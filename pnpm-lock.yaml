@@ -1,0 +1,51 @@
+lockfileVersion: 5.4
+
+specifiers:
+  '@codec-bytes/ascii': ^3.0.0
+  reflect-metadata: ^0.1.13
+  typescript: ^5.1.6
+
+dependencies:
+  '@codec-bytes/ascii': registry.npmmirror.com/@codec-bytes/ascii/3.0.0
+  reflect-metadata: registry.npmmirror.com/reflect-metadata/0.1.13
+
+devDependencies:
+  typescript: registry.npmmirror.com/typescript/5.1.6
+
+packages:
+
+  registry.npmmirror.com/@codec-bytes/ascii/3.0.0:
+    resolution: {integrity: sha512-lC3/UGjMmRELIZVdRthY9zD2KLiCLY6SdeHLMl8lenCoon7n/2ZhtGL7hQc/++ZWeSx2unlnMp37TJLhEJVv7g==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@codec-bytes/ascii/-/ascii-3.0.0.tgz}
+    name: '@codec-bytes/ascii'
+    version: 3.0.0
+    dependencies:
+      '@codec-bytes/error': registry.npmmirror.com/@codec-bytes/error/5.0.1
+    dev: false
+
+  registry.npmmirror.com/@codec-bytes/error/5.0.1:
+    resolution: {integrity: sha512-+CIn20TUlwsoiStlhCBfXqiBhDsU5TxGNhW5fhBj5xqs9B+O4pT1y83n+7gu4x+Y9U+3Ceyc/BtfxCjAlPxVAw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@codec-bytes/error/-/error-5.0.1.tgz}
+    name: '@codec-bytes/error'
+    version: 5.0.1
+    dependencies:
+      '@failure-abstraction/error': registry.npmmirror.com/@failure-abstraction/error/6.0.1
+    dev: false
+
+  registry.npmmirror.com/@failure-abstraction/error/6.0.1:
+    resolution: {integrity: sha512-KvIHhvwfrgbUduQbk55WRDGL2XcXjDLwleId+pSnK7mUUIY7zMGMy3N+ouDcOFymme48tKDlarKsYj5mEEd3fg==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@failure-abstraction/error/-/error-6.0.1.tgz}
+    name: '@failure-abstraction/error'
+    version: 6.0.1
+    dev: false
+
+  registry.npmmirror.com/reflect-metadata/0.1.13:
+    resolution: {integrity: sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/reflect-metadata/-/reflect-metadata-0.1.13.tgz}
+    name: reflect-metadata
+    version: 0.1.13
+    dev: false
+
+  registry.npmmirror.com/typescript/5.1.6:
+    resolution: {integrity: sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/typescript/-/typescript-5.1.6.tgz}
+    name: typescript
+    version: 5.1.6
+    engines: {node: '>=14.17'}
+    hasBin: true
+    dev: true
