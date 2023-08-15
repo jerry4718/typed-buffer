@@ -1,21 +1,28 @@
-import { AdvancedParser, BaseParser, createContext, ParserContext, ParserOptionComposable, ValueSpec } from '@/parser/base-parser';
+// deno-lint-ignore-file no-namespace
+import { AdvancedParser, BaseParser, createContext, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
 import {
-    Float32, Float32BE, Float32LE, Float64, Float64BE, Float64LE, Int16, Int16BE, Int16LE, Int32, Int32BE, Int32LE, BigInt64, BigInt64BE, BigInt64LE, Int8, PrimitiveParser, Uint16,
-    Uint16BE, Uint16LE, Uint32, Uint32BE, Uint32LE, BigUint64, BigUint64BE, BigUint64LE, Uint8,
-} from '@/parser/primitive-parser';
-import { assertType, isBoolean, isNumber, isObject, isUndefined } from '@/utils/type-util';
+    BigInt64, BigInt64BE, BigInt64LE, BigUint64, BigUint64BE, BigUint64LE,
+    Float32, Float32BE, Float32LE, Float64, Float64BE, Float64LE,
+    Int16, Int16BE, Int16LE, Int32, Int32BE, Int32LE, Int8,
+    PrimitiveParser,
+    Uint16, Uint16BE, Uint16LE, Uint32, Uint32BE, Uint32LE, Uint8,
+} from './primitive-parser.ts';
+import { assertType, isBoolean, isNumber, isObject, isUndefined } from '../utils/type-util.ts';
 
-type OptionNumber<T> = ((ctx: ParserContext<T>) => number) | PrimitiveParser<number> | number;
-type OptionEos<T> = ((ctx: ParserContext<T>) => number) | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
+export type ArrayParserOptionNumber<T> = ((ctx: ParserContext<T>) => number) | PrimitiveParser<number> | number;
+export type ArrayParserOptionEos<T> = ((ctx: ParserContext<T>) => number) | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
 
-type BaseArrayParserOptionRequired<T> = { item: BaseParser<T> }
-type BaseArrayParserOptionComputed<T> =
-    | { count: OptionNumber<T> }
-    | { size: OptionNumber<T> }
-    | { eos: OptionEos<T> }
-type BaseArrayParserOption<T> = BaseArrayParserOptionRequired<T> & BaseArrayParserOptionComputed<T>;
+export type ArrayParserOptionRequired<T> = { item: BaseParser<T> };
+export type ArrayParserCountReader<T> = { count: ArrayParserOptionNumber<T> };
+export type ArrayParserSizeReader<T> = { size: ArrayParserOptionNumber<T> };
+export type ArrayParserEosReader<T> = { eos: ArrayParserOptionEos<T> };
 
-interface PrimitiveArrayConstructor<T, TArray> {
+export type ArrayParserReaderPartial<T> = Partial<ArrayParserCountReader<T>> & Partial<ArrayParserSizeReader<T>> & Partial<ArrayParserEosReader<T>>;
+export type ArrayParserReaderComputed<T> = ArrayParserCountReader<T> | ArrayParserSizeReader<T> | ArrayParserEosReader<T>;
+
+export type BaseArrayParserOption<T> = ArrayParserOptionRequired<T> & ArrayParserReaderComputed<T>;
+
+interface TypedArrayConstructor<T, TArray> {
     new(length: number): TArray;
 
     new(array: ArrayLike<T> | ArrayBufferLike): TArray;
@@ -32,15 +39,16 @@ interface PrimitiveArrayConstructor<T, TArray> {
 const DEFAULT_EOS_FLAG = 0x00;
 const eosFlag = (eos?: number) => !isUndefined(eos) ? eos : DEFAULT_EOS_FLAG;
 
-export class BaseArrayParser<T> extends AdvancedParser<T[]> {
-    private readonly itemParser?: BaseParser<T>;
-    private readonly count?: OptionNumber<T>;
-    private readonly size?: OptionNumber<T>;
-    private readonly eos?: boolean | number | ((ctx: ParserContext<string>) => number);
+export class ArrayParser<T> extends AdvancedParser<T[]> {
+    private readonly itemParser: BaseParser<T>;
+    private readonly count?: ArrayParserOptionNumber<T[]>;
+    private readonly size?: ArrayParserOptionNumber<T[]>;
+    private readonly eos?: ArrayParserOptionEos<T[]>;
 
     constructor(option: BaseArrayParserOption<T>) {
         super();
-        const { item: itemParser, count, size, eos } = option;
+        const { item: itemParser, ...readerPartial } = option;
+        const { count, size, eos } = readerPartial as ArrayParserReaderPartial<T[]>;
         if (isUndefined(itemParser)) {
             throw new Error('Invalid parser options. Option [item] is required.');
         }
@@ -53,7 +61,7 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
         this.eos = eos;
     }
 
-    readOptionNumber(ctx: ParserContext<T, T[]>, option: OptionNumber<T>, byteOffset: number): ValueSpec<number> {
+    readOptionNumber(ctx: ParserContext<T[]>, option: ArrayParserOptionNumber<T[]>, byteOffset: number): ValueSpec<number> {
         if (isObject(option) && option instanceof PrimitiveParser && assertType<PrimitiveParser<number>>(option)) {
             return option.read(ctx, byteOffset);
         }
@@ -64,7 +72,7 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
         throw Error('one of NumberOption is not valid');
     }
 
-    writeOptionNumber(ctx: ParserContext<T, T[]>, option: OptionNumber<T>, byteOffset: number, value: number): ValueSpec<number> {
+    writeOptionNumber(ctx: ParserContext<T[]>, option: ArrayParserOptionNumber<T[]>, byteOffset: number, value: number): ValueSpec<number> {
         if (isObject(option) && option instanceof PrimitiveParser && assertType<PrimitiveParser<number>>(option)) {
             return option.write(ctx, byteOffset, value);
         }
@@ -75,17 +83,17 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
         throw Error('one of NumberOption is not valid');
     }
 
-    eosJudge(ctx: ParserContext<T, T[]>, dataOffset: number, option?: ParserOptionComposable): boolean {
+    eosJudge(ctx: ParserContext<T[]>, dataOffset: number, option?: ParserOptionComposable): boolean {
         const eos = this.eos;
         const { value: nextUInt8 } = Uint8.read(ctx, dataOffset);
-        if (isBoolean(eos)) return nextUInt8 === eosFlag(option.eos);
+        if (isBoolean(eos)) return nextUInt8 === eosFlag(option?.eos);
         if (isNumber(eos)) return nextUInt8 === eos;
-        return nextUInt8 === eos(ctx);
+        return nextUInt8 === eos!(ctx);
     }
 
-    eosMark(ctx: ParserContext<T, T[]>, dataOffset: number, option?: ParserOptionComposable): ValueSpec<number> {
+    eosMark(ctx: ParserContext<T[]>, dataOffset: number, option?: ParserOptionComposable): ValueSpec<number> {
         const eos = this.eos;
-        const value = isBoolean(eos) ? eosFlag(option.eos) : isNumber(eos) ? eos : eos(ctx);
+        const value = isBoolean(eos) ? eosFlag(option?.eos) : isNumber(eos) ? eos : eos!(ctx);
         return Uint8.write(ctx, dataOffset, value);
     }
 
@@ -96,18 +104,17 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
         return this.valueSpec(items, byteOffset, byteSize);
     }
 
-    read(ctx: ParserContext<T[]>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T[]> {
-        const { item: itemParser, count, size, eos } = this;
+    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T[]> {
+        const { itemParser, count, size, eos } = this;
 
         const itemSpecs: ValueSpec<T>[] = [];
         const items: T[] = [];
         let itemsByteSize = 0;
-
-        const subContext = createContext(items, ctx);
+        const subContext = createContext(ctx, items);
 
         if (!isUndefined(count)) {
             // 使用传入的 count 选项获取字符串长度
-            const countSpec = this.readOptionNumber(ctx, count, byteOffset);
+            const countSpec = this.readOptionNumber(subContext, count, byteOffset);
             for (let readIndex = 0; readIndex < countSpec.value; readIndex++) {
                 const itemSpec = itemParser.read(subContext, countSpec.offsetEnd + itemsByteSize, option);
                 itemSpecs.push(itemSpec);
@@ -119,7 +126,7 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
 
         if (!isUndefined(size)) {
             // 使用传入的 size 选项获取字符串长度
-            const sizeSpec = this.readOptionNumber(ctx, size, byteOffset);
+            const sizeSpec = this.readOptionNumber(subContext, size, byteOffset);
 
             while (itemsByteSize < sizeSpec.value) {
                 const itemSpec = itemParser.read(subContext, sizeSpec.offsetEnd + itemsByteSize, option);
@@ -137,7 +144,7 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
 
         if (!isUndefined(eos)) {
             // 使用 eosJudge 来确定读取Array的长度
-            while (this.eosJudge(ctx, byteOffset + itemsByteSize)) {
+            while (!this.eosJudge(subContext, byteOffset + itemsByteSize)) {
                 const itemSpec = itemParser.read(subContext, byteOffset + itemsByteSize, option);
                 itemSpecs.push(itemSpec);
                 items.push(itemSpec.value);
@@ -153,11 +160,12 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
         throw new Error('Either count,size or eos must be provided to read the array.');
     }
 
-    write(ctx: ParserContext<T[]>, byteOffset: number, value: T[], option?: ParserOptionComposable): ValueSpec<T[]> {
-        const { item: itemParser, count, size, eos } = this;
+    write(ctx: ParserContext<unknown>, byteOffset: number, value: T[], option?: ParserOptionComposable): ValueSpec<T[]> {
+        const subContext = createContext(ctx, value);
+        const { itemParser, count, size, eos } = this;
         if (!isUndefined(count)) {
             // 使用传入的 count 选项写入字符串长度
-            const countSpec = this.writeOptionNumber(ctx, count, byteOffset, value.length);
+            const countSpec = this.writeOptionNumber(subContext, count, byteOffset, value.length);
             const itemSpecs: ValueSpec<T>[] = [];
             let itemsByteSize = 0;
             for (const item of value) {
@@ -170,7 +178,7 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
 
         if (!isUndefined(size)) {
             // 使用传入的 size 选项写入字符串长度（暂时未知具体长度，先写0，以获取offset）
-            const sizeSpec = this.writeOptionNumber(ctx, size, byteOffset, 0);
+            const sizeSpec = this.writeOptionNumber(subContext, size, byteOffset, 0);
 
             const itemSpecs: ValueSpec<T>[] = [];
             let itemsByteSize = 0;
@@ -181,7 +189,7 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
             }
 
             // 回到初始位置，写入正确的size
-            this.writeOptionNumber(ctx, size, byteOffset, itemsByteSize);
+            this.writeOptionNumber(subContext, size, byteOffset, itemsByteSize);
 
             return this.valueSpecs(itemSpecs, byteOffset, sizeSpec.byteSize);
         }
@@ -195,7 +203,7 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
                 itemsByteSize += itemSpec.byteSize;
             }
 
-            this.eosMark(ctx, byteOffset + itemsByteSize);
+            this.eosMark(subContext, byteOffset + itemsByteSize);
 
             // 这里表示将eos标志位也算入Array数据长度
             const eosSize = 1;
@@ -207,24 +215,29 @@ export class BaseArrayParser<T> extends AdvancedParser<T[]> {
 
 }
 
-export class PrimitiveArrayParser<T, TArray> extends AdvancedParser<TArray> {
-    private readonly PrimitiveArrayConstructor: PrimitiveArrayConstructor<T, TArray>;
-    private readonly baseArrayParser: BaseArrayParser<T>;
+export class TypedArrayParser<T, TypedArray extends ArrayLike<T>> extends AdvancedParser<TypedArray> {
+    private readonly TypedArrayConstructor: TypedArrayConstructor<T, TypedArray>;
+    private readonly baseArrayParser: ArrayParser<T>;
 
-    constructor(constructor: PrimitiveArrayConstructor<T, TArray>, option: BaseArrayParserOption<T>) {
+    constructor(constructor: TypedArrayConstructor<T, TypedArray>, option: BaseArrayParserOption<T>) {
         super();
-        this.PrimitiveArrayConstructor = constructor;
-        this.baseArrayParser = new BaseArrayParser<T>(option);
+        this.TypedArrayConstructor = constructor;
+        this.baseArrayParser = new ArrayParser<T>(option);
     }
 
-    read(ctx: ParserContext<TArray>, byteOffset: number, option: ParserOptionComposable | undefined): ValueSpec<TArray> {
-        const { value: baseArray, byteSize } = this.baseArrayParser.read(ctx as ParserContext<T[]>, byteOffset, option);
-        const tArray = this.PrimitiveArrayConstructor.from(baseArray);
+    read(ctx: ParserContext<unknown>, byteOffset: number, option: ParserOptionComposable | undefined): ValueSpec<TypedArray> {
+        const { value: baseArray, byteSize } = this.baseArrayParser.read(ctx, byteOffset, option);
+        const tArray = this.TypedArrayConstructor.from(baseArray);
         return this.valueSpec(tArray, byteOffset, byteSize);
     }
 
-    write(ctx: ParserContext<TArray>, byteOffset: number, value: TArray, option: ParserOptionComposable | undefined): ValueSpec<TArray> {
-        const { value: baseArray, byteSize } = this.baseArrayParser.write(ctx as ParserContext<T[]>, byteOffset, Array.from<T>(value), option);
+    write(ctx: ParserContext<unknown>, byteOffset: number, value: TypedArray, option: ParserOptionComposable | undefined): ValueSpec<TypedArray> {
+        const { value: baseArray, byteSize } = this.baseArrayParser.write(
+            ctx,
+            byteOffset,
+            Array.from<T>(value),
+            option,
+        );
         return this.valueSpec(value, byteOffset, byteSize);
     }
 }
@@ -241,34 +254,28 @@ namespace OriConstructors {
     export const OriBigInt64Array = BigInt64Array;
     export const OriBigUint64Array = BigUint64Array;
 }
+
 namespace Constructors {
-    export const Int8Array = OriConstructors.OriInt8Array as PrimitiveArrayConstructor<number, Int8Array>;
-    export const Uint8Array = OriConstructors.OriUint8Array as PrimitiveArrayConstructor<number, Uint8Array>;
-    export const Int16Array = OriConstructors.OriInt16Array as PrimitiveArrayConstructor<number, Int16Array>;
-    export const Uint16Array = OriConstructors.OriUint16Array as PrimitiveArrayConstructor<number, Uint16Array>;
-    export const Int32Array = OriConstructors.OriInt32Array as PrimitiveArrayConstructor<number, Int32Array>;
-    export const Uint32Array = OriConstructors.OriUint32Array as PrimitiveArrayConstructor<number, Uint32Array>;
-    export const Float32Array = OriConstructors.OriFloat32Array as PrimitiveArrayConstructor<number, Float32Array>;
-    export const Float64Array = OriConstructors.OriFloat64Array as PrimitiveArrayConstructor<number, Float64Array>;
-    export const BigInt64Array = OriConstructors.OriBigInt64Array as PrimitiveArrayConstructor<bigint, BigInt64Array>;
-    export const BigUint64Array = OriConstructors.OriBigUint64Array as PrimitiveArrayConstructor<bigint, BigUint64Array>;
+    export const Int8Array = OriConstructors.OriInt8Array as TypedArrayConstructor<number, Int8Array>;
+    export const Uint8Array = OriConstructors.OriUint8Array as TypedArrayConstructor<number, Uint8Array>;
+    export const Int16Array = OriConstructors.OriInt16Array as TypedArrayConstructor<number, Int16Array>;
+    export const Uint16Array = OriConstructors.OriUint16Array as TypedArrayConstructor<number, Uint16Array>;
+    export const Int32Array = OriConstructors.OriInt32Array as TypedArrayConstructor<number, Int32Array>;
+    export const Uint32Array = OriConstructors.OriUint32Array as TypedArrayConstructor<number, Uint32Array>;
+    export const Float32Array = OriConstructors.OriFloat32Array as TypedArrayConstructor<number, Float32Array>;
+    export const Float64Array = OriConstructors.OriFloat64Array as TypedArrayConstructor<number, Float64Array>;
+    export const BigInt64Array = OriConstructors.OriBigInt64Array as TypedArrayConstructor<bigint, BigInt64Array>;
+    export const BigUint64Array = OriConstructors.OriBigUint64Array as TypedArrayConstructor<bigint, BigUint64Array>;
 }
 
-getArrayParser.BigInt64Array({
-    eos: (ctx) => ctx.parent.length,
-});
-
 export function getArrayParser<T>(option: BaseArrayParserOption<T>) {
-    return new BaseArrayParser(option);
+    return new ArrayParser(option);
 }
 
 export namespace getArrayParser {
-    function createGetter<T, TArray>(
-        item: PrimitiveParser<T>,
-        constructor: PrimitiveArrayConstructor<T, TArray>,
-    ) {
-        return function (option: BaseArrayParserOptionComputed<T>) {
-            return new PrimitiveArrayParser<T, TArray>(constructor, { item, ...option });
+    function createGetter<T, TArray extends ArrayLike<T>>(item: PrimitiveParser<T>, constructor: TypedArrayConstructor<T, TArray>) {
+        return function (option: ArrayParserReaderComputed<T>) {
+            return new TypedArrayParser<T, TArray>(constructor, { item, ...option });
         };
     }
 

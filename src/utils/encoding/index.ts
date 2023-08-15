@@ -1,4 +1,4 @@
-import { EncodingAscii } from './encoding-ascii';
+import { EncodingAscii } from './encoding-ascii.ts';
 
 export type Encoding = {
     encode: (str: string) => Uint8Array,

@@ -1,4 +1,6 @@
-import { BaseParser, Endian, ParserContext, ParserOptionComposable, ValueSpec } from '@/parser/base-parser';
+import { isUndefined } from '../utils/type-util.ts';
+import { BigEndian, Endian, LittleEndian } from '../common.ts';
+import { BaseParser, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
 
 type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
 type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
@@ -11,8 +13,10 @@ interface PrimitiveParserOptionRequired<T> {
     setter: PrimitiveSetter<T>,
 }
 
-function isLittleEndian(endian: Endian): boolean {
-    return endian === 'le';
+function isLittleEndian(endian?: Endian): boolean {
+    if (isUndefined(endian)) return false;
+    if (endian === BigEndian) return false;
+    return endian === LittleEndian;
 }
 
 export class PrimitiveParser<T> extends BaseParser<T> {
@@ -33,14 +37,14 @@ export class PrimitiveParser<T> extends BaseParser<T> {
         return super.valueSpec(value, byteOffset, this.byteSize);
     }
 
-    read(ctx: ParserContext<T>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
-        const littleEndian = isLittleEndian(this.endian || option.endian);
+    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
+        const littleEndian = isLittleEndian(this.endian || option?.endian);
         const value = this.getter.call(new DataView(ctx.buffer), byteOffset, littleEndian);
         return this.valueSpec(value, byteOffset);
     }
 
-    write(ctx: ParserContext<T>, byteOffset: number, value: number, option?: ParserOptionComposable): ValueSpec<T> {
-        const littleEndian = isLittleEndian(this.endian || option.endian);
+    write(ctx: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T> {
+        const littleEndian = isLittleEndian(this.endian || option?.endian);
         this.setter.call(new DataView(ctx.buffer), byteOffset, value, littleEndian);
         return this.valueSpec(value, byteOffset);
     }

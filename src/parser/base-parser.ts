@@ -1,13 +1,20 @@
-import { isFunction, isUndefined } from '@/utils/type-util';
+import { Endian } from '../common.ts';
 
-export type ParserContext<T, P = any, R = any> = {
+export type ScopeAccessor =
+    & object
+    & { [k in string]: unknown }
+    & { [k in symbol]: unknown }
+    & { [k in number]: unknown }
+
+export type ParserContext<T, P = unknown, R = unknown> = {
     buffer: ArrayBuffer,
     section?: Partial<T>,
     parent?: P,
     root?: R,
+    scope: ScopeAccessor,
 }
 
-export function createContext<T, P>(section?: Partial<T>, parent?: ParserContext<P>): ParserContext<T, P> {
+export function createContext<P, T = unknown>(parent?: ParserContext<P>, section?: Partial<T>): ParserContext<T, P> {
     let initSection = section;
 
     const sectionDescriptor: PropertyDescriptor = {
@@ -19,56 +26,99 @@ export function createContext<T, P>(section?: Partial<T>, parent?: ParserContext
         },
     };
 
+    const parentScope = parent?.scope || {};
+    const scopeHolder = {};
+    const scopeGetter = new Proxy(scopeHolder, {
+        get: function (_, propKey, receiver) {
+            if (Object.hasOwn(scopeHolder, propKey)) {
+                return Reflect.get(scopeHolder, propKey, receiver);
+            }
+            return Reflect.get(parentScope, propKey, receiver);
+        },
+        set: function (_, propKey, value, receiver) {
+            return Reflect.set(scopeHolder, propKey, value, receiver);
+        },
+    });
+
     return Object.defineProperties(
         {} as ParserContext<T, P>,
         {
-            buffer: { get: () => parent.buffer },
+            buffer: { get: () => parent?.buffer },
             section: sectionDescriptor,
             parent: { get: () => parent?.section },
             root: { get: () => parent?.root ?? section },
+            scope: { get: () => scopeGetter },
         },
     );
 }
 
-export interface ValueSpec<T> {
-    value: T,
+interface SpecInfo {
     byteSize: number,
     offsetStart: number,
     offsetEnd: number,
     offset: [ number, number ]
 }
 
-export type Endian = 'le' | 'be'
+export interface ValueSpec<T> extends SpecInfo {
+    value: T,
+    spec: SpecInfo,
+}
 
 export interface ParserOptionComposable {
     eos?: number,
     endian?: Endian,
 }
 
-export abstract class BaseParser<T> {
-    abstract read(ctx: ParserContext<T>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T>;
+function createSpec(byteOffset: number, byteSize: number): SpecInfo {
+    const positionStart = byteOffset;
+    const positionEnd = byteOffset + byteSize;
 
-    abstract write(ctx: ParserContext<T>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T>;
+    return Object.defineProperties(
+        {} as SpecInfo,
+        {
+            byteSize: { writable: false, value: byteSize },
+            offsetStart: { writable: false, value: positionStart },
+            offsetEnd: { writable: false, value: positionEnd },
+            offset: { get: () => [ positionStart, positionEnd ] },
+        },
+    );
+}
 
-    protected valueSpec(value: T, byteOffset: number, byteSize: number): ValueSpec<T> {
-        return BaseParser.valueSpec(value, byteOffset, byteSize);
+function valueSpec<T>(value: T, byteOffset: number, byteSize: number): ValueSpec<T> {
+    const spec = createSpec(byteOffset, byteSize);
+
+    return Object.defineProperties(
+        {} as ValueSpec<T>,
+        {
+            value: { writable: false, value: value },
+            spec: { writable: false, value: spec },
+            byteSize: { get: () => spec.byteSize },
+            offsetStart: { get: () => spec.offsetStart },
+            offsetEnd: { get: () => spec.offsetEnd },
+            offset: { get: () => spec.offset },
+        },
+    );
+}
+
+export interface Parser<T> {
+    read(parentContext: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T>;
+
+    write(parentContext: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T>;
+
+    valueSpec(value: T, byteOffset: number, byteSize: number): ValueSpec<T>;
+}
+
+export abstract class BaseParser<T> implements Parser<T> {
+    abstract read(parentContext: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T>;
+
+    abstract write(parentContext: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T>;
+
+    valueSpec(value: T, byteOffset: number, byteSize: number): ValueSpec<T> {
+        return valueSpec(value, byteOffset, byteSize);
     }
 
-    static valueSpec<T>(value: T, byteOffset: number, byteSize: number): ValueSpec<T> {
-        const positionStart = byteOffset;
-        const positionEnd = byteOffset + byteSize;
-        const position = [ positionStart, positionEnd ];
-
-        return Object.defineProperties(
-            {} as ValueSpec<T>,
-            {
-                value: { get: () => value },
-                byteSize: { get: () => byteSize },
-                offsetStart: { get: () => positionStart },
-                offsetEnd: { get: () => positionEnd },
-                offset: { get: () => position.slice() },
-            },
-        );
+    static valueSpec<O>(value: O, byteOffset: number, byteSize: number): ValueSpec<O> {
+        return valueSpec(value, byteOffset, byteSize);
     }
 }
 

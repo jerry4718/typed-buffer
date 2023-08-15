@@ -1,0 +1,27 @@
+{
+  "version": "2",
+  "remote": {},
+  "npm": {
+    "specifiers": {
+      "@codec-bytes/ascii@^3.0.0": "@codec-bytes/ascii@3.0.0"
+    },
+    "packages": {
+      "@codec-bytes/ascii@3.0.0": {
+        "integrity": "sha512-lC3/UGjMmRELIZVdRthY9zD2KLiCLY6SdeHLMl8lenCoon7n/2ZhtGL7hQc/++ZWeSx2unlnMp37TJLhEJVv7g==",
+        "dependencies": {
+          "@codec-bytes/error": "@codec-bytes/error@5.0.1"
+        }
+      },
+      "@codec-bytes/error@5.0.1": {
+        "integrity": "sha512-+CIn20TUlwsoiStlhCBfXqiBhDsU5TxGNhW5fhBj5xqs9B+O4pT1y83n+7gu4x+Y9U+3Ceyc/BtfxCjAlPxVAw==",
+        "dependencies": {
+          "@failure-abstraction/error": "@failure-abstraction/error@6.0.1"
+        }
+      },
+      "@failure-abstraction/error@6.0.1": {
+        "integrity": "sha512-KvIHhvwfrgbUduQbk55WRDGL2XcXjDLwleId+pSnK7mUUIY7zMGMy3N+ouDcOFymme48tKDlarKsYj5mEEd3fg==",
+        "dependencies": {}
+      }
+    }
+  }
+}
