@@ -157,7 +157,7 @@ type ArrayParserOption<T> = {
     item: ParserSelect<T>,
     count?: NumberOption<T>,
     size?: NumberOption<T>,
-    eos?: number | ((ctx: ParserContext<string>) => number), // 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
+    end?: number | ((ctx: ParserContext<string>) => number), // 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
 }
 
 function isUndefined(value: any): value is undefined {
@@ -169,12 +169,12 @@ function hackItemType<I, O>(input: I): O {
 }
 
 function getArrayParser<T>(parserOption: ArrayParserOption<T>): AdvancedParser<T> {
-    const { item: itemParser, count, size, eos } = parserOption;
+    const { item: itemParser, count, size, end } = parserOption;
     if (isUndefined(itemParser)) {
         throw new Error('Invalid parser options. Option [item] is required.');
     }
-    if (Number(!isUndefined(count)) + Number(!isUndefined(size)) + Number(!isUndefined(eos)) !== 1) {
-        throw new Error('Invalid parser options. Only one of [size] or [eos].');
+    if (Number(!isUndefined(count)) + Number(!isUndefined(size)) + Number(!isUndefined(end)) !== 1) {
+        throw new Error('Invalid parser options. Only one of [size] or [end].');
     }
 
     function readOptionNumber(option: NumberOption<T>, view: DataView, byteOffset: number): ValueSpec<number> {
@@ -199,14 +199,14 @@ function getArrayParser<T>(parserOption: ArrayParserOption<T>): AdvancedParser<T
         throw Error('one of NumberOption is not valid');
     }
 
-    function eosJudge(view: DataView, dataOffset: number): boolean {
+    function endJudge(view: DataView, dataOffset: number): boolean {
         const { value: nextUInt8 } = UInt8.read(view, dataOffset);
-        if (isNumber(eos)) return nextUInt8 === eos;
-        return nextUInt8 === eos({});
+        if (isNumber(end)) return nextUInt8 === end;
+        return nextUInt8 === end({});
     }
 
-    function eosMark(view: DataView, dataOffset: number): ValueSpec<number> {
-        const value = isFunction(eos) ? eos({}) : eos;
+    function endMark(view: DataView, dataOffset: number): ValueSpec<number> {
+        const value = isFunction(end) ? end({}) : end;
         return UInt8.write(view, dataOffset, value);
     }
 
@@ -264,23 +264,23 @@ function getArrayParser<T>(parserOption: ArrayParserOption<T>): AdvancedParser<T
                 return wrapReturn(itemSpecs, byteOffset, sizeByteSize);
             }
 
-            if (!isUndefined(eos)) {
+            if (!isUndefined(end)) {
                 const itemSpecs: ValueSpec<T>[] = [];
                 let itemsByteSize = 0;
-                // 使用 eosJudge 来确定读取Array的长度
-                while (eosJudge(view, byteOffset + itemsByteSize)) {
+                // 使用 endJudge 来确定读取Array的长度
+                while (endJudge(view, byteOffset + itemsByteSize)) {
                     const itemSpec = itemParser.read(view, byteOffset + itemsByteSize, option);
                     itemSpecs.push(itemSpec);
                     itemsByteSize += itemSpec.byteSize;
                 }
 
-                // 这里表示将eos标志位也算入Array数据长度
-                const eosSize = 1;
-                return wrapReturn(itemSpecs, byteOffset, eosSize);
+                // 这里表示将end标志位也算入Array数据长度
+                const endSize = 1;
+                return wrapReturn(itemSpecs, byteOffset, endSize);
             }
 
-            // 如果没有提供 count,size或eos，则抛出错误，因为无法确定Array的长度
-            throw new Error('Either count,size or eos must be provided to read the array.');
+            // 如果没有提供 count,size或end，则抛出错误，因为无法确定Array的长度
+            throw new Error('Either count,size or end must be provided to read the array.');
         },
         write(view: DataView, byteOffset: number, value: ArrayTypeSelect<T>, option?: ParserOptionComposable): ValueSpec<ArrayTypeSelect<T>> {
             if (!isUndefined(count)) {
@@ -320,7 +320,7 @@ function getArrayParser<T>(parserOption: ArrayParserOption<T>): AdvancedParser<T
                 return wrapReturn(itemSpecs, byteOffset, sizeByteSize);
             }
 
-            if (!isUndefined(eos)) {
+            if (!isUndefined(end)) {
                 const itemSpecs: ValueSpec<T>[] = [];
                 let itemsByteSize = 0;
                 for (const item of value) {
@@ -329,30 +329,30 @@ function getArrayParser<T>(parserOption: ArrayParserOption<T>): AdvancedParser<T
                     itemsByteSize += itemSpec.byteSize;
                 }
 
-                eosMark(view, byteOffset + itemsByteSize);
+                endMark(view, byteOffset + itemsByteSize);
 
-                // 这里表示将eos标志位也算入Array数据长度
-                const eosSize = 1;
-                return wrapReturn(itemSpecs, byteOffset, eosSize);
+                // 这里表示将end标志位也算入Array数据长度
+                const endSize = 1;
+                return wrapReturn(itemSpecs, byteOffset, endSize);
             }
-            // 如果没有提供 count,size或eos，则抛出错误，因为无法确定Array的长度
-            throw new Error('Either count,size or eos must be provided to write the array.');
+            // 如果没有提供 count,size或end，则抛出错误，因为无法确定Array的长度
+            throw new Error('Either count,size or end must be provided to write the array.');
         },
     };
 }
 
 // 字符串解析器
 type StringParserOption =
-    & Pick<ArrayParserOption<number>, 'eos' | 'size'>
+    & Pick<ArrayParserOption<number>, 'end' | 'size'>
     & { encoding?: Encoding }
 
 function getStringParser(parserOption: StringParserOption): AdvancedParser<string> {
-    const { encoding = Encodings.Ascii, size, eos } = parserOption;
-    if (Number(!isUndefined(size)) + Number(!isUndefined(eos)) !== 1) {
-        throw new Error('Invalid parser options. Only one of size or eos.');
+    const { encoding = Encodings.Ascii, size, end } = parserOption;
+    if (Number(!isUndefined(size)) + Number(!isUndefined(end)) !== 1) {
+        throw new Error('Invalid parser options. Only one of size or end.');
     }
 
-    const Uint8ArrayParser = getArrayParser({ item: UInt8, size, eos });
+    const Uint8ArrayParser = getArrayParser({ item: UInt8, size, end });
 
     return {
         [keyAdvancedCreator]: getStringParser,
@@ -469,7 +469,7 @@ function getTypedParser<T>(targetClass: new () => T): AdvancedParser<T> {
 
 @ParserClass()
 class Person {
-    @ParserField(getStringParser({ encoding: Encodings.Ascii, eos: 0 }))
+    @ParserField(getStringParser({ encoding: Encodings.Ascii, end: 0 }))
     name!: string;
 
     @ParserField(Int32LE)

@@ -53,33 +53,37 @@ export function createContext<P, T = unknown>(parent?: ParserContext<P>, section
 }
 
 interface SpecInfo {
+    size: number,
+    start: number,
+    end: number,
+    pos: [ number, number ]
+}
+
+export interface ValueSpec<T> {
+    value: T,
+    spec: SpecInfo,
     byteSize: number,
     offsetStart: number,
     offsetEnd: number,
     offset: [ number, number ]
 }
 
-export interface ValueSpec<T> extends SpecInfo {
-    value: T,
-    spec: SpecInfo,
-}
-
 export interface ParserOptionComposable {
-    eos?: number,
+    end?: number,
     endian?: Endian,
 }
 
 function createSpec(byteOffset: number, byteSize: number): SpecInfo {
-    const positionStart = byteOffset;
-    const positionEnd = byteOffset + byteSize;
+    const offsetStart = byteOffset;
+    const offsetEnd = byteOffset + byteSize;
 
     return Object.defineProperties(
         {} as SpecInfo,
         {
-            byteSize: { writable: false, value: byteSize },
-            offsetStart: { writable: false, value: positionStart },
-            offsetEnd: { writable: false, value: positionEnd },
-            offset: { get: () => [ positionStart, positionEnd ] },
+            size: { enumerable: true, writable: false, value: byteSize },
+            start: { enumerable: true, writable: false, value: offsetStart },
+            end: { enumerable: true, writable: false, value: offsetEnd },
+            pos: { enumerable: true, get: () => [ offsetStart, offsetEnd ] },
         },
     );
 }
@@ -90,12 +94,12 @@ function valueSpec<T>(value: T, byteOffset: number, byteSize: number): ValueSpec
     return Object.defineProperties(
         {} as ValueSpec<T>,
         {
-            value: { writable: false, value: value },
-            spec: { writable: false, value: spec },
-            byteSize: { get: () => spec.byteSize },
-            offsetStart: { get: () => spec.offsetStart },
-            offsetEnd: { get: () => spec.offsetEnd },
-            offset: { get: () => spec.offset },
+            value: { enumerable: true, writable: false, value: value },
+            spec: { enumerable: true, writable: false, value: spec },
+            byteSize: { enumerable: false, get: () => spec.size },
+            offsetStart: { enumerable: false, get: () => spec.start },
+            offsetEnd: { enumerable: false, get: () => spec.end },
+            offset: { enumerable: false, get: () => spec.pos },
         },
     );
 }
