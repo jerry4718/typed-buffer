@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 type MetadataKey<T> = (string | symbol);
 
 export const StructParser = Symbol('@@StructParser') satisfies MetadataKey<string>;

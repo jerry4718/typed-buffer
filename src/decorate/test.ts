@@ -1,6 +1,5 @@
 import { Field, Parser } from './decorator.ts';
 import { StructFields, StructParser, getInheritedMetadata, getPrototypeMetadata } from './meta.ts';
-import 'reflect-metadata';
 
 @Parser('Test')
 class Test {

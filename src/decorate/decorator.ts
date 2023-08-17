@@ -1,4 +1,5 @@
 import { StructFields, StructParser } from "./meta.ts";
+import 'reflect-metadata';
 
 export const defineClassDecorator = (decorator: ClassDecorator): ClassDecorator => decorator;
 export const definePropertyDecorator = (decorator: PropertyDecorator): PropertyDecorator => decorator;
