@@ -1,15 +1,14 @@
-// deno-lint-ignore-file no-namespace
 import { AdvancedParser, BaseParser, ContextGetter, createContext, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
 import * as TypedArray from '../describe/interface.ts';
 import {
-    BigInt64, BigInt64BE, BigInt64LE, BigUint64, BigUint64BE, BigUint64LE,
-    Float32, Float32BE, Float32LE, Float64, Float64BE, Float64LE,
-    Int16, Int16BE, Int16LE, Int32, Int32BE, Int32LE, Int8,
-    PrimitiveParser,
-    Uint16, Uint16BE, Uint16LE, Uint32, Uint32BE, Uint32LE, Uint8,
+	BigInt64, BigInt64BE, BigInt64LE, BigUint64, BigUint64BE, BigUint64LE,
+	Float32, Float32BE, Float32LE, Float64, Float64BE, Float64LE,
+	Int16, Int16BE, Int16LE, Int32, Int32BE, Int32LE, Int8,
+	PrimitiveParser,
+	Uint16, Uint16BE, Uint16LE, Uint32, Uint32BE, Uint32LE, Uint8,
 } from './primitive-parser.ts';
 import { assertType, isBoolean, isNumber, isObject, isUndefined } from '../utils/type-util.ts';
-import { TypedArrayFactory } from '../describe/interface.ts';
+import { TypedArrayFactory, TypedArrayInstance } from '../describe/interface.ts';
 
 export type ArrayParserOptionNumber<T> = ContextGetter<number, T> | PrimitiveParser<number> | number;
 export type ArrayParserOptionEos<T> = ContextGetter<number, T> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
@@ -19,8 +18,14 @@ export type ArrayParserCountReader<T> = { count: ArrayParserOptionNumber<T> };
 export type ArrayParserSizeReader<T> = { size: ArrayParserOptionNumber<T> };
 export type ArrayParserEosReader<T> = { ends: ArrayParserOptionEos<T> };
 
-export type ArrayParserReaderPartial<T> = Partial<ArrayParserCountReader<T>> & Partial<ArrayParserSizeReader<T>> & Partial<ArrayParserEosReader<T>>;
-export type ArrayParserReaderComputed<T> = ArrayParserCountReader<T> | ArrayParserSizeReader<T> | ArrayParserEosReader<T>;
+export type ArrayParserReaderPartial<T> =
+    & Partial<ArrayParserCountReader<T>>
+    & Partial<ArrayParserSizeReader<T>>
+    & Partial<ArrayParserEosReader<T>>;
+export type ArrayParserReaderComputed<T> =
+    | ArrayParserCountReader<T>
+    | ArrayParserSizeReader<T>
+    | ArrayParserEosReader<T>;
 
 export type BaseArrayParserOption<T> = ArrayParserOptionRequired<T> & ArrayParserReaderComputed<T>;
 
@@ -205,24 +210,24 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
 }
 
-export class TypedArrayParser<T, TypedArray extends ArrayLike<T>> extends AdvancedParser<TypedArray> {
-    private readonly typedFactory: TypedArrayFactory<T, TypedArray>;
-    private readonly baseArrayParser: ArrayParser<T>;
+export class TypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<Instance> {
+    private readonly typedFactory: TypedArrayFactory<Item, Instance>;
+    private readonly baseArrayParser: ArrayParser<Item>;
 
-    constructor(constructor: TypedArrayFactory<T, TypedArray>, option: BaseArrayParserOption<T>) {
+    constructor(constructor: TypedArrayFactory<Item, Instance>, option: BaseArrayParserOption<Item>) {
         super();
         this.typedFactory = constructor;
-        this.baseArrayParser = new ArrayParser<T>(option);
+        this.baseArrayParser = new ArrayParser<Item>(option);
     }
 
-    read(ctx: ParserContext<unknown>, byteOffset: number, option: ParserOptionComposable | undefined): ValueSpec<TypedArray> {
+    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<Instance> {
         const { value: baseArray, byteSize } = this.baseArrayParser.read(ctx, byteOffset, option);
         const tArray = this.typedFactory.from(baseArray);
         return this.valueSpec(tArray, byteOffset, byteSize);
     }
 
-    write(ctx: ParserContext<unknown>, byteOffset: number, value: TypedArray, option: ParserOptionComposable | undefined): ValueSpec<TypedArray> {
-        const { value: baseArray, byteSize } = this.baseArrayParser.write(ctx, byteOffset, Array.from<T>(value), option);
+    write(ctx: ParserContext<unknown>, byteOffset: number, value: Instance, option?: ParserOptionComposable): ValueSpec<Instance> {
+        const { byteSize } = this.baseArrayParser.write(ctx, byteOffset, Array.from(value), option);
         return this.valueSpec(value, byteOffset, byteSize);
     }
 }
@@ -231,37 +236,35 @@ export function getArrayParser<T>(option: BaseArrayParserOption<T>) {
     return new ArrayParser<T>(option);
 }
 
-export namespace getArrayParser {
-    function createGetter<T, TArray extends ArrayLike<T>>(item: PrimitiveParser<T>, constructor: TypedArrayFactory<T, TArray>) {
-        return function (option: ArrayParserReaderComputed<T>) {
-            return new TypedArrayParser<T, TArray>(constructor, { item, ...option });
-        };
-    }
-
-    export const Int8Array = createGetter(Int8, TypedArray.Int8Array);
-    export const Uint8Array = createGetter(Uint8, TypedArray.Uint8Array);
-    export const Int16Array = createGetter(Int16, TypedArray.Int16Array);
-    export const Uint16Array = createGetter(Uint16, TypedArray.Uint16Array);
-    export const Int32Array = createGetter(Int32, TypedArray.Int32Array);
-    export const Uint32Array = createGetter(Uint32, TypedArray.Uint32Array);
-    export const Float32Array = createGetter(Float32, TypedArray.Float32Array);
-    export const Float64Array = createGetter(Float64, TypedArray.Float64Array);
-    export const BigInt64Array = createGetter(BigInt64, TypedArray.BigInt64Array);
-    export const BigUint64Array = createGetter(BigUint64, TypedArray.BigUint64Array);
-    export const Int16BEArray = createGetter(Int16BE, TypedArray.Int16Array);
-    export const Uint16BEArray = createGetter(Uint16BE, TypedArray.Uint16Array);
-    export const Int32BEArray = createGetter(Int32BE, TypedArray.Int32Array);
-    export const Uint32BEArray = createGetter(Uint32BE, TypedArray.Uint32Array);
-    export const Float32BEArray = createGetter(Float32BE, TypedArray.Float32Array);
-    export const Float64BEArray = createGetter(Float64BE, TypedArray.Float64Array);
-    export const BigInt64BEArray = createGetter(BigInt64BE, TypedArray.BigInt64Array);
-    export const BigUint64BEArray = createGetter(BigUint64BE, TypedArray.BigUint64Array);
-    export const Int16LEArray = createGetter(Int16LE, TypedArray.Int16Array);
-    export const Uint16LEArray = createGetter(Uint16LE, TypedArray.Uint16Array);
-    export const Int32LEArray = createGetter(Int32LE, TypedArray.Int32Array);
-    export const Uint32LEArray = createGetter(Uint32LE, TypedArray.Uint32Array);
-    export const Float32LEArray = createGetter(Float32LE, TypedArray.Float32Array);
-    export const Float64LEArray = createGetter(Float64LE, TypedArray.Float64Array);
-    export const BigInt64LEArray = createGetter(BigInt64LE, TypedArray.BigInt64Array);
-    export const BigUint64LEArray = createGetter(BigUint64LE, TypedArray.BigUint64Array);
+function createGetter<Item, Instance extends TypedArrayInstance<Item, Instance>>(item: PrimitiveParser<Item>, constructor: TypedArrayFactory<Item, Instance>) {
+    return function (option: ArrayParserReaderComputed<Item>) {
+        return new TypedArrayParser<Item, Instance>(constructor, { item, ...option });
+    };
 }
+
+export const Int8Array = createGetter(Int8, TypedArray.Int8Array);
+export const Uint8Array = createGetter(Uint8, TypedArray.Uint8Array);
+export const Int16Array = createGetter(Int16, TypedArray.Int16Array);
+export const Uint16Array = createGetter(Uint16, TypedArray.Uint16Array);
+export const Int32Array = createGetter(Int32, TypedArray.Int32Array);
+export const Uint32Array = createGetter(Uint32, TypedArray.Uint32Array);
+export const Float32Array = createGetter(Float32, TypedArray.Float32Array);
+export const Float64Array = createGetter(Float64, TypedArray.Float64Array);
+export const BigInt64Array = createGetter(BigInt64, TypedArray.BigInt64Array);
+export const BigUint64Array = createGetter(BigUint64, TypedArray.BigUint64Array);
+export const Int16BEArray = createGetter(Int16BE, TypedArray.Int16Array);
+export const Uint16BEArray = createGetter(Uint16BE, TypedArray.Uint16Array);
+export const Int32BEArray = createGetter(Int32BE, TypedArray.Int32Array);
+export const Uint32BEArray = createGetter(Uint32BE, TypedArray.Uint32Array);
+export const Float32BEArray = createGetter(Float32BE, TypedArray.Float32Array);
+export const Float64BEArray = createGetter(Float64BE, TypedArray.Float64Array);
+export const BigInt64BEArray = createGetter(BigInt64BE, TypedArray.BigInt64Array);
+export const BigUint64BEArray = createGetter(BigUint64BE, TypedArray.BigUint64Array);
+export const Int16LEArray = createGetter(Int16LE, TypedArray.Int16Array);
+export const Uint16LEArray = createGetter(Uint16LE, TypedArray.Uint16Array);
+export const Int32LEArray = createGetter(Int32LE, TypedArray.Int32Array);
+export const Uint32LEArray = createGetter(Uint32LE, TypedArray.Uint32Array);
+export const Float32LEArray = createGetter(Float32LE, TypedArray.Float32Array);
+export const Float64LEArray = createGetter(Float64LE, TypedArray.Float64Array);
+export const BigInt64LEArray = createGetter(BigInt64LE, TypedArray.BigInt64Array);
+export const BigUint64LEArray = createGetter(BigUint64LE, TypedArray.BigUint64Array);
