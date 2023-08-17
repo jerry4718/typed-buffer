@@ -8,11 +8,42 @@ export type ScopeAccessor =
 
 export type ParserContext<T, P = unknown, R = unknown> = {
     buffer: ArrayBuffer,
+    scope: ScopeAccessor,
     section?: Partial<T>,
     parent?: P,
     root?: R,
-    scope: ScopeAccessor,
 }
+
+class ParserBaseContext<T> {
+    constructor(
+        public buffer: ArrayBuffer,
+        public scope: ScopeAccessor = {},
+    ) {
+
+    }
+}
+
+class ParserRootContext<R> extends ParserBaseContext<R> {
+    constructor() {
+        super();
+    }
+    subContext<S>(): ParserSubContext<S, R, R> {
+        return undefined
+    }
+}
+
+class ParserSubContext<T, P, R> extends ParserBaseContext<T> {
+    parent?: P;
+    root?: R;
+    constructor(parent: ParserBaseContext<T>) {
+        super();
+    }
+    subContext<S>(): ParserSubContext<S, T, R> {
+        return undefined
+    }
+}
+
+export type ContextGetter<Result, CT, CP = unknown, CR = unknown> = (ctx: ParserContext<CT, CP, CR>, scope: ScopeAccessor) => Result
 
 export function createContext<P, T = unknown>(parent?: ParserContext<P>, section?: Partial<T>): ParserContext<T, P> {
     let initSection = section;
@@ -62,10 +93,10 @@ interface SpecInfo {
 export interface ValueSpec<T> {
     value: T,
     spec: SpecInfo,
-    byteSize: number,
-    offsetStart: number,
-    offsetEnd: number,
-    offset: [ number, number ]
+    byteSize: SpecInfo['size'],
+    offsetStart: SpecInfo['start'],
+    offsetEnd: SpecInfo['end'],
+    offset: SpecInfo['pos']
 }
 
 export interface ParserOptionComposable {
@@ -116,6 +147,10 @@ export abstract class BaseParser<T> implements Parser<T> {
     abstract read(parentContext: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T>;
 
     abstract write(parentContext: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T>;
+
+    getFromContext<Result, CT, CP = unknown, CR = unknown>(context: ParserContext<CT, CP, CR>, getter: ContextGetter<Result, CT, CP, CR>): Result {
+        return getter(context, context.scope);
+    }
 
     valueSpec(value: T, byteOffset: number, byteSize: number): ValueSpec<T> {
         return valueSpec(value, byteOffset, byteSize);

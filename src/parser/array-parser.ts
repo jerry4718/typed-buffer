@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-namespace
-import { AdvancedParser, BaseParser, createContext, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
+import { AdvancedParser, BaseParser, ContextGetter, createContext, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
 import * as TypedArray from '../describe/interface.ts';
 import {
     BigInt64, BigInt64BE, BigInt64LE, BigUint64, BigUint64BE, BigUint64LE,
@@ -11,8 +11,8 @@ import {
 import { assertType, isBoolean, isNumber, isObject, isUndefined } from '../utils/type-util.ts';
 import { TypedArrayFactory } from '../describe/interface.ts';
 
-export type ArrayParserOptionNumber<T> = ((ctx: ParserContext<T>) => number) | PrimitiveParser<number> | number;
-export type ArrayParserOptionEos<T> = ((ctx: ParserContext<T>) => number) | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
+export type ArrayParserOptionNumber<T> = ContextGetter<number, T> | PrimitiveParser<number> | number;
+export type ArrayParserOptionEos<T> = ContextGetter<number, T> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
 
 export type ArrayParserOptionRequired<T> = { item: BaseParser<T> };
 export type ArrayParserCountReader<T> = { count: ArrayParserOptionNumber<T> };
@@ -24,8 +24,8 @@ export type ArrayParserReaderComputed<T> = ArrayParserCountReader<T> | ArrayPars
 
 export type BaseArrayParserOption<T> = ArrayParserOptionRequired<T> & ArrayParserReaderComputed<T>;
 
-const DEFAULT_END_FLAG = 0x00;
-const endFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_END_FLAG;
+const DEFAULT_ENDS_FLAG = 0x00;
+const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
 
 export class ArrayParser<T> extends AdvancedParser<T[]> {
     private readonly itemParser: BaseParser<T>;
@@ -35,8 +35,8 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
     constructor(option: BaseArrayParserOption<T>) {
         super();
-        const { item: itemParser, ...readerPartial } = option;
-        const { count, size, ends } = readerPartial as ArrayParserReaderPartial<T[]>;
+        const { item: itemParser, ...optionPartial } = option;
+        const { count, size, ends } = optionPartial as ArrayParserReaderPartial<T[]>;
         if (isUndefined(itemParser)) {
             throw new Error('Invalid parser options. Option [item] is required.');
         }
@@ -54,7 +54,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             return option.read(ctx, byteOffset);
         }
         if (typeof option === 'function' || typeof option === 'number') {
-            const value = typeof option === 'number' ? option : option(ctx);
+            const value = typeof option === 'number' ? option : option(ctx, ctx.scope);
             return BaseParser.valueSpec(value, byteOffset, 0);
         }
         throw Error('one of NumberOption is not valid');
@@ -74,14 +74,14 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
     endsJudge(ctx: ParserContext<T[]>, dataOffset: number, option?: ParserOptionComposable): boolean {
         const ends = this.ends;
         const { value: nextUInt8 } = Uint8.read(ctx, dataOffset);
-        if (isBoolean(ends)) return nextUInt8 === endFlag(option?.end);
+        if (isBoolean(ends)) return nextUInt8 === endsFlag(option?.end);
         if (isNumber(ends)) return nextUInt8 === ends;
-        return nextUInt8 === ends!(ctx);
+        return nextUInt8 === ends!(ctx, ctx.scope);
     }
 
     endsMark(ctx: ParserContext<T[]>, dataOffset: number, option?: ParserOptionComposable): ValueSpec<number> {
         const ends = this.ends;
-        const value = isBoolean(ends) ? endFlag(option?.end) : isNumber(ends) ? ends : ends!(ctx);
+        const value = isBoolean(ends) ? endsFlag(option?.end) : isNumber(ends) ? ends : ends!(ctx, ctx.scope);
         return Uint8.write(ctx, dataOffset, value);
     }
 
@@ -133,7 +133,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         }
 
         if (!isUndefined(ends)) {
-            // 使用 endJudge 来确定读取Array的长度
+            // 使用 endsJudge 来确定读取Array的长度
             while (!this.endsJudge(subContext, byteOffset + itemsByteSize)) {
                 const itemSpec = itemParser.read(subContext, byteOffset + itemsByteSize, option);
                 itemSpecs.push(itemSpec);

@@ -3,7 +3,8 @@
   "remote": {},
   "npm": {
     "specifiers": {
-      "@codec-bytes/ascii@^3.0.0": "@codec-bytes/ascii@3.0.0"
+      "@codec-bytes/ascii@^3.0.0": "@codec-bytes/ascii@3.0.0",
+      "reflect-metadata@^0.1.13": "reflect-metadata@0.1.13"
     },
     "packages": {
       "@codec-bytes/ascii@3.0.0": {
@@ -20,6 +21,10 @@
       },
       "@failure-abstraction/error@6.0.1": {
         "integrity": "sha512-KvIHhvwfrgbUduQbk55WRDGL2XcXjDLwleId+pSnK7mUUIY7zMGMy3N+ouDcOFymme48tKDlarKsYj5mEEd3fg==",
+        "dependencies": {}
+      },
+      "reflect-metadata@0.1.13": {
+        "integrity": "sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==",
         "dependencies": {}
       }
     }

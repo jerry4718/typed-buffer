@@ -1,4 +1,4 @@
-import * as BinaryFlag from './binary-flag';
+import * as BinaryFlag from './binary-flag.ts';
 
 export const u8 = BinaryFlag.Len8;
 export const i8 = u8 | BinaryFlag.Signed;
