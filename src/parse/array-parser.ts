@@ -107,10 +107,9 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             for (let readIndex = 0; readIndex < countValue; readIndex++) {
                 const itemPair = itemParser.read(subContext, countSpec.end + itemsByteSize, option);
                 itemPairs.push(itemPair);
-                items.push(itemPair.value);
-                itemsByteSize += itemPair.byteSize;
+                itemsByteSize += itemPair[1].size;
             }
-            return this.valuePairs(itemPairs, byteOffset, countSpec.byteSize);
+            return this.valuePairs(itemPairs, byteOffset, countSpec.size);
         }
 
         if (!isUndefined(size)) {
