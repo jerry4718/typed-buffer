@@ -3,6 +3,7 @@ import { Float32, Float64, Uint8 } from '../src/parse/primitive-parser.ts';
 import { getStringParser } from '../src/parse/string-parser.ts';
 import { getStructParser } from '../src/parse/struct-parser.ts';
 import { bu64s, bu64les, u32les, u32bes } from '../src/parse/typed-array-parser.ts';
+import { createContext } from '../src/parse/base-parser.ts';
 
 type TestStruct = {
     name: string,
@@ -14,22 +15,21 @@ type TestStruct = {
     item: ArrayLike<number>,
 }
 
-const testStruct: Omit<TestStruct, 'itemType' | 'item'> = {
+const testStruct: Omit<TestStruct, 'itemType'> = {
     name: 'jerry',
     age: 29,
     height: 1.75,
     money: 9968.22322233,
     itemCount: 2,
-};
-
-const testStructItems1: Pick<TestStruct, 'itemType' | 'item'> = {
-    itemType: 1,
     item: Uint32Array.of(0x66ccff, 0xffcc66),
 };
 
-const testStructItems2: Pick<TestStruct, 'itemType' | 'item'> = {
+const testStructItems1: Pick<TestStruct, 'itemType'> = {
+    itemType: 1,
+};
+
+const testStructItems2: Pick<TestStruct, 'itemType'> = {
     itemType: 2,
-    item: Int32Array.of(0x66ccff, 0xffcc66),
 };
 
 const TestStructParser = getStructParser<TestStruct>({
@@ -56,10 +56,7 @@ const TestStructParser = getStructParser<TestStruct>({
 
 const TestStructListParser = new ArrayParser<TestStruct>({ item: TestStructParser, count: 2 });
 
-const context = {
-    buffer: new Uint8Array(100).buffer,
-    scope: {},
-};
+const context = createContext(new Uint8Array(100).buffer);
 
 const writeSpec = TestStructListParser.write(context, 0, [
     { ...testStruct, ...testStructItems1 },

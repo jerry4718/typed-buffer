@@ -1,6 +1,6 @@
 import { isUndefined } from '../utils/type-util.ts';
 import { BigEndian, Endian, LittleEndian } from '../common.ts';
-import { BaseParser, ParserContext, ParserOptionComposable, ValueDesc } from './base-parser.ts';
+import { BaseParser, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
 
 type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
 type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
@@ -33,16 +33,16 @@ export class PrimitiveParser<T> extends BaseParser<T> {
         this.endian = option.endian;
     }
 
-    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueDesc<T> {
+    read(ctx: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
         const littleEndian = isLittleEndian(this.endian || option?.endian);
         const value = this.getter.call(new DataView(ctx.buffer), byteOffset, littleEndian);
-        return this.valueDesc(value, byteOffset, this.byteSize);
+        return this.valueSpec(value, byteOffset, this.byteSize);
     }
 
-    write(ctx: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueDesc<T> {
+    write(ctx: ParserContext, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T> {
         const littleEndian = isLittleEndian(this.endian || option?.endian);
         this.setter.call(new DataView(ctx.buffer), byteOffset, value, littleEndian);
-        return this.valueDesc(value, byteOffset, this.byteSize);
+        return this.valueSpec(value, byteOffset, this.byteSize);
     }
 }
 

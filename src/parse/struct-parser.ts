@@ -1,12 +1,12 @@
-import { AdvancedParser, BaseParser, ContextCompute, createContext, ParserContext, ParserOptionComposable, ScopeAccessor, ValueDesc } from './base-parser.ts';
+import { AdvancedParser, BaseParser, ContextCompute, ParserContext, ParserOptionComposable, ScopeAccessor, ValueSpec } from './base-parser.ts';
 import { isBoolean, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
 
 export type ObjectField<T, K extends keyof T> = {
     name: K,
-    type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined, T>,
+    type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>,
     option?: ParserOptionComposable,
     condition?: {
-        if?: ContextCompute<boolean, T>,
+        if?: ContextCompute<boolean>,
         default?: T[K]
     },
     variable?: boolean | string | symbol,
@@ -20,7 +20,7 @@ export type ObjectParserOption<T> = {
 export const K_FieldSpec = Symbol.for('@@KeyFieldSpecs');
 
 export type Struct = object;
-export type StructSpec<T extends Struct> = { [K in keyof T]: ValueDesc<T[K]> };
+export type StructSpec<T extends Struct> = { [K in keyof T]: ValueSpec<T[K]> };
 
 function setStructSpec<T extends Struct>(from: T, spec: StructSpec<T>): boolean {
     return Reflect.set(from, K_FieldSpec, spec);
@@ -53,16 +53,16 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
         }
     }
 
-    resolveParser<T, K extends keyof T>(ctx: ParserContext<unknown>, type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined, T>): BaseParser<T[K]> {
+    resolveParser<T, K extends keyof T>(ctx: ParserContext, type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>): BaseParser<T[K]> {
         if (type instanceof BaseParser) return type;
         const resolved = this.compute(ctx, type);
         if (resolved instanceof BaseParser) return resolved;
         throw Error('Cannot resolve that type as any Parser');
     }
 
-    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueDesc<T> {
+    read(ctx: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
         const section = Reflect.construct(this.creator, []);
-        const childCtx = createContext(ctx, section);
+        const childCtx = ctx.derive();
         let currentOffset = byteOffset;
 
         const structSpec = {} as StructSpec<T>;
@@ -91,11 +91,11 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
             currentOffset += byteSize;
         }
 
-        return this.valueDesc(section, byteOffset, currentOffset - byteOffset);
+        return this.valueSpec(section, byteOffset, currentOffset - byteOffset);
     }
 
-    write(ctx: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueDesc<T> {
-        const childCtx = createContext(ctx, value);
+    write(ctx: ParserContext, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T> {
+        const childCtx = ctx.derive();
         let currentOffset = byteOffset;
 
         const structSpec = hasStructSpec(value)
@@ -135,7 +135,7 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
             currentOffset += byteSize;
         }
 
-        return this.valueDesc(value, byteOffset, currentOffset - byteOffset);
+        return this.valueSpec(value, byteOffset, currentOffset - byteOffset);
     }
 }
 

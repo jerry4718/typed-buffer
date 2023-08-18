@@ -1,0 +1,16 @@
+{
+  "name": "binary-parser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@codec-bytes/ascii": "^3.0.0",
+    "reflect-metadata": "^0.1.13"
+  }
+}
