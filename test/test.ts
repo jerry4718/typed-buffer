@@ -56,7 +56,7 @@ const TestStructParser = getStructParser<TestStruct>({
 
 const TestStructListParser = new ArrayParser<TestStruct>({ item: TestStructParser, count: 2 });
 
-const context = createContext(new Uint8Array(100).buffer);
+const context = createContext(new ArrayBuffer(100));
 
 const writeSpec = TestStructListParser.write(context, 0, [
     { ...testStruct, ...testStructItems1 },

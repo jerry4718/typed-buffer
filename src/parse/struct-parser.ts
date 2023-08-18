@@ -55,7 +55,7 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
 
     resolveParser<T, K extends keyof T>(ctx: ParserContext, type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>): BaseParser<T[K]> {
         if (type instanceof BaseParser) return type;
-        const resolved = this.compute(ctx, type);
+        const resolved = ctx.compute(type);
         if (resolved instanceof BaseParser) return resolved;
         throw Error('Cannot resolve that type as any Parser');
     }
@@ -74,7 +74,7 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
             const fieldOption = fieldConfig.option;
 
             const fieldSpec =
-                !(fieldConfig.condition?.if && !this.compute(ctx, fieldConfig.condition.if!))
+                !(fieldConfig.condition?.if && !ctx.compute(fieldConfig.condition.if!))
                     ? fieldParser.read(childCtx, currentOffset, { ...option, ...fieldOption })
                     : fieldParser.default(fieldConfig.condition?.default, byteOffset, 0);
 
@@ -119,7 +119,7 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
 
             const fieldSpec =
                 // todo: why judge condition on write?
-                !(fieldConfig.condition?.if && !this.compute(ctx, fieldConfig.condition.if!))
+                !(fieldConfig.condition?.if && !ctx.compute(fieldConfig.condition.if!))
                     ? fieldParser.write(childCtx, currentOffset, fieldValue, { ...option, ...fieldOption })
                     // todo: why use default on write?
                     : fieldParser.default(fieldConfig.condition?.default, byteOffset, 0);

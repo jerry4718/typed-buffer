@@ -6,14 +6,14 @@ export type ScopeAccessor =
     & { [k in symbol]: unknown }
     & { [k in number]: unknown }
 
+export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor) => Result
+
 export type ParserContext = {
     buffer: ArrayBuffer,
     scope: ScopeAccessor,
     compute<Result>(getter: ContextCompute<Result>): Result,
     derive(): ParserContext,
 }
-
-export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor) => Result
 
 export function createContext(buffer: ArrayBuffer): ParserContext {
     function create(parent?: ParserContext) {
@@ -108,8 +108,6 @@ function valueSpec<T>(value: T, byteOffset: number, byteSize: number): ValueSpec
 }
 
 export interface Parser<T> {
-    compute<Result>(context: ParserContext, getter: ContextCompute<Result>): Result;
-
     read(parentContext: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T>;
 
     write(parentContext: ParserContext, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T>;
@@ -124,10 +122,6 @@ export abstract class BaseParser<T> implements Parser<T> {
     abstract read(parentContext: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T>;
 
     abstract write(parentContext: ParserContext, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T>;
-
-    compute<Result>(context: ParserContext, getter: ContextCompute<Result>): Result {
-        return getter(context, context.scope);
-    }
 
     default(value: T | undefined, byteOffset: number, byteSize = 0): ValueSpec<T> {
         return valueSpec(value!, byteOffset, byteSize);
