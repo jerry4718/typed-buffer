@@ -76,31 +76,27 @@ export interface TypedArrayInterface<Item, Instance> {
     valueOf(): Instance;
 }
 
-type Unique<A, B> = { [K in keyof A]: K extends keyof B ? B[K] : A[K] } & B;
+type Union<A, B> = { [K in keyof A]: K extends keyof B ? B[K] : A[K] } & B;
 
-export type TypedArrayInstance<Item, Instance> = Unique<Instance, TypedArrayInterface<Item, Instance>>
+export type TypedArrayInstance<Item, Instance> = Union<Instance, TypedArrayInterface<Item, Instance>>
 export type TypedArrayConstructor<Item, Instance> = TypedArrayFactory<Item, TypedArrayInstance<Item, Instance>>
 
-const DescribedInt8Array = Int8Array as TypedArrayConstructor<number, Int8Array>;
-const DescribedUint8Array = Uint8Array as TypedArrayConstructor<number, Uint8Array>;
-const DescribedInt16Array = Int16Array as TypedArrayConstructor<number, Int16Array>;
-const DescribedUint16Array = Uint16Array as TypedArrayConstructor<number, Uint16Array>;
-const DescribedInt32Array = Int32Array as TypedArrayConstructor<number, Int32Array>;
-const DescribedUint32Array = Uint32Array as TypedArrayConstructor<number, Uint32Array>;
-const DescribedFloat32Array = Float32Array as TypedArrayConstructor<number, Float32Array>;
-const DescribedFloat64Array = Float64Array as TypedArrayConstructor<number, Float64Array>;
-const DescribedBigInt64Array = BigInt64Array as TypedArrayConstructor<bigint, BigInt64Array>;
-const DescribedBigUint64Array = BigUint64Array as TypedArrayConstructor<bigint, BigUint64Array>;
+const
+    DescribedInt8Array = Int8Array as TypedArrayConstructor<number, Int8Array>,
+    DescribedUint8Array = Uint8Array as TypedArrayConstructor<number, Uint8Array>,
+    DescribedInt16Array = Int16Array as TypedArrayConstructor<number, Int16Array>,
+    DescribedUint16Array = Uint16Array as TypedArrayConstructor<number, Uint16Array>,
+    DescribedInt32Array = Int32Array as TypedArrayConstructor<number, Int32Array>,
+    DescribedUint32Array = Uint32Array as TypedArrayConstructor<number, Uint32Array>,
+    DescribedFloat32Array = Float32Array as TypedArrayConstructor<number, Float32Array>,
+    DescribedFloat64Array = Float64Array as TypedArrayConstructor<number, Float64Array>,
+    DescribedBigInt64Array = BigInt64Array as TypedArrayConstructor<bigint, BigInt64Array>,
+    DescribedBigUint64Array = BigUint64Array as TypedArrayConstructor<bigint, BigUint64Array>;
 
 export {
-    DescribedInt8Array as Int8Array,
-    DescribedUint8Array as Uint8Array,
-    DescribedInt16Array as Int16Array,
-    DescribedUint16Array as Uint16Array,
-    DescribedInt32Array as Int32Array,
-    DescribedUint32Array as Uint32Array,
-    DescribedFloat32Array as Float32Array,
-    DescribedFloat64Array as Float64Array,
-    DescribedBigInt64Array as BigInt64Array,
-    DescribedBigUint64Array as BigUint64Array,
+    DescribedInt8Array as Int8Array, DescribedUint8Array as Uint8Array,
+    DescribedInt16Array as Int16Array, DescribedUint16Array as Uint16Array,
+    DescribedInt32Array as Int32Array, DescribedUint32Array as Uint32Array,
+    DescribedFloat32Array as Float32Array, DescribedFloat64Array as Float64Array,
+    DescribedBigInt64Array as BigInt64Array, DescribedBigUint64Array as BigUint64Array,
 };

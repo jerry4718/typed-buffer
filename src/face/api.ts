@@ -23,7 +23,7 @@ type WithEndian<T extends number> = T | `${T}${Endian}`
 type SizeEndian<T extends string> =
     T extends Int ? 8 | WithEndian<16 | 32>
     : T extends Uint ? 8 | WithEndian<16 | 32>
-    : T extends Float ? 32 | 64
+    : T extends Float ? WithEndian<32 | 64>
     : T extends BigInt ? WithEndian<64>
     : T extends BigUint ? WithEndian<64>
     : never
@@ -38,18 +38,16 @@ type TypeFace<T extends TypeCase> =
     : T extends BigUint ? TypeSymbol<BigUint>
     : never
 
-type Config<F = TypeFace<TypeCase>> =
-    F extends `${string}${Endian}` ? { type: F }
-    : F extends `${Alias<Float>}${string}` ? { type: F }
-    : F extends `${Alias<Int | Uint>}8` ? { type: F }
-    : F extends TypeFace<TypeCase> ? { type: F, endian?: Endian }
+type ConfigFace<T = TypeFace<TypeCase>> =
+    T extends `${string}${Endian}` ? { type: T }
+    : T extends `${Alias<Int | Uint>}8` ? { type: T }
+    : T extends TypeFace<TypeCase> ? { type: T, endian?: Endian }
     : never
 
-type ConfigArrayFace<F = TypeFace<TypeCase>> =
-    F extends `${string}${Endian}` ? { type: `${F}[]` }
-    : F extends `${Alias<Float>}${string}` ? { type: `${F}[]` }
-    : F extends `${Alias<Int | Uint>}8` ? { type: `${F}[]` }
-    : F extends TypeFace<TypeCase> ? { type: `${F}[]`, endian?: Endian }
+type ConfigArrayFace<T = TypeFace<TypeCase>> =
+    T extends `${string}${Endian}` ? { type: `${T}[]` }
+    : T extends `${Alias<Int | Uint>}8` ? { type: `${T}[]` }
+    : T extends TypeFace<TypeCase> ? { type: `${T}[]`, endian?: Endian }
     : never
 
 const Regs = {
@@ -71,7 +69,7 @@ const Regs = {
 type RegKey = keyof typeof Regs;
 type ParseResult = { [k in RegKey]: boolean };
 
-function parseType(type: (Config | ConfigArrayFace)['type']) {
+function parseType(type: (ConfigFace | ConfigArrayFace)['type']) {
     const mark: Partial<ParseResult> = {}
 
     for (const key in Regs) {
@@ -83,4 +81,4 @@ function parseType(type: (Config | ConfigArrayFace)['type']) {
     return mark as ParseResult
 }
 
-console.log(parseType('bu64le[]'))
+console.log(parseType('float32le[]'))

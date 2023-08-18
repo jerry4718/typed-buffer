@@ -1,10 +1,14 @@
-import { AdvancedParser, BaseParser, createContext, ParserContext, ParserOptionComposable, ScopeAccessor, ValueSpec } from './base-parser.ts';
+import { AdvancedParser, BaseParser, ContextCompute, createContext, ParserContext, ParserOptionComposable, ScopeAccessor, ValuePair } from './base-parser.ts';
 import { isBoolean, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
 
 export type ObjectField<T, K extends keyof T> = {
     name: K,
-    type: BaseParser<T[K]>,
+    type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined, T>,
     option?: ParserOptionComposable,
+    condition?: {
+        if?: ContextCompute<boolean, T>,
+        default?: T[K]
+    },
     variable?: boolean | string | symbol,
 };
 
@@ -16,7 +20,7 @@ export type ObjectParserOption<T> = {
 export const K_FieldSpec = Symbol.for('@@KeyFieldSpecs');
 
 export type Struct = object;
-export type StructSpec<T extends Struct> = { [K in keyof T]: ValueSpec<T[K]> };
+export type StructSpec<T extends Struct> = { [K in keyof T]: ValuePair<T[K]> };
 
 function setStructSpec<T extends Struct>(from: T, spec: StructSpec<T>): boolean {
     return Reflect.set(from, K_FieldSpec, spec);
@@ -49,7 +53,14 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
         }
     }
 
-    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
+    resolveParser<T, K extends keyof T>(ctx: ParserContext<unknown>, type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined, T>): BaseParser<T[K]> {
+        if (type instanceof BaseParser) return type;
+        const resolved = this.compute(ctx, type);
+        if (resolved instanceof BaseParser) return resolved;
+        throw Error('Cannot resolve that type as any Parser');
+    }
+
+    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValuePair<T> {
         const section = Reflect.construct(this.creator, []);
         const childCtx = createContext(ctx, section);
         let currentOffset = byteOffset;
@@ -59,26 +70,31 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
 
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
-            const fieldType = fieldConfig.type;
+            const fieldParser = this.resolveParser(childCtx, fieldConfig.type);
             const fieldOption = fieldConfig.option;
-            const fieldVariable = fieldConfig.variable;
 
-            const fieldSpec = fieldType.read(childCtx, currentOffset, { ...option, ...fieldOption });
-            const { value: fieldValue } = fieldSpec;
+            const fieldSpec =
+                !(fieldConfig.condition?.if && !this.compute(ctx, fieldConfig.condition.if!))
+                    ? fieldParser.read(childCtx, currentOffset, { ...option, ...fieldOption })
+                    : fieldParser.default(fieldConfig.condition?.default, byteOffset, 0);
+
+            const [ fieldValue, { size: byteSize } ] = fieldSpec;
             Reflect.set(section, fieldName, fieldValue);
+
+            const fieldVariable = fieldConfig.variable;
 
             if (!isUndefined(fieldVariable)) {
                 this.addScopeVariable(childCtx.scope, fieldVariable, fieldName, fieldValue);
             }
 
             Reflect.set(structSpec, fieldName, fieldSpec);
-            currentOffset += fieldSpec.byteSize;
+            currentOffset += byteSize;
         }
 
-        return this.valueSpec(section, byteOffset, currentOffset - byteOffset);
+        return this.valuePair(section, byteOffset, currentOffset - byteOffset);
     }
 
-    write(ctx: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T> {
+    write(ctx: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValuePair<T> {
         const childCtx = createContext(ctx, value);
         let currentOffset = byteOffset;
 
@@ -96,22 +112,30 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
 
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
-            const fieldType = fieldConfig.type;
+            const fieldParser = this.resolveParser(childCtx, fieldConfig.type);
             const fieldOption = fieldConfig.option;
-            const fieldVariable = fieldConfig.variable;
 
             const fieldValue = Reflect.get(value, fieldName);
-            const fieldSpec = fieldType.write(childCtx, currentOffset, fieldValue, { ...option, ...fieldOption });
 
+            const fieldSpec =
+                // todo: why judge condition on write?
+                !(fieldConfig.condition?.if && !this.compute(ctx, fieldConfig.condition.if!))
+                    ? fieldParser.write(childCtx, currentOffset, fieldValue, { ...option, ...fieldOption })
+                    // todo: why use default on write?
+                    : fieldParser.default(fieldConfig.condition?.default, byteOffset, 0);
+
+            const [ fieldValue2, { size: byteSize } ] = fieldSpec;
+
+            const fieldVariable = fieldConfig.variable;
             if (!isUndefined(fieldVariable)) {
-                this.addScopeVariable(childCtx.scope, fieldVariable, fieldName, fieldValue);
+                this.addScopeVariable(childCtx.scope, fieldVariable, fieldName, fieldValue2);
             }
 
             Reflect.set(structSpec, fieldName, fieldSpec);
-            currentOffset += fieldSpec.byteSize;
+            currentOffset += byteSize;
         }
 
-        return this.valueSpec(value, byteOffset, currentOffset - byteOffset);
+        return this.valuePair(value, byteOffset, currentOffset - byteOffset);
     }
 }
 

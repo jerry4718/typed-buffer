@@ -34,15 +34,15 @@ export namespace Primitive {
     } = DataView.prototype;
 
     export const Int8: PrimitiveExecutor<number> = PrimitiveExecutor(1, getInt8, setInt8);
-    export const UInt8: PrimitiveExecutor<number> = PrimitiveExecutor(1, getUint8, setUint8);
+    export const Uint8: PrimitiveExecutor<number> = PrimitiveExecutor(1, getUint8, setUint8);
     export const Int16: PrimitiveExecutor<number> = PrimitiveExecutor(2, getInt16, setInt16);
-    export const UInt16: PrimitiveExecutor<number> = PrimitiveExecutor(2, getUint16, setUint16);
+    export const Uint16: PrimitiveExecutor<number> = PrimitiveExecutor(2, getUint16, setUint16);
     export const Int32: PrimitiveExecutor<number> = PrimitiveExecutor(4, getInt32, setInt32);
-    export const UInt32: PrimitiveExecutor<number> = PrimitiveExecutor(4, getUint32, setUint32);
+    export const Uint32: PrimitiveExecutor<number> = PrimitiveExecutor(4, getUint32, setUint32);
     export const Float32: PrimitiveExecutor<number> = PrimitiveExecutor(4, getFloat32, setFloat32);
     export const Float64: PrimitiveExecutor<number> = PrimitiveExecutor(8, getFloat64, setFloat64);
     export const Int64: PrimitiveExecutor<bigint> = PrimitiveExecutor(8, getBigInt64, setBigInt64);
-    export const UInt64: PrimitiveExecutor<bigint> = PrimitiveExecutor(8, getBigUint64, setBigUint64);
+    export const Uint64: PrimitiveExecutor<bigint> = PrimitiveExecutor(8, getBigUint64, setBigUint64);
 
     function dynamicStringReader(getLength: PrimitiveExecutor<number>, encoding: string = 'utf-8'): PrimitiveReader<string> {
         return function (this: DataView, byteOffset: number, littleEndian?: boolean): string {
@@ -77,74 +77,74 @@ export namespace Primitive {
 export enum PrimitiveSymbol {
     None = Symbol('None'),
     Int8 = Symbol('Int8'),
-    UInt8 = Symbol('UInt8'),
+    Uint8 = Symbol('Uint8'),
     Int16 = Symbol('Int16'),
-    UInt16 = Symbol('UInt16'),
+    Uint16 = Symbol('Uint16'),
     Int32 = Symbol('Int32'),
-    UInt32 = Symbol('UInt32'),
+    Uint32 = Symbol('Uint32'),
     Float32 = Symbol('Float32'),
     Float64 = Symbol('Float64'),
     Int64 = Symbol('Int64'),
-    UInt64 = Symbol('UInt64'),
+    Uint64 = Symbol('Uint64'),
 
     Int8LE = Symbol('Int8LE'),
-    UInt8LE = Symbol('UInt8LE'),
+    Uint8LE = Symbol('Uint8LE'),
     Int16LE = Symbol('Int16LE'),
-    UInt16LE = Symbol('UInt16LE'),
+    Uint16LE = Symbol('Uint16LE'),
     Int32LE = Symbol('Int32LE'),
-    UInt32LE = Symbol('UInt32LE'),
+    Uint32LE = Symbol('Uint32LE'),
     Float32LE = Symbol('Float32LE'),
     Float64LE = Symbol('Float64LE'),
     Int64LE = Symbol('Int64LE'),
-    UInt64LE = Symbol('UInt64LE'),
+    Uint64LE = Symbol('Uint64LE'),
 
     Int8BE = Symbol('Int8BE'),
-    UInt8BE = Symbol('UInt8BE'),
+    Uint8BE = Symbol('Uint8BE'),
     Int16BE = Symbol('Int16BE'),
-    UInt16BE = Symbol('UInt16BE'),
+    Uint16BE = Symbol('Uint16BE'),
     Int32BE = Symbol('Int32BE'),
-    UInt32BE = Symbol('UInt32BE'),
+    Uint32BE = Symbol('Uint32BE'),
     Float32BE = Symbol('Float32BE'),
     Float64BE = Symbol('Float64BE'),
     Int64BE = Symbol('Int64BE'),
-    UInt64BE = Symbol('UInt64BE'),
+    Uint64BE = Symbol('Uint64BE'),
 }
 
 export enum PrimitiveMark {
     None = 0,
 
     Int8 = BinaryFlags.Len8 | BinaryFlags.Signed,
-    UInt8 = BinaryFlags.Len8,
+    Uint8 = BinaryFlags.Len8,
     Int16 = BinaryFlags.Len16 | BinaryFlags.Signed,
-    UInt16 = BinaryFlags.Len16,
+    Uint16 = BinaryFlags.Len16,
     Int32 = BinaryFlags.Len32 | BinaryFlags.Signed,
-    UInt32 = BinaryFlags.Len32,
+    Uint32 = BinaryFlags.Len32,
     Float32 = BinaryFlags.Len32 | BinaryFlags.Float | BinaryFlags.Signed,
     Float64 = BinaryFlags.Len64 | BinaryFlags.Float | BinaryFlags.Signed,
     Int64 = BinaryFlags.Len64 | BinaryFlags.Signed,
-    UInt64 = BinaryFlags.Len64,
+    Uint64 = BinaryFlags.Len64,
 
     Int8BE = Int8 | BinaryFlags.Endian,
-    UInt8BE = UInt8 | BinaryFlags.Endian,
+    Uint8BE = Uint8 | BinaryFlags.Endian,
     Int16BE = Int16 | BinaryFlags.Endian,
-    UInt16BE = UInt16 | BinaryFlags.Endian,
+    Uint16BE = Uint16 | BinaryFlags.Endian,
     Int32BE = Int32 | BinaryFlags.Endian,
-    UInt32BE = UInt32 | BinaryFlags.Endian,
+    Uint32BE = Uint32 | BinaryFlags.Endian,
     Float32BE = Float32 | BinaryFlags.Endian,
     Float64BE = Float64 | BinaryFlags.Endian,
     Int64BE = Int64 | BinaryFlags.Endian,
-    UInt64BE = UInt64 | BinaryFlags.Endian,
+    Uint64BE = Uint64 | BinaryFlags.Endian,
 
     Int8LE = Int8BE | BinaryFlags.LE,
-    UInt8LE = UInt8BE | BinaryFlags.LE,
+    Uint8LE = Uint8BE | BinaryFlags.LE,
     Int16LE = Int16BE | BinaryFlags.LE,
-    UInt16LE = UInt16BE | BinaryFlags.LE,
+    Uint16LE = Uint16BE | BinaryFlags.LE,
     Int32LE = Int32BE | BinaryFlags.LE,
-    UInt32LE = UInt32BE | BinaryFlags.LE,
+    Uint32LE = Uint32BE | BinaryFlags.LE,
     Float32LE = Float32BE | BinaryFlags.LE,
     Float64LE = Float64BE | BinaryFlags.LE,
     Int64LE = Int64BE | BinaryFlags.LE,
-    UInt64LE = UInt64BE | BinaryFlags.LE,
+    Uint64LE = Uint64BE | BinaryFlags.LE,
 }
 
 type BinaryBaseConfig = {
@@ -193,14 +193,14 @@ function defineType<T>(param: { fields: Field<T>[] }): TypeSpec<T> {
 
 const Str16h = defineType({
     fields: [
-        { name: 'length', type: Primitive.UInt16 },
+        { name: 'length', type: Primitive.Uint16 },
         { name: 'data', type: Primitive.String((readed) => readed.length, 'ascii') },
     ],
 });
 
 const Str32h = defineType({
     fields: [
-        { name: 'length', type: Primitive.UInt32 },
+        { name: 'length', type: Primitive.Uint32 },
         { name: 'data', type: Primitive.String((readed) => readed.length, 'ascii') },
     ],
 });
@@ -208,8 +208,8 @@ const Str32h = defineType({
 const Header = defineType({
     fields: [
         { name: 'name', type: Str16h }
-        { name: 'version', type: Primitive.UInt8 },
-        { name: 'bodyPosition', type: Primitive.UInt32 },
+        { name: 'version', type: Primitive.Uint8 },
+        { name: 'bodyPosition', type: Primitive.Uint32 },
     ],
 });
 

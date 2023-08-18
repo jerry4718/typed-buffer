@@ -25,25 +25,26 @@ export const
     f64le = f64 | mask.LE;
 
 /** alias  */
-export const
-    Int8 = i8, UInt8 = u8,
+export {
+    i8 as Int8, u8 as Uint8,
 
-    Int16 = i16, UInt16 = u16,
-    Int16BE = i16be, UInt16BE = u16be,
-    Int16LE = i16le, UInt16LE = u16le,
+    i16 as Int16, u16 as Uint16,
+    i16be as Int16BE, u16be as Uint16BE,
+    i16le as Int16LE, u16le as Uint16LE,
 
-    Int32 = i32, UInt32 = u32,
-    Int32BE = i32be, UInt32BE = u32be,
-    Int32LE = i32le, UInt32LE = u32le,
+    i32 as Int32, u32 as Uint32,
+    i32be as Int32BE, u32be as Uint32BE,
+    i32le as Int32LE, u32le as Uint32LE,
 
-    BigInt64 = bi64, BigUint64 = bu64,
-    BigInt64BE = bi64be, BigUint64BE = bu64be,
-    BigInt64LE = bi64le, BigUint64LE = bu64le,
+    bi64 as BigInt64, bu64 as BigUint64,
+    bi64be as BigInt64BE, bu64be as BigUint64BE,
+    bi64le as BigInt64LE, bu64le as BigUint64LE,
 
-    Float32 = f32,
-    Float32BE = f32be,
-    Float32LE = f32le,
+    f32 as Float32,
+    f32be as Float32BE,
+    f32le as Float32LE,
 
-    Float64 = f64,
-    Float64LE = f64le,
-    Float64BE = f64be;
+    f64 as Float64,
+    f64le as Float64LE,
+    f64be as Float64BE
+}
