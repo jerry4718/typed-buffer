@@ -1,5 +1,5 @@
 import { assertType, isBoolean, isNumber, isObject, isUndefined } from '../utils/type-util.ts';
-import { AdvancedParser, BaseParser, ContextCompute, createContext, ParserContext, ParserOptionComposable, ValuePair, ValuePair } from './base-parser.ts';
+import { AdvancedParser, BaseParser, ContextCompute, createContext, ParserContext, ParserOptionComposable, ValueDesc } from './base-parser.ts';
 import { PrimitiveParser, Uint8 } from './primitive-parser.ts';
 
 export type ArrayParserOptionNumber<T> = ContextCompute<number, T> | PrimitiveParser<number> | number;
@@ -47,24 +47,24 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         this.ends = ends;
     }
 
-    readOptionNumber(ctx: ParserContext<T[]>, option: ArrayParserOptionNumber<T[]>, byteOffset: number): ValuePair<number> {
+    readOptionNumber(ctx: ParserContext<T[]>, option: ArrayParserOptionNumber<T[]>, byteOffset: number): ValueDesc<number> {
         if (isObject(option) && option instanceof PrimitiveParser && assertType<PrimitiveParser<number>>(option)) {
             return option.read(ctx, byteOffset);
         }
         if (typeof option === 'function' || typeof option === 'number') {
             const value = typeof option === 'number' ? option : option(ctx, ctx.scope);
-            return BaseParser.valuePair(value, byteOffset, 0);
+            return BaseParser.valueDesc(value, byteOffset, 0);
         }
         throw Error('one of NumberOption is not valid');
     }
 
-    writeOptionNumber(ctx: ParserContext<T[]>, option: ArrayParserOptionNumber<T[]>, byteOffset: number, value: number): ValuePair<number> {
+    writeOptionNumber(ctx: ParserContext<T[]>, option: ArrayParserOptionNumber<T[]>, byteOffset: number, value: number): ValueDesc<number> {
         if (isObject(option) && option instanceof PrimitiveParser && assertType<PrimitiveParser<number>>(option)) {
             return option.write(ctx, byteOffset, value);
         }
         if (typeof option === 'function' || typeof option === 'number') {
             // const value = typeof size === 'number' ? size : size({});
-            return BaseParser.valuePair(value, byteOffset, 0);
+            return BaseParser.valueDesc(value, byteOffset, 0);
         }
         throw Error('one of NumberOption is not valid');
     }
@@ -77,26 +77,26 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         return nextUInt8 === ends!(ctx, ctx.scope);
     }
 
-    endsMark(ctx: ParserContext<T[]>, dataOffset: number, option?: ParserOptionComposable): ValuePair<number> {
+    endsMark(ctx: ParserContext<T[]>, dataOffset: number, option?: ParserOptionComposable): ValueDesc<number> {
         const ends = this.ends;
         const value = isBoolean(ends) ? endsFlag(option?.end) : isNumber(ends) ? ends : ends!(ctx, ctx.scope);
         return Uint8.write(ctx, dataOffset, value);
     }
 
-    valuePairs(itemPairs: ValuePair<T>[], byteOffset: number, addSize: number): ValuePair<T[]> {
+    valuePairs(itemPairs: ValueDesc<T>[], byteOffset: number, addSize: number): ValueDesc<T[]> {
         const items = itemPairs.map(([ value ]) => value);
-        const specs = itemPairs.map(([_, spec ]) => spec);
+        const specs = itemPairs.map(([ _, spec ]) => spec);
         const itemsSize = specs
             .map(spec => spec.size)
             .reduce((a, b) => a + b, 0);
         const byteSize = itemsSize + addSize;
-        return this.valuePair(items, byteOffset, byteSize);
+        return this.valueDesc(items, byteOffset, byteSize);
     }
 
-    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValuePair<T[]> {
+    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueDesc<T[]> {
         const { itemParser, count, size, ends } = this;
 
-        const itemPairs: ValuePair<T>[] = [];
+        const itemPairs: ValueDesc<T>[] = [];
         const items: T[] = [];
         let itemsByteSize = 0;
         const subContext = createContext(ctx, items);
@@ -106,37 +106,41 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             const [ countValue, countSpec ] = this.readOptionNumber(subContext, count, byteOffset);
             for (let readIndex = 0; readIndex < countValue; readIndex++) {
                 const itemPair = itemParser.read(subContext, countSpec.end + itemsByteSize, option);
+                const [ itemValue, itemSpec ] = itemPair;
+                items.push(itemValue);
                 itemPairs.push(itemPair);
-                itemsByteSize += itemPair[1].size;
+                itemsByteSize += itemSpec.size;
             }
             return this.valuePairs(itemPairs, byteOffset, countSpec.size);
         }
 
         if (!isUndefined(size)) {
             // 使用传入的 size 选项获取字符串长度
-            const sizeSpec = this.readOptionNumber(subContext, size, byteOffset);
+            const [ sizeValue, sizeSpec ] = this.readOptionNumber(subContext, size, byteOffset);
 
-            while (itemsByteSize < sizeSpec.value) {
-                const itemPair = itemParser.read(subContext, sizeSpec.offsetEnd + itemsByteSize, option);
+            while (itemsByteSize < sizeValue) {
+                const itemPair = itemParser.read(subContext, sizeSpec.end + itemsByteSize, option);
+                const [ itemValue, itemSpec ] = itemPair;
+                items.push(itemValue);
                 itemPairs.push(itemPair);
-                items.push(itemPair.value);
-                itemsByteSize += itemPair.byteSize;
+                itemsByteSize += itemSpec.size;
             }
 
-            if (itemsByteSize > sizeSpec.value) {
+            if (itemsByteSize > sizeValue) {
                 throw Error('Invalid array data read');
             }
 
-            return this.valuePairs(itemPairs, byteOffset, sizeSpec.byteSize);
+            return this.valuePairs(itemPairs, byteOffset, sizeSpec.size);
         }
 
         if (!isUndefined(ends)) {
             // 使用 endsJudge 来确定读取Array的长度
             while (!this.endsJudge(subContext, byteOffset + itemsByteSize)) {
                 const itemPair = itemParser.read(subContext, byteOffset + itemsByteSize, option);
+                const [ itemValue, itemSpec ] = itemPair;
+                items.push(itemValue);
                 itemPairs.push(itemPair);
-                items.push(itemPair.value);
-                itemsByteSize += itemPair.byteSize;
+                itemsByteSize += itemSpec.size;
             }
 
             // 这里表示将end标志位也算入Array数据长度
@@ -148,47 +152,50 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         throw new Error('Either count,size or end must be provided to read the array.');
     }
 
-    write(ctx: ParserContext<unknown>, byteOffset: number, value: T[], option?: ParserOptionComposable): ValuePair<T[]> {
+    write(ctx: ParserContext<unknown>, byteOffset: number, value: T[], option?: ParserOptionComposable): ValueDesc<T[]> {
         const subContext = createContext(ctx, value);
         const { itemParser, count, size, ends } = this;
         if (!isUndefined(count)) {
             // 使用传入的 count 选项写入字符串长度
-            const countSpec = this.writeOptionNumber(subContext, count, byteOffset, value.length);
-            const itemPairs: ValuePair<T>[] = [];
+            const [ _, countSpec ] = this.writeOptionNumber(subContext, count, byteOffset, value.length);
+            const itemPairs: ValueDesc<T>[] = [];
             let itemsByteSize = 0;
             for (const item of value) {
-                const itemPair = itemParser.write(ctx, countSpec.offsetEnd + itemsByteSize, item, option);
+                const itemPair = itemParser.write(ctx, countSpec.end + itemsByteSize, item, option);
+                const [ _, itemSpec ] = itemPair;
                 itemPairs.push(itemPair);
-                itemsByteSize += itemPair.byteSize;
+                itemsByteSize += itemSpec.size;
             }
-            return this.valuePairs(itemPairs, byteOffset, countSpec.byteSize);
+            return this.valuePairs(itemPairs, byteOffset, countSpec.size);
         }
 
         if (!isUndefined(size)) {
             // 使用传入的 size 选项写入字符串长度（暂时未知具体长度，先写0，以获取offset）
-            const sizeSpec = this.writeOptionNumber(subContext, size, byteOffset, 0);
+            const [ _, sizeSpec ] = this.writeOptionNumber(subContext, size, byteOffset, 0);
 
-            const itemPairs: ValuePair<T>[] = [];
+            const itemPairs: ValueDesc<T>[] = [];
             let itemsByteSize = 0;
             for (const item of value) {
-                const itemPair = itemParser.write(ctx, sizeSpec.offsetEnd + itemsByteSize, item, option);
+                const itemPair = itemParser.write(ctx, sizeSpec.end + itemsByteSize, item, option);
+                const [ _, itemSpec ] = itemPair;
                 itemPairs.push(itemPair);
-                itemsByteSize += itemPair.byteSize;
+                itemsByteSize += itemSpec.size;
             }
 
             // 回到初始位置，写入正确的size
             this.writeOptionNumber(subContext, size, byteOffset, itemsByteSize);
 
-            return this.valuePairs(itemPairs, byteOffset, sizeSpec.byteSize);
+            return this.valuePairs(itemPairs, byteOffset, sizeSpec.size);
         }
 
         if (!isUndefined(ends)) {
-            const itemPairs: ValuePair<T>[] = [];
+            const itemPairs: ValueDesc<T>[] = [];
             let itemsByteSize = 0;
             for (const item of value) {
                 const itemPair = itemParser.write(ctx, byteOffset + itemsByteSize, item, option);
+                const [ _, itemSpec ] = itemPair;
                 itemPairs.push(itemPair);
-                itemsByteSize += itemPair.byteSize;
+                itemsByteSize += itemSpec.size;
             }
 
             this.endsMark(subContext, byteOffset + itemsByteSize);
@@ -201,7 +208,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         throw new Error('Either count,size or end must be provided to write the array.');
     }
 
-    default(value: T[] | undefined, byteOffset: number, byteSize = 0): ValuePair<T[]> {
+    default(value: T[] | undefined, byteOffset: number, byteSize = 0): ValueDesc<T[]> {
         return super.default(value || [], byteOffset, byteSize);
     }
 }

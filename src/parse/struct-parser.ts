@@ -1,4 +1,4 @@
-import { AdvancedParser, BaseParser, ContextCompute, createContext, ParserContext, ParserOptionComposable, ScopeAccessor, ValuePair } from './base-parser.ts';
+import { AdvancedParser, BaseParser, ContextCompute, createContext, ParserContext, ParserOptionComposable, ScopeAccessor, ValueDesc } from './base-parser.ts';
 import { isBoolean, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
 
 export type ObjectField<T, K extends keyof T> = {
@@ -20,7 +20,7 @@ export type ObjectParserOption<T> = {
 export const K_FieldSpec = Symbol.for('@@KeyFieldSpecs');
 
 export type Struct = object;
-export type StructSpec<T extends Struct> = { [K in keyof T]: ValuePair<T[K]> };
+export type StructSpec<T extends Struct> = { [K in keyof T]: ValueDesc<T[K]> };
 
 function setStructSpec<T extends Struct>(from: T, spec: StructSpec<T>): boolean {
     return Reflect.set(from, K_FieldSpec, spec);
@@ -60,7 +60,7 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
         throw Error('Cannot resolve that type as any Parser');
     }
 
-    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValuePair<T> {
+    read(ctx: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueDesc<T> {
         const section = Reflect.construct(this.creator, []);
         const childCtx = createContext(ctx, section);
         let currentOffset = byteOffset;
@@ -91,10 +91,10 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
             currentOffset += byteSize;
         }
 
-        return this.valuePair(section, byteOffset, currentOffset - byteOffset);
+        return this.valueDesc(section, byteOffset, currentOffset - byteOffset);
     }
 
-    write(ctx: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValuePair<T> {
+    write(ctx: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueDesc<T> {
         const childCtx = createContext(ctx, value);
         let currentOffset = byteOffset;
 
@@ -135,7 +135,7 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
             currentOffset += byteSize;
         }
 
-        return this.valuePair(value, byteOffset, currentOffset - byteOffset);
+        return this.valueDesc(value, byteOffset, currentOffset - byteOffset);
     }
 }
 

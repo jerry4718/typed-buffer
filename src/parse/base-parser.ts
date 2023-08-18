@@ -102,7 +102,7 @@ export interface ValueSpec<T> {
     offset: SpecInfo['pos']
 }
 
-export type ValuePair<T> = [ T, SpecInfo ];
+export type ValueDesc<T> = [ T, SpecInfo ] & ValueSpec<T>;
 
 export interface ParserOptionComposable {
     end?: number,
@@ -124,68 +124,55 @@ function createSpec(byteOffset: number, byteSize: number): SpecInfo {
     );
 }
 
-function valueSpec<T>(value: T, byteOffset: number, byteSize: number): ValueSpec<T> {
+function valueDesc<T>(value: T, byteOffset: number, byteSize: number): ValueDesc<T> {
     const spec = createSpec(byteOffset, byteSize);
+    const pair = [ value, spec ];
 
     return Object.defineProperties(
-        {} as ValueSpec<T>,
+        pair as ValueDesc<T>,
         {
-            value: { enumerable: true, writable: false, value: value },
-            spec: { enumerable: true, writable: false, value: spec },
-            byteSize: { enumerable: false, get: () => spec.size },
-            offsetStart: { enumerable: false, get: () => spec.start },
-            offsetEnd: { enumerable: false, get: () => spec.end },
-            offset: { enumerable: false, get: () => spec.pos },
+            value: { enumerable: false, writable: false, value: value },
+            spec: { enumerable: false, writable: false, value: spec },
+            size: { enumerable: false, get: () => spec.size },
+            start: { enumerable: false, get: () => spec.start },
+            end: { enumerable: false, get: () => spec.end },
+            pos: { enumerable: false, get: () => spec.pos },
         },
     );
-}
-
-function valuePair<T>(value: T, byteOffset: number, byteSize: number): ValuePair<T> {
-    return [ value, createSpec(byteOffset, byteSize) ];
 }
 
 export interface Parser<T> {
     compute<Result, CT, CP = unknown, CR = unknown>(context: ParserContext<CT, CP, CR>, getter: ContextCompute<Result, CT, CP, CR>): Result;
 
-    read(parentContext: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValuePair<T>;
+    read(parentContext: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueDesc<T>;
 
-    write(parentContext: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValuePair<T>;
+    write(parentContext: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueDesc<T>;
 
-    default(value: T | undefined, byteOffset: number, byteSize: number): ValuePair<T>;
+    default(value: T | undefined, byteOffset: number, byteSize: number): ValueDesc<T>;
 
-    valueSpec(value: T, byteOffset: number, byteSize: number): ValueSpec<T>;
-
-    valuePair(value: T, byteOffset: number, byteSize: number): ValuePair<T>;
+    valueDesc(value: T, byteOffset: number, byteSize: number): ValueDesc<T>;
 }
 
 export abstract class BaseParser<T> implements Parser<T> {
 
-    abstract read(parentContext: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValuePair<T>;
+    abstract read(parentContext: ParserContext<unknown>, byteOffset: number, option?: ParserOptionComposable): ValueDesc<T>;
 
-    abstract write(parentContext: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValuePair<T>;
+    abstract write(parentContext: ParserContext<unknown>, byteOffset: number, value: T, option?: ParserOptionComposable): ValueDesc<T>;
 
     compute<Result, CT, CP = unknown, CR = unknown>(context: ParserContext<CT, CP, CR>, getter: ContextCompute<Result, CT, CP, CR>): Result {
         return getter(context, context.scope);
     }
 
-    default(value: T | undefined, byteOffset: number, byteSize = 0): ValuePair<T> {
-        return valuePair(value!, byteOffset, byteSize);
+    default(value: T | undefined, byteOffset: number, byteSize = 0): ValueDesc<T> {
+        return valueDesc(value!, byteOffset, byteSize);
     }
 
-    valueSpec(value: T, byteOffset: number, byteSize: number): ValueSpec<T> {
-        return valueSpec(value, byteOffset, byteSize);
+    valueDesc(value: T, byteOffset: number, byteSize: number): ValueDesc<T> {
+        return valueDesc(value, byteOffset, byteSize);
     }
 
-    static valueSpec<U>(value: U, byteOffset: number, byteSize: number): ValueSpec<U> {
-        return valueSpec(value, byteOffset, byteSize);
-    }
-
-    valuePair(value: T, byteOffset: number, byteSize: number): ValuePair<T> {
-        return valuePair(value, byteOffset, byteSize);
-    }
-
-    static valuePair<U>(value: U, byteOffset: number, byteSize: number): ValuePair<U> {
-        return valuePair(value, byteOffset, byteSize);
+    static valueDesc<U>(value: U, byteOffset: number, byteSize: number): ValueDesc<U> {
+        return valueDesc(value, byteOffset, byteSize);
     }
 }
 
