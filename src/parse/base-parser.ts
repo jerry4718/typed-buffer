@@ -19,10 +19,6 @@ export function createContext(buffer: ArrayBuffer): ParserContext {
     function create(parent?: ParserContext) {
         const context = {} as ParserContext;
 
-        function compute<Result>(getter: ContextCompute<Result>): Result {
-            return getter(context, scopeAccessor);
-        }
-
         const parentScope = parent?.scope;
         const scopeAccessor = new Proxy({}, {
             get: function (target, propKey, receiver) {
@@ -34,6 +30,10 @@ export function createContext(buffer: ArrayBuffer): ParserContext {
                 return Reflect.set(target, propKey, value, receiver);
             },
         });
+
+        function compute<Result>(getter: ContextCompute<Result>): Result {
+            return getter(context, scopeAccessor);
+        }
 
         return Object.defineProperties(
             context,
