@@ -1,7 +1,8 @@
+import { ParserContext } from '../context/types.ts';
 import * as TypedArray from '../describe/typed-array.ts';
 import { TypedArrayFactory, TypedArrayInstance } from '../describe/typed-array.ts';
 import { ArrayParser, ArrayParserReaderComputed, BaseArrayParserOption } from './array-parser.ts';
-import { AdvancedParser, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
+import { AdvancedParser } from '../context/base-parser.ts';
 import {
     PrimitiveParser,
     Int8, Uint8,
@@ -22,20 +23,19 @@ export class TypedArrayParser<Item, Instance extends TypedArrayInstance<Item, In
         this.baseArrayParser = new ArrayParser<Item>(option);
     }
 
-    read(ctx: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<Instance> {
-        const [ baseArray, { size: byteSize } ] = this.baseArrayParser.read(ctx, byteOffset, option);
-        const tArray = this.typedFactory.from(baseArray);
-        return this.valueSpec(tArray, byteOffset, byteSize);
+    read(ctx: ParserContext): Instance {
+        const [ baseArray ] = ctx.read(this.baseArrayParser);
+        return this.typedFactory.from(baseArray);
     }
 
-    write(ctx: ParserContext, byteOffset: number, value: Instance, option?: ParserOptionComposable): ValueSpec<Instance> {
-        const [ _, { size: byteSize } ] = this.baseArrayParser.write(ctx, byteOffset, Array.from(value), option);
-        return this.valueSpec(value, byteOffset, byteSize);
+    write(ctx: ParserContext, value: Instance): Instance {
+        ctx.write(this.baseArrayParser, Array.from(value));
+        return value;
     }
 }
 
 function createGetter<Item, Instance extends TypedArrayInstance<Item, Instance>>(constructor: TypedArrayFactory<Item, Instance>, item: PrimitiveParser<Item>) {
-    return function (option: ArrayParserReaderComputed<Item>) {
+    return function (option: ArrayParserReaderComputed) {
         return new TypedArrayParser<Item, Instance>(constructor, { item, ...option });
     };
 }

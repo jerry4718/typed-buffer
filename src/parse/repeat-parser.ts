@@ -1,9 +1,11 @@
 import { PrimitiveParser } from './primitive-parser.ts';
-import { ParserContext, AdvancedParser, ParserOptionComposable, WithValue, BaseParser } from './base-parser.ts';
+import { ParserContext } from "../context/types.ts";
+import { AdvancedParser } from "../context/base-parser.ts";
+import { ValueSnap } from "../context/parser-context.ts";
 
 export type RepeatParserNumberOption<T> = ((ctx: ParserContext) => number) | PrimitiveParser<number> | number;
 
-// export type RepeatParserJudgeSpec<T> = [ T, BaseParser<T>, (read: T, compare: T) => boolean ]
+// export type RepeatParserJudgeSnap<T> = [ T, BaseParser<T>, (read: T, compare: T) => boolean ]
 /**
  * 支持：
  *  1.指定结束于固定unit8
@@ -29,11 +31,11 @@ export type RepeatParserPartialOption<T> =
     & Partial<RepeatParserEosCompose>;
 
 // export class BaseRepeatParser<T> extends AdvancedParser<T> {
-//     read(parentContext: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
+//     read(parentContext: ParserContext, byteOffset: number): ValueSnap<T> {
 //         return undefined;
 //     }
 //
-//     write(parentContext: ParserContext, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T> {
+//     write(parentContext: ParserContext, value: T, byteOffset: number): ValueSnap<T> {
 //         return undefined;
 //     }
 // }

@@ -1,6 +1,8 @@
 import { isUndefined } from '../utils/type-util.ts';
 import { BigEndian, Endian, LittleEndian } from '../common.ts';
-import { BaseParser, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
+import { BaseParser } from '../context/base-parser.ts';
+import { ParserContext } from '../context/types.ts';
+import { ParserOptionComposable } from '../context/parser-context.ts';
 
 type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
 type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
@@ -20,7 +22,7 @@ function isLittleEndian(endian?: Endian): boolean {
 }
 
 export class PrimitiveParser<T> extends BaseParser<T> {
-    private readonly byteSize: number;
+    readonly byteSize: number;
     private readonly getter: PrimitiveGetter<T>;
     private readonly setter: PrimitiveSetter<T>;
     private readonly endian?: Endian;
@@ -33,16 +35,15 @@ export class PrimitiveParser<T> extends BaseParser<T> {
         this.endian = option.endian;
     }
 
-    read(ctx: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
-        const littleEndian = isLittleEndian(this.endian || option?.endian);
-        const value = this.getter.call(new DataView(ctx.buffer), byteOffset, littleEndian);
-        return this.valueSpec(value, byteOffset, this.byteSize);
+    read(ctx: ParserContext, byteOffset: number): T {
+        const littleEndian = isLittleEndian(this.endian || ctx.option.endian);
+        return this.getter.call(new DataView(ctx.buffer), byteOffset, littleEndian);
     }
 
-    write(ctx: ParserContext, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T> {
-        const littleEndian = isLittleEndian(this.endian || option?.endian);
+    write(ctx: ParserContext, value: T, byteOffset: number): T {
+        const littleEndian = isLittleEndian(this.endian || ctx.option.endian);
         this.setter.call(new DataView(ctx.buffer), byteOffset, value, littleEndian);
-        return this.valueSpec(value, byteOffset, this.byteSize);
+        return value;
     }
 }
 

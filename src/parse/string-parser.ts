@@ -1,12 +1,13 @@
 // 字符串解析器
 import { Uint8 } from './primitive-parser.ts';
-import { AdvancedParser, ParserContext, ParserOptionComposable, ValueSpec } from './base-parser.ts';
+import { AdvancedParser } from '../context/base-parser.ts';
 import { type Coding, Utf8 } from '../coding/codings.ts';
 import { slice } from '../utils/proto-fn.ts';
-import { ArrayParserReaderComputed, ArrayParserCountReader, ArrayParser } from './array-parser.ts';
+import { ArrayParser, ArrayParserCountReader, ArrayParserReaderComputed } from './array-parser.ts';
+import { ParserContext } from '../context/types.ts';
 
 type StringParserOption =
-    & Exclude<ArrayParserReaderComputed<number>, ArrayParserCountReader<number>>
+    & Exclude<ArrayParserReaderComputed, ArrayParserCountReader>
     & { coding?: Coding }
 
 export class StringParser extends AdvancedParser<string> {
@@ -20,17 +21,16 @@ export class StringParser extends AdvancedParser<string> {
         this.dataParser = new ArrayParser({ item: Uint8, ...computed });
     }
 
-    read(ctx: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<string> {
-        const [ readArray, { size: byteSize } ] = this.dataParser.read(ctx, byteOffset, option);
+    read(ctx: ParserContext): string {
+        const [ readArray] = ctx.read(this.dataParser);
         const byteArray = readArray instanceof Uint8Array ? readArray : Uint8Array.from(readArray);
-        const value = this.coding.decode(byteArray);
-        return this.valueSpec(value, byteOffset, byteSize);
+        return this.coding.decode(byteArray);
     }
 
-    write(parentContext: ParserContext, byteOffset: number, value: string, option?: ParserOptionComposable): ValueSpec<string> {
+    write(ctx: ParserContext, value: string): string {
         const byteArray = this.coding.encode(value);
-        const [ _, { size: byteSize } ] = this.dataParser.write(parentContext, byteOffset, slice.call(byteArray), option);
-        return this.valueSpec(value, byteOffset, byteSize);
+        ctx.write(this.dataParser, slice.call(byteArray));
+        return value;
     }
 }
 

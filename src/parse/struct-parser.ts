@@ -1,15 +1,17 @@
-import { AdvancedParser, BaseParser, ContextCompute, ParserContext, ParserOptionComposable, ScopeAccessor, ValueSpec } from './base-parser.ts';
-import { isBoolean, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
+import { AdvancedParser, BaseParser } from '../context/base-parser.ts';
+import { isUndefined } from '../utils/type-util.ts';
+import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
+import { ValueSnap } from '../context/parser-context.ts';
 
 export type ObjectField<T, K extends keyof T> = {
     name: K,
     type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>,
-    option?: ParserOptionComposable,
+    option?: ContextOption,
     condition?: {
         if?: ContextCompute<boolean>,
         default?: T[K]
     },
-    variable?: boolean | string | symbol,
+    expose?: boolean | string | symbol,
 };
 
 export type ObjectParserOption<T> = {
@@ -17,21 +19,21 @@ export type ObjectParserOption<T> = {
     fields: ObjectField<T, keyof T>[];
 };
 
-export const K_FieldSpec = Symbol.for('@@KeyFieldSpecs');
+export const K_FieldSnap = Symbol.for('@@KeyFieldSnaps');
 
 export type Struct = object;
-export type StructSpec<T extends Struct> = { [K in keyof T]: ValueSpec<T[K]> };
+export type StructSnap<T extends Struct> = { [K in keyof T]: ValueSnap<T[K]> };
 
-function setStructSpec<T extends Struct>(from: T, spec: StructSpec<T>): boolean {
-    return Reflect.set(from, K_FieldSpec, spec);
+function setStructSnap<T extends Struct>(from: T, snap: StructSnap<T>): boolean {
+    return Reflect.set(from, K_FieldSnap, snap);
 }
 
-function hasStructSpec<T extends Struct>(from: T): boolean {
-    return Reflect.has(from, K_FieldSpec);
+function hasStructSnap<T extends Struct>(from: T): boolean {
+    return Reflect.has(from, K_FieldSnap);
 }
 
-export function getStructSpec<T extends Struct>(from: T): StructSpec<T> | undefined {
-    return Reflect.get(from, K_FieldSpec) as StructSpec<T>;
+export function getStructSnap<T extends Struct>(from: T): StructSnap<T> | undefined {
+    return Reflect.get(from, K_FieldSnap) as StructSnap<T>;
 }
 
 export class StructParser<T extends Struct> extends AdvancedParser<T> {
@@ -44,15 +46,6 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
         this.creator = option.type || Object as unknown as new () => T;
     }
 
-    addScopeVariable<K extends keyof T>(scope: ScopeAccessor, fieldVariable: boolean | string | symbol, fieldName: K, fieldValue: T[K]) {
-        if (isBoolean(fieldVariable)) {
-            Reflect.set(scope, fieldName, fieldValue);
-        }
-        if (isString(fieldVariable) || isSymbol(fieldVariable)) {
-            Reflect.set(scope, fieldVariable, fieldValue);
-        }
-    }
-
     resolveParser<T, K extends keyof T>(ctx: ParserContext, type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>): BaseParser<T[K]> {
         if (type instanceof BaseParser) return type;
         const resolved = ctx.compute(type);
@@ -60,82 +53,76 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
         throw Error('Cannot resolve that type as any Parser');
     }
 
-    read(ctx: ParserContext, byteOffset: number, option?: ParserOptionComposable): ValueSpec<T> {
+    read(ctx: ParserContext): T {
         const section = Reflect.construct(this.creator, []);
-        const childCtx = ctx.derive();
-        let currentOffset = byteOffset;
 
-        const structSpec = {} as StructSpec<T>;
-        setStructSpec(section, structSpec);
+        const structSnap = {} as StructSnap<T>;
+        setStructSnap(section, structSnap);
 
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
-            const fieldParser = this.resolveParser(childCtx, fieldConfig.type);
+            const fieldParser = this.resolveParser(ctx, fieldConfig.type);
             const fieldOption = fieldConfig.option;
 
-            const fieldSpec =
+            const fieldSnap =
                 !(fieldConfig.condition?.if && !ctx.compute(fieldConfig.condition.if!))
-                    ? fieldParser.read(childCtx, currentOffset, { ...option, ...fieldOption })
-                    : fieldParser.default(fieldConfig.condition?.default, byteOffset, 0);
+                    ? ctx.read(fieldParser, fieldOption)
+                    : ctx.result(fieldConfig.condition?.default, 0);
 
-            const [ fieldValue, { size: byteSize } ] = fieldSpec;
+            const [ fieldValue ] = fieldSnap;
             Reflect.set(section, fieldName, fieldValue);
 
-            const fieldVariable = fieldConfig.variable;
+            const fieldExpose = fieldConfig.expose;
 
-            if (!isUndefined(fieldVariable)) {
-                this.addScopeVariable(childCtx.scope, fieldVariable, fieldName, fieldValue);
+            if (!isUndefined(fieldExpose)) {
+                ctx.expose(fieldExpose, fieldName, fieldValue);
             }
 
-            Reflect.set(structSpec, fieldName, fieldSpec);
-            currentOffset += byteSize;
+            Reflect.set(structSnap, fieldName, fieldSnap);
         }
 
-        return this.valueSpec(section, byteOffset, currentOffset - byteOffset);
+        return section;
     }
 
-    write(ctx: ParserContext, byteOffset: number, value: T, option?: ParserOptionComposable): ValueSpec<T> {
-        const childCtx = ctx.derive();
-        let currentOffset = byteOffset;
-
-        const structSpec = hasStructSpec(value)
+    write(ctx: ParserContext, value: T): T {
+        const structSnap = hasStructSnap(value)
             ? (() => {
-                const oldSpec = getStructSpec(value)!;
-                Reflect.ownKeys(oldSpec).forEach(key => Reflect.deleteProperty(oldSpec, key));
-                return oldSpec;
+                const oldSnap = getStructSnap(value)!;
+                Reflect.ownKeys(oldSnap).forEach(key => Reflect.deleteProperty(oldSnap, key));
+                return oldSnap;
             })()
             : (() => {
-                const newSpec = {} as StructSpec<T>;
-                setStructSpec(value, newSpec);
-                return newSpec;
+                const newSnap = {} as StructSnap<T>;
+                setStructSnap(value, newSnap);
+                return newSnap;
             })();
 
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
-            const fieldParser = this.resolveParser(childCtx, fieldConfig.type);
+            const fieldParser = this.resolveParser(ctx, fieldConfig.type);
             const fieldOption = fieldConfig.option;
 
             const fieldValue = Reflect.get(value, fieldName);
 
-            const fieldSpec =
+            const fieldSnap =
                 // todo: why judge condition on write?
                 !(fieldConfig.condition?.if && !ctx.compute(fieldConfig.condition.if!))
-                    ? fieldParser.write(childCtx, currentOffset, fieldValue, { ...option, ...fieldOption })
+                    ? ctx.write(fieldParser, fieldValue, fieldOption)
                     // todo: why use default on write?
-                    : fieldParser.default(fieldConfig.condition?.default, byteOffset, 0);
+                    : ctx.result(fieldConfig.condition?.default, 0);
 
-            const [ fieldValue2, { size: byteSize } ] = fieldSpec;
+            const [ fieldValue2 ] = fieldSnap;
 
-            const fieldVariable = fieldConfig.variable;
-            if (!isUndefined(fieldVariable)) {
-                this.addScopeVariable(childCtx.scope, fieldVariable, fieldName, fieldValue2);
+            const fieldExpose = fieldConfig.expose;
+
+            if (!isUndefined(fieldExpose)) {
+                ctx.expose(fieldExpose, fieldName, fieldValue2);
             }
 
-            Reflect.set(structSpec, fieldName, fieldSpec);
-            currentOffset += byteSize;
+            Reflect.set(structSnap, fieldName, fieldSnap);
         }
 
-        return this.valueSpec(value, byteOffset, currentOffset - byteOffset);
+        return value;
     }
 }
 
