@@ -1,4 +1,4 @@
-import { Endian } from '../common.ts';
+import { Endian } from '../../src/common.ts';
 
 type Int = 'Int';
 type Uint = 'Uint';

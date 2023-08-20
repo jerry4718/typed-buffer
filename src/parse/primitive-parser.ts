@@ -1,19 +1,22 @@
 import { isUndefined } from '../utils/type-util.ts';
 import { BigEndian, Endian, LittleEndian } from '../common.ts';
-import { BaseParser } from '../context/base-parser.ts';
+import { BaseParser, BaseParserConfig } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
 import { ParserOptionComposable } from '../context/parser-context.ts';
 
 type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
 type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
 
-type PrimitiveParserOption<T> = ParserOptionComposable & PrimitiveParserOptionRequired<T>;
-
 interface PrimitiveParserOptionRequired<T> {
     byteSize: number,
     getter: PrimitiveGetter<T>,
     setter: PrimitiveSetter<T>,
 }
+
+type PrimitiveParserConfig<T> =
+    & BaseParserConfig
+    & ParserOptionComposable
+    & PrimitiveParserOptionRequired<T>;
 
 function isLittleEndian(endian?: Endian): boolean {
     if (isUndefined(endian)) return false;
@@ -27,12 +30,12 @@ export class PrimitiveParser<T> extends BaseParser<T> {
     private readonly setter: PrimitiveSetter<T>;
     private readonly endian?: Endian;
 
-    constructor(option: PrimitiveParserOption<T>) {
-        super();
-        this.byteSize = option.byteSize;
-        this.getter = option.getter;
-        this.setter = option.setter;
-        this.endian = option.endian;
+    constructor(config: PrimitiveParserConfig<T>) {
+        super(config);
+        this.byteSize = config.byteSize;
+        this.getter = config.getter;
+        this.setter = config.setter;
+        this.endian = config.endian;
     }
 
     read(ctx: ParserContext, byteOffset: number): T {
@@ -48,7 +51,7 @@ export class PrimitiveParser<T> extends BaseParser<T> {
 }
 
 function compose<T>(basic: PrimitiveParserOptionRequired<T>, ...expand: Partial<ParserOptionComposable>[]) {
-    return Object.assign({}, basic, ...expand) as PrimitiveParserOption<T>;
+    return Object.assign({}, basic, ...expand) as PrimitiveParserConfig<T>;
 }
 
 const {

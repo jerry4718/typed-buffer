@@ -18,16 +18,16 @@ export type ContextOption = {
 
 export type ParserContext = {
     buffer: ArrayBuffer,
-    size: number,
-    take: [ number, number ],
-    scope: ScopeAccessor,
     option: ContextOption,
-    expose(condition: string | boolean | symbol, name: string | number | symbol, value: unknown): void,
+    scope: ScopeAccessor,
     read<T>(parser: Parser<T>, option?: Partial<ContextOption>): ValueSnap<T>,
     write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): ValueSnap<T>,
+    expose(condition: string | boolean | symbol, name: string | number | symbol, value: unknown): void,
     compute<Result>(getter: ContextCompute<Result>): Result,
     result<T>(value: T, size?: number): ValueSnap<T>,
-    derive(option?: Partial<ContextOption>): ParserContext,
+    derive(...options: (Partial<ContextOption> | undefined)[]): ParserContext,
+    size: number,
+    take: [ number, number ],
 }
 
 export interface Parser<T> {

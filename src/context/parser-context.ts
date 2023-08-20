@@ -1,7 +1,9 @@
 import { isBoolean, isString, isSymbol } from '../utils/type-util.ts';
-import { ContextCompute, ContextOption, Parser, ParserContext } from './types.ts';
+import { ContextCompute, ContextOption, ParserContext } from './types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { Endian } from '../common.ts';
+import { BaseParser } from './base-parser.ts';
+import { SafeAny } from '../utils/prototype-util.ts';
 
 const defaultContextOption: ContextOption = {
     offset: 0,
@@ -67,42 +69,46 @@ export function createResult<T>(value: T, snap: SnapInfo): ValueSnap<T> {
     );
 }
 
+function createChainAccessor<T extends object>(space: boolean, ...upward: (T | undefined)[]): T {
+    const target = {} as T;
+
+    function has<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K): boolean {
+        if (space && Object.hasOwn(target, propKey)) return true;
+        for (const scope of upward) {
+            if (scope && Object.hasOwn(scope, propKey)) return true;
+        }
+        return false;
+    }
+
+    function get<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, receiver: SafeAny): T[K] | undefined {
+        if (space && Object.hasOwn(target, propKey)) return Reflect.get(target, propKey, receiver);
+        for (const scope of upward) {
+            if (scope && Object.hasOwn(scope, propKey)) return Reflect.get(scope, propKey, receiver);
+        }
+        return undefined;
+    }
+
+    function set<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, value: T[K], receiver: SafeAny): boolean {
+        if (!space) return false;
+        return Reflect.set(target, propKey, value, receiver);
+    }
+
+    return new Proxy(target, { has, get, set });
+}
+
 export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption> = {}): ParserContext {
     const rootOption: ContextOption = { ...defaultContextOption, ...option };
 
-    function create(parent?: ParserContext, option: Partial<ContextOption> = {}): ParserContext {
+    function create(parent?: ParserContext, ...options: (ContextOption | undefined)[]): ParserContext {
         const context = {} as ParserContext;
+        const scope = createChainAccessor(true, parent?.scope);
+        const option = createChainAccessor(false, parent?.option, ...options.reverse(), rootOption);
 
-        const parentScope = parent?.scope;
-        const scopeAccessor = new Proxy({}, {
-            get: function (target, propKey, receiver) {
-                if (Object.hasOwn(target, propKey)) return Reflect.get(target, propKey, receiver);
-                if (parentScope) return Reflect.get(parentScope, propKey, receiver);
-                return undefined;
-            },
-            set: function (target, propKey, value, receiver) {
-                return Reflect.set(target, propKey, value, receiver);
-            },
-        });
-
-        const parentOption = parent?.option;
-        const optionAccessor = new Proxy(option as ContextOption, {
-            get: function (target, propKey, receiver) {
-                if (Object.hasOwn(target, propKey)) return Reflect.get(target, propKey, receiver);
-                if (parentOption && Object.hasOwn(parentOption, propKey)) return Reflect.get(parentOption, propKey, receiver);
-                if (Object.hasOwn(rootOption, propKey)) return Reflect.get(rootOption, propKey, receiver);
-                return undefined;
-            },
-        });
-
-        const byteStart = option.offset || parent?.option.offset || rootOption.offset;
+        const byteStart = option.offset!;
         let byteSize = 0;
 
-        function read<T>(parser: Parser<T>, option?: ContextOption): ValueSnap<T> {
-            const ctx = context.derive({
-                offset: byteStart + byteSize,
-                ...option,
-            });
+        function read<T>(parser: BaseParser<T>, option?: ContextOption): ValueSnap<T> {
+            const ctx = context.derive({ offset: byteStart + byteSize }, parser.option, option);
             try {
                 const value = parser.read(ctx, ctx.option.offset);
                 if (!ctx.option.consume) return ctx.result(value, 0);
@@ -116,11 +122,8 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
             }
         }
 
-        function write<T>(parser: Parser<T>, value: T, option?: ContextOption): ValueSnap<T> {
-            const ctx = context.derive({
-                offset: optionAccessor.offset + byteSize,
-                ...option,
-            });
+        function write<T>(parser: BaseParser<T>, value: T, option?: ContextOption): ValueSnap<T> {
+            const ctx = context.derive({ offset: byteStart + byteSize }, parser.option, option);
             try {
                 parser.write(ctx, value, ctx.option.offset);
                 if (!ctx.option.consume) return ctx.result(value, 0);
@@ -136,25 +139,25 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
 
         function expose(condition: string | boolean | symbol, name: string | number | symbol, value: unknown) {
             if (isBoolean(condition)) {
-                return Reflect.set(scopeAccessor, name, value);
+                return Reflect.set(scope, name, value);
             }
             if (isString(condition) || isSymbol(condition)) {
-                return Reflect.set(scopeAccessor, condition, value);
+                return Reflect.set(scope, condition, value);
             }
         }
 
         function compute<Result>(getter: ContextCompute<Result>): Result {
-            return getter(context, scopeAccessor);
+            return getter(context, scope);
         }
 
         function result<T>(value: T, size = byteSize): ValueSnap<T> {
-            return createResult(value, createSnap(optionAccessor.offset, size));
+            return createResult(value, createSnap(option.offset, size));
         }
 
         return Object.defineProperties(context, {
             buffer: { writable: false, value: buffer },
-            scope: { writable: false, value: scopeAccessor },
-            option: { writable: false, value: optionAccessor },
+            option: { writable: false, value: option },
+            scope: { writable: false, value: scope },
             read: { writable: false, value: read },
             write: { writable: false, value: write },
             expose: { writable: false, value: expose },

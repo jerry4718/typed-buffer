@@ -1,9 +1,9 @@
-import { AdvancedParser, BaseParser } from '../context/base-parser.ts';
+import { AdvancedParser, BaseParser, BaseParserConfig } from '../context/base-parser.ts';
 import { isUndefined } from '../utils/type-util.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { ValueSnap } from '../context/parser-context.ts';
 
-export type ObjectField<T, K extends keyof T> = {
+export type StructField<T, K extends keyof T> = {
     name: K,
     type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>,
     option?: ContextOption,
@@ -14,36 +14,36 @@ export type ObjectField<T, K extends keyof T> = {
     expose?: boolean | string | symbol,
 };
 
-export type ObjectParserOption<T> = {
-    type?: new () => T;
-    fields: ObjectField<T, keyof T>[];
-};
+export type StructParserConfig<T> =
+    & BaseParserConfig
+    & { type?: new () => T }
+    & { fields: StructField<T, keyof T>[] }
 
-export const K_FieldSnap = Symbol.for('@@KeyFieldSnaps');
+export const FieldSnapKey = Symbol.for('@@KeyFieldSnap');
 
-export type Struct = object;
-export type StructSnap<T extends Struct> = { [K in keyof T]: ValueSnap<T[K]> };
+export type StructObject = object;
+export type StructSnap<T extends StructObject> = { [K in keyof T]: ValueSnap<T[K]> };
 
-function setStructSnap<T extends Struct>(from: T, snap: StructSnap<T>): boolean {
-    return Reflect.set(from, K_FieldSnap, snap);
+function setStructSnap<T extends StructObject>(from: T, snap: StructSnap<T>): boolean {
+    return Reflect.set(from, FieldSnapKey, snap);
 }
 
-function hasStructSnap<T extends Struct>(from: T): boolean {
-    return Reflect.has(from, K_FieldSnap);
+function hasStructSnap<T extends StructObject>(from: T): boolean {
+    return Reflect.has(from, FieldSnapKey);
 }
 
-export function getStructSnap<T extends Struct>(from: T): StructSnap<T> | undefined {
-    return Reflect.get(from, K_FieldSnap) as StructSnap<T>;
+export function getStructSnap<T extends StructObject>(from: T): StructSnap<T> | undefined {
+    return Reflect.get(from, FieldSnapKey) as StructSnap<T>;
 }
 
-export class StructParser<T extends Struct> extends AdvancedParser<T> {
-    private readonly fields: ObjectField<T, keyof T>[];
+export class StructParser<T extends StructObject> extends AdvancedParser<T> {
+    private readonly fields: StructField<T, keyof T>[];
     private readonly creator: new () => T;
 
-    constructor(option: ObjectParserOption<T>) {
-        super();
-        this.fields = option.fields;
-        this.creator = option.type || Object as unknown as new () => T;
+    constructor(config: StructParserConfig<T>) {
+        super(config);
+        this.fields = config.fields;
+        this.creator = config.type || Object as unknown as new () => T;
     }
 
     resolveParser<T, K extends keyof T>(ctx: ParserContext, type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>): BaseParser<T[K]> {
@@ -126,6 +126,10 @@ export class StructParser<T extends Struct> extends AdvancedParser<T> {
     }
 }
 
-export function getStructParser<T extends Struct>(parserOption: ObjectParserOption<T>): StructParser<T> {
-    return new StructParser(parserOption);
+export function getStructParser<T extends StructObject>(option: StructParserConfig<T>): StructParser<T> {
+    return new StructParser(option);
 }
+
+export {
+    StructParser as Struct,
+};

@@ -71,8 +71,8 @@ const TestStructParser = getStructParser<PersonStruct>({
             type: (_, scope) => {
                 const option = { count: () => scope.itemCount as number };
                 switch (scope.itemType) {
-                    case 1: return u32les(option);
-                    case 2: return u32bes(option);
+                    case 1: return new u32les(option);
+                    case 2: return new u32bes(option);
                 }
                 throw Error(`unknown itemType case ${scope.itemType}`);
             },

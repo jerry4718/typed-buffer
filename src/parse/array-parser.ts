@@ -1,13 +1,13 @@
 import { ValueSnap } from '../context/parser-context.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { isBoolean, isNumber, isObject, isUndefined } from '../utils/type-util.ts';
-import { AdvancedParser, BaseParser } from '../context/base-parser.ts';
+import { AdvancedParser, BaseParser, BaseParserConfig } from '../context/base-parser.ts';
 import { PrimitiveParser, Uint8 } from './primitive-parser.ts';
 
 export type ArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
 export type ArrayParserOptionEos = ContextCompute<number> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
 
-export type ArrayParserOptionRequired<T> = { item: BaseParser<T> };
+export type ArrayParserConfigRequired<T> = { item: BaseParser<T> };
 export type ArrayParserCountReader = { count: ArrayParserOptionNumber };
 export type ArrayParserSizeReader = { size: ArrayParserOptionNumber };
 export type ArrayParserEosReader = { ends: ArrayParserOptionEos };
@@ -17,12 +17,15 @@ export type ArrayParserReaderPartial =
     & Partial<ArrayParserSizeReader>
     & Partial<ArrayParserEosReader>;
 
-export type ArrayParserReaderComputed =
+export type ArrayParserConfigComputed =
     | ArrayParserCountReader
     | ArrayParserSizeReader
     | ArrayParserEosReader;
 
-export type BaseArrayParserOption<T> = ArrayParserOptionRequired<T> & ArrayParserReaderComputed;
+export type ArrayParserConfig<T> =
+    & BaseParserConfig
+    & ArrayParserConfigRequired<T>
+    & ArrayParserConfigComputed;
 
 const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
@@ -33,8 +36,8 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
     private readonly size?: ArrayParserOptionNumber;
     private readonly ends?: ArrayParserOptionEos;
 
-    constructor(option: BaseArrayParserOption<T>) {
-        super();
+    constructor(option: ArrayParserConfig<T>) {
+        super(option);
         const { item: itemParser, ...optionPartial } = option;
         const { count, size, ends } = optionPartial as ArrayParserReaderPartial;
         if (isUndefined(itemParser)) {
@@ -159,10 +162,10 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
     }
 }
 
-export function createArrayParser<T>(option: BaseArrayParserOption<T>) {
-    return new ArrayParser<T>(option);
+export function createArrayParser<T>(config: ArrayParserConfig<T>) {
+    return new ArrayParser<T>(config);
 }
 
 export {
-    createArrayParser as Array,
+    ArrayParser as Array,
 };
