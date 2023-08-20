@@ -16,6 +16,7 @@ class Person {
     @t.FieldOption({ endian: 'be' })
     money!: number;
 
+    /** todo: 根据顶部的endian配置，这里应该读作 Uint16LE */
     @t.FieldType(t.Uint16)
     @t.FieldExpose()
     itemType!: number;
