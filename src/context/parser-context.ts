@@ -102,13 +102,15 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
     function create(parent?: ParserContext, ...options: (ContextOption | undefined)[]): ParserContext {
         const context = {} as ParserContext;
         const scope = createChainAccessor(true, parent?.scope);
-        const option = createChainAccessor(false, parent?.option, ...options.reverse(), rootOption);
+        const option = createChainAccessor(false, ...options, parent?.option, rootOption);
 
         const byteStart = option.offset!;
         let byteSize = 0;
 
-        function read<T>(parser: BaseParser<T>, option?: ContextOption): ValueSnap<T> {
-            const ctx = context.derive({ offset: byteStart + byteSize }, parser.option, option);
+        function read<T>(parser: BaseParser<T>, readOption?: ContextOption): ValueSnap<T> {
+            const ctx = context.derive(
+                createChainAccessor(false, readOption, parser.option, { offset: byteStart + byteSize })
+            );
             try {
                 const value = parser.read(ctx, ctx.option.offset);
                 if (!ctx.option.consume) return ctx.result(value, 0);
@@ -122,8 +124,10 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
             }
         }
 
-        function write<T>(parser: BaseParser<T>, value: T, option?: ContextOption): ValueSnap<T> {
-            const ctx = context.derive({ offset: byteStart + byteSize }, parser.option, option);
+        function write<T>(parser: BaseParser<T>, value: T, writeOption?: ContextOption): ValueSnap<T> {
+            const ctx = context.derive(
+                createChainAccessor(false, writeOption, parser.option, { offset: byteStart + byteSize })
+            );
             try {
                 parser.write(ctx, value, ctx.option.offset);
                 if (!ctx.option.consume) return ctx.result(value, 0);

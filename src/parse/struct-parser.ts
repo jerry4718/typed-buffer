@@ -104,6 +104,9 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
 
             const fieldValue = Reflect.get(value, fieldName);
 
+            if (fieldName === 'itemType') {
+                console.log('itemType')
+            }
             const fieldSnap =
                 // todo: why judge condition on write?
                 !(fieldConfig.condition?.if && !ctx.compute(fieldConfig.condition.if!))

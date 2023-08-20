@@ -9,11 +9,11 @@ class Person {
     age!: number;
 
     @t.FieldType(t.Float32)
-    @t.FieldOption({ endian: 'le' })
+    @t.FieldOption({ endian: 'be' })
     height!: number;
 
     @t.FieldType(t.Float64)
-    @t.FieldOption({ endian: 'le' })
+    @t.FieldOption({ endian: 'be' })
     money!: number;
 
     @t.FieldType(t.Uint16)
@@ -26,10 +26,8 @@ class Person {
 
     @t.FieldType((_, scope) => {
         const option = { count: () => scope.itemCount as number };
-        switch (scope.itemType) {
-            case 1: return new t.Uint32BEArray(option);
-            case 2: return new t.Uint32LEArray(option);
-        }
+        if (scope.itemType === 1) return new t.Uint32BEArray(option);
+        if (scope.itemType === 2) return new t.Uint32LEArray(option);
         throw Error(`unknown itemType case ${scope.itemType}`);
     })
     @t.FieldCondition(
@@ -38,7 +36,6 @@ class Person {
     )
     item!: Uint32Array;
 }
-
 
 const testPerson: Omit<Person, 'itemType'> = {
     name: '123~~~!!!@@@我淦啊',

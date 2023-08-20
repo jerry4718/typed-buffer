@@ -34,15 +34,14 @@ type FieldConfig<K extends number | string | symbol, T> = StructField<{ [k in K]
 export function getTypedParser<T extends object>(klass: Constructor<T>): StructParser<T> {
     return Reflect.getOwnMetadata(kParserCached, klass);
 }
+
 function convertTypedParser<T extends object>(klass: Constructor<T>): StructParser<T> {
-    const targetOptions = getInheritedMetadata(klass, kParserTarget);
+    const targetOptions = getInheritedMetadata(kParserTarget, klass);
     if (!targetOptions.length) throw Error('The configured type has not ParserTarget');
 
     type LocalField = FieldConfig<keyof T, T[keyof T]>
 
-    const symbol = kParserFields as MetadataKey<LocalField[]>;
-
-    const fieldGroups = getPrototypeMetadata(klass, symbol);
+    const fieldGroups = getPrototypeMetadata(kParserFields, klass);
 
     const composedFields: LocalField[] = [];
 

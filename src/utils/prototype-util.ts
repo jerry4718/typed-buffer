@@ -23,7 +23,7 @@ export function isExtendFrom<P>(childClass: unknown, parentClass: Constructor<P>
 export interface MetadataKey<T> extends Symbol {
 }
 
-export function getInheritedMetadata<T>(klass: new () => unknown, metadataKey: MetadataKey<T>): T[] {
+export function getInheritedMetadata<T>(metadataKey: MetadataKey<T>, klass: new () => unknown): T[] {
     const result: T[] = [];
     let cur = klass;
     while (cur !== FunctionPrototype) {
@@ -33,7 +33,7 @@ export function getInheritedMetadata<T>(klass: new () => unknown, metadataKey: M
     return result;
 }
 
-export function getPrototypeMetadata<T>(klass: new () => unknown, metadataKey: MetadataKey<T>): T[] {
+export function getPrototypeMetadata<T>(metadataKey: MetadataKey<T>, klass: new () => unknown): T[] {
     const result: T[] = [];
     let cur = klass.prototype;
     while (cur.constructor !== Object) {
