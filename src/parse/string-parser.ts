@@ -1,10 +1,10 @@
 // 字符串解析器
-import { Uint8 } from './primitive-parser.ts';
-import { AdvancedParser, BaseParserConfig } from '../context/base-parser.ts';
 import { type Coding, Utf8 } from '../coding/codings.ts';
-import { slice } from '../utils/proto-fn.ts';
-import { ArrayParser, ArrayParserCountReader, ArrayParserConfigComputed } from './array-parser.ts';
+import { AdvancedParser, BaseParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
+import { slice } from '../utils/proto-fn.ts';
+import { ArrayParser, ArrayParserConfigComputed, ArrayParserCountReader } from './array-parser.ts';
+import { Uint8 } from './primitive-parser.ts';
 
 type StringParserConfig =
     & BaseParserConfig
@@ -35,10 +35,10 @@ export class StringParser extends AdvancedParser<string> {
     }
 }
 
-export function getStringParser(option: StringParserConfig) {
-    return new StringParser(option);
-}
+const StringParserCreator = createParserCreator(StringParser);
 
 export {
-    StringParser as String,
+    StringParserCreator,
+    StringParserCreator as String,
+    StringParserCreator as string,
 };

@@ -1,8 +1,7 @@
-import { isUndefined } from '../utils/type-util.ts';
 import { BigEndian, Endian, LittleEndian } from '../common.ts';
 import { BaseParser, BaseParserConfig } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { ParserOptionComposable } from '../context/parser-context.ts';
+import { isUndefined } from '../utils/type-util.ts';
 
 type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
 type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
@@ -13,15 +12,20 @@ interface PrimitiveParserOptionRequired<T> {
     setter: PrimitiveSetter<T>,
 }
 
+interface PrimitiveParserOptionComposable {
+    endian?: Endian,
+}
+
 type PrimitiveParserConfig<T> =
     & BaseParserConfig
-    & ParserOptionComposable
+    & PrimitiveParserOptionComposable
     & PrimitiveParserOptionRequired<T>;
 
 function isLittleEndian(endian?: Endian): boolean {
-    if (isUndefined(endian)) return false;
+    if (isUndefined(endian)) throw Error('endian loosed')
     if (endian === BigEndian) return false;
-    return endian === LittleEndian;
+    if (endian === LittleEndian) return true;
+    throw Error('endian only support "le" or "be"');
 }
 
 export class PrimitiveParser<T> extends BaseParser<T> {
@@ -50,7 +54,7 @@ export class PrimitiveParser<T> extends BaseParser<T> {
     }
 }
 
-function compose<T>(basic: PrimitiveParserOptionRequired<T>, ...expand: Partial<ParserOptionComposable>[]) {
+function compose<T>(basic: PrimitiveParserOptionRequired<T>, ...expand: Partial<PrimitiveParserOptionComposable>[]) {
     return Object.assign({}, basic, ...expand) as PrimitiveParserConfig<T>;
 }
 
@@ -62,8 +66,8 @@ const {
     getBigInt64, setBigInt64, getBigUint64, setBigUint64,
 } = DataView.prototype;
 
-const composeLE: Pick<ParserOptionComposable, 'endian'> = { endian: 'le' };
-const composeBE: Pick<ParserOptionComposable, 'endian'> = { endian: 'be' };
+const composeLE: Pick<PrimitiveParserOptionComposable, 'endian'> = { endian: 'le' };
+const composeBE: Pick<PrimitiveParserOptionComposable, 'endian'> = { endian: 'be' };
 
 function cell<T>(
     byteSize: number,

@@ -1,16 +1,15 @@
-import { AdvancedParser, BaseParser, BaseParserConfig } from '../context/base-parser.ts';
-import { isUndefined } from '../utils/type-util.ts';
+import { AdvancedParser, BaseParser, BaseParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
+import { isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
 import { ValueSnap } from '../context/parser-context.ts';
 
 export type StructField<T, K extends keyof T> = {
     name: K,
     type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>,
+    point?: number | ContextCompute<number>,
     option?: ContextOption,
-    condition?: {
-        if?: ContextCompute<boolean>,
-        default?: T[K]
-    },
+    if?: boolean | ContextCompute<boolean>,
+    default?: T[K] | ContextCompute<T[K]>,
     expose?: boolean | string | symbol,
 };
 
@@ -53,6 +52,27 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
         throw Error('Cannot resolve that type as any Parser');
     }
 
+    resolveOption(ctx: ParserContext, fieldConfig: StructField<T, keyof T>): ContextOption {
+        const composeOptions: Partial<ContextOption>[] = [];
+        const inputOption = fieldConfig.option;
+        const inputPoint = fieldConfig.point;
+
+        if (!isUndefined(inputOption)) composeOptions.push(inputOption);
+        if (!isUndefined(inputPoint) && isNumber(inputPoint)) composeOptions.push({ point: inputPoint });
+        if (!isUndefined(inputPoint) && isFunction(inputPoint)) composeOptions.push({ point: ctx.compute(inputPoint)! });
+
+        return Object.assign({}, ...composeOptions);
+    }
+
+    resolveIf(ctx: ParserContext, fieldConfig: StructField<T, keyof T>): boolean {
+        const fieldIf = fieldConfig.if;
+
+        if (!isUndefined(fieldIf) && isBoolean(fieldIf)) return fieldIf;
+        if (!isUndefined(fieldIf) && isFunction(fieldIf)) return ctx.compute(fieldIf);
+
+        return true;
+    }
+
     read(ctx: ParserContext): T {
         const section = Reflect.construct(this.creator, []);
 
@@ -62,12 +82,12 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
             const fieldParser = this.resolveParser(ctx, fieldConfig.type);
-            const fieldOption = fieldConfig.option;
+            const fieldOption = this.resolveOption(ctx, fieldConfig);
+            const fieldIf = this.resolveIf(ctx, fieldConfig);
 
-            const fieldSnap =
-                !(fieldConfig.condition?.if && !ctx.compute(fieldConfig.condition.if!))
-                    ? ctx.read(fieldParser, fieldOption)
-                    : ctx.result(fieldConfig.condition?.default, 0);
+            const fieldSnap = fieldIf
+                ? ctx.read(fieldParser, fieldOption)
+                : ctx.result(fieldConfig.default, 0);
 
             const [ fieldValue ] = fieldSnap;
             Reflect.set(section, fieldName, fieldValue);
@@ -100,19 +120,20 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
             const fieldParser = this.resolveParser(ctx, fieldConfig.type);
-            const fieldOption = fieldConfig.option;
+            const fieldOption = this.resolveOption(ctx, fieldConfig);
+            const fieldIf = this.resolveIf(ctx, fieldConfig);
 
             const fieldValue = Reflect.get(value, fieldName);
 
             if (fieldName === 'itemType') {
-                console.log('itemType')
+                console.log('itemType');
             }
-            const fieldSnap =
-                // todo: why judge condition on write?
-                !(fieldConfig.condition?.if && !ctx.compute(fieldConfig.condition.if!))
-                    ? ctx.write(fieldParser, fieldValue, fieldOption)
-                    // todo: why use default on write?
-                    : ctx.result(fieldConfig.condition?.default, 0);
+
+            // todo: why judge condition on write?
+            const fieldSnap = fieldIf
+                ? ctx.write(fieldParser, fieldValue, fieldOption)
+                // todo: why use default on write?
+                : ctx.result(fieldConfig.default, 0);
 
             const [ fieldValue2 ] = fieldSnap;
 
@@ -129,10 +150,10 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
     }
 }
 
-export function getStructParser<T extends StructObject>(option: StructParserConfig<T>): StructParser<T> {
-    return new StructParser(option);
-}
+const StructParserCreator = createParserCreator(StructParser);
 
 export {
-    StructParser as Struct,
+    StructParserCreator,
+    StructParserCreator as Struct,
+    StructParserCreator as struct,
 };

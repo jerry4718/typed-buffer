@@ -1,14 +1,12 @@
 import 'reflect-metadata';
-import { Constructor, getInheritedMetadata, getPrototypeMetadata, isExtendFrom, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
+import { BaseParser, isParserClass, isParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption } from '../context/types.ts';
-import { StructField, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
-import { BaseParser } from '../context/base-parser.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
+import { StructField, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
+import { Constructor, getInheritedMetadata, getPrototypeMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
 
 const kParserTarget = Symbol('@@ParserTarget') as MetadataKey<Partial<ContextOption>>;
 const kParserCached = Symbol('@@ParserCached') as MetadataKey<StructParser<SafeAny>>;
-// 处理递归问题
-// const kParserGetter = Symbol('@@kParserGetter') as MetadataKey<() => StructParser<SafeAny>>;
 const kParserFields = Symbol('@@ParserFields') as MetadataKey<FieldConfig<SafeAny, SafeAny>[]>;
 
 export const defineClassDecorator = (decorator: ClassDecorator): ClassDecorator => decorator;
@@ -23,7 +21,6 @@ export function ParserTarget<T extends object>(config: Partial<ContextOption>) {
         const parser = convertTypedParser(klass);
 
         Reflect.defineMetadata(kParserCached, parser, klass);
-        // Reflect.defineMetadata(kParserGetter, () => parser, klass);
     }
 
     return defineClassDecorator(decorator as ClassDecorator);
@@ -50,7 +47,7 @@ function convertTypedParser<T extends object>(klass: Constructor<T>): StructPars
             const fieldName = fieldItem.name;
             const composedIndex = composedFields.findIndex(composed => composed.name === fieldName);
             const composeTo = composedIndex > -1
-                ? composedFields[ composedIndex ]
+                ? composedFields[composedIndex]
                 : {} as LocalField;
             Object.assign(composeTo, fieldItem);
             if (composedIndex === -1) composedFields.push(composeTo);
@@ -75,7 +72,7 @@ function ensureFieldConfig<K extends string | symbol, T>(proto: object, property
     const fieldIndex = fields.findIndex(field => field.name === propertyKey);
 
     const ensureConfig = fieldIndex > -1
-        ? fields[ fieldIndex ]
+        ? fields[fieldIndex]
         : { name: propertyKey } as FieldConfig<K, T>;
 
     if (fieldIndex === -1) fields.push(ensureConfig);
@@ -90,36 +87,40 @@ function createFieldTypeDecorator<T>(parser: FieldConfig<string | symbol, T>['ty
     });
 }
 
-export function FieldType<T>(input: PrimitiveParser<T>): PropertyDecorator
-export function FieldType<T>(input: ContextCompute<BaseParser<T> | { new(): T }>): PropertyDecorator
-export function FieldType<T, O>(input: { new(option: O): BaseParser<T> }, option: O): PropertyDecorator
-export function FieldType<T>(input: { new(): T }): PropertyDecorator
+export function FieldType<T>(parser: PrimitiveParser<T>): PropertyDecorator
+export function FieldType<T, O>(parserCreator: (option: O) => BaseParser<T>, config: O): PropertyDecorator
+export function FieldType<T, O>(parserClass: { new(option: O): BaseParser<T> }, config: O): PropertyDecorator
+export function FieldType<T>(typeClass: { new(): T }): PropertyDecorator
+export function FieldType<T>(parserSwitch: ContextCompute<BaseParser<T> | { new(): T }>): PropertyDecorator
 export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
     // 原始数据类型的Parser实例
     if (input instanceof PrimitiveParser) {
         return createFieldTypeDecorator(input);
     }
+    // createParserCreator创建而来的creator
+    if (isParserCreator(input)) {
+        return createFieldTypeDecorator(input(config));
+    }
     // BaseParser类型的子类class
-    if (isExtendFrom(input, BaseParser as Constructor<BaseParser<T>>)) {
+    if (isParserClass(input)) {
         return createFieldTypeDecorator(Reflect.construct(input, [ config ]));
     }
     // 已经标记了ParserTarget的class
-    // + 如果存在循环依赖，这里判断不到，所以在下面部分，将type指定为动态
+    // + 如果存在循环引用，这里会无法正确判断，所以在下面部分，将type指定为动态
     if (Reflect.hasOwnMetadata(kParserCached, input)) {
         return createFieldTypeDecorator(Reflect.getOwnMetadata(kParserCached, input));
     }
 
-    // 此时input签名应该是ContextCompute<BaseParser<T> | { new(): T }>
-
+    // 此时input签名应该是ContextCompute<BaseParser<T> | { new(): T }>或者循环引用
     return createFieldTypeDecorator((context, scope) => {
         // 处理循环依赖(如果存在循环依赖，这里应该已经加载完毕)
         if (Reflect.hasOwnMetadata(kParserCached, input)) {
             return Reflect.getOwnMetadata(kParserCached, input);
         }
-        // 确保ContextCompute可以正常执行，
+        // 确保parserSwitch可以正常执行，
         const parser = input(context, scope);
 
-        // 这里执行结果也可能是装饰器处理过的class，所以再进行一次判断
+        // 这里执行结果也可能是装饰器处理过的class，所以再对parser进行一次判断
         if (Reflect.hasOwnMetadata(kParserCached, parser)) {
             return Reflect.getOwnMetadata(kParserCached, parser);
         }
@@ -135,10 +136,10 @@ export function FieldOption<T>(option: Partial<ContextOption>) {
     });
 }
 
-export function FieldCondition<T>(condition: ContextCompute<boolean>, defaultValue?: T) {
+export function FieldIf<T>(condition: boolean | ContextCompute<boolean>, defaultValue?: T | ContextCompute<T>) {
     return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
         const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
-        Object.assign(fieldConfig, { condition: { if: condition, default: defaultValue } });
+        Object.assign(fieldConfig, { if: condition, default: defaultValue });
     });
 }
 

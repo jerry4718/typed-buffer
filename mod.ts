@@ -7,5 +7,6 @@ export * from './src/coding/codings.ts';
 
 export * from './src/parse/struct-parser.ts';
 
+export * from './src/context/types.ts';
 export * from './src/context/parser-context.ts';
 export * from './src/decorate/decorator.ts';

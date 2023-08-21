@@ -1,15 +1,25 @@
-import { isBoolean, isString, isSymbol } from '../utils/type-util.ts';
+import { Endian } from '../common.ts';
+import { isBoolean, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
 import { ContextCompute, ContextOption, ParserContext } from './types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
-import { Endian } from '../common.ts';
 import { BaseParser } from './base-parser.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 
+// 探测当前运行环境的端序情况
+function nativeEndianness(): Endian {
+    const testBuffer = new ArrayBuffer(2);
+    new Uint16Array(testBuffer).fill(0x0102);
+    const [ left, right ] = new Uint8Array(testBuffer);
+    if (left === 1 && right === 2) return 'be';
+    if (left === 2 && right === 1) return 'le';
+    throw Error('never');
+}
+
 const defaultContextOption: ContextOption = {
-    offset: 0,
+    point: 0,
     consume: true,
     ends: 0x00,
-    endian: 'be',
+    endian: nativeEndianness(),
 };
 
 export interface SnapInfo {
@@ -32,12 +42,6 @@ export type ValueSnap<T> =
     & WithValue<T>
     & WithSnap
     & SnapInfo;
-
-export interface ParserOptionComposable {
-    pos?: number,
-    ends?: number,
-    endian?: Endian,
-}
 
 export function createSnap(byteStart: number, byteSize: number): SnapInfo {
     const byteEnd = byteStart + byteSize;
@@ -69,21 +73,22 @@ export function createResult<T>(value: T, snap: SnapInfo): ValueSnap<T> {
     );
 }
 
-function createChainAccessor<T extends object>(space: boolean, ...upward: (T | undefined)[]): T {
+function createChainAccessor<T extends object>(space: boolean, ...access: (T | undefined)[]): T {
     const target = {} as T;
+    const chain = access.filter(s => !isUndefined(s));
 
     function has<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K): boolean {
-        if (space && Object.hasOwn(target, propKey)) return true;
-        for (const scope of upward) {
-            if (scope && Object.hasOwn(scope, propKey)) return true;
+        if (space && propKey in target) return true;
+        for (const scope of chain) {
+            if (scope && propKey in scope) return true;
         }
         return false;
     }
 
     function get<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, receiver: SafeAny): T[K] | undefined {
-        if (space && Object.hasOwn(target, propKey)) return Reflect.get(target, propKey, receiver);
-        for (const scope of upward) {
-            if (scope && Object.hasOwn(scope, propKey)) return Reflect.get(scope, propKey, receiver);
+        if (space && propKey in target) return Reflect.get(target, propKey, receiver);
+        for (const scope of chain) {
+            if (scope && propKey in scope) return Reflect.get(scope, propKey, receiver);
         }
         return undefined;
     }
@@ -104,15 +109,13 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
         const scope = createChainAccessor(true, parent?.scope);
         const option = createChainAccessor(false, ...options, parent?.option, rootOption);
 
-        const byteStart = option.offset!;
+        const byteStart = option.point!;
         let byteSize = 0;
 
         function read<T>(parser: BaseParser<T>, readOption?: ContextOption): ValueSnap<T> {
-            const ctx = context.derive(
-                createChainAccessor(false, readOption, parser.option, { offset: byteStart + byteSize })
-            );
+            const ctx = context.derive(readOption, parser.option, { point: byteStart + byteSize });
             try {
-                const value = parser.read(ctx, ctx.option.offset);
+                const value = parser.read(ctx, ctx.option.point);
                 if (!ctx.option.consume) return ctx.result(value, 0);
                 const readSize = parser instanceof PrimitiveParser
                     ? parser.byteSize
@@ -125,11 +128,9 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
         }
 
         function write<T>(parser: BaseParser<T>, value: T, writeOption?: ContextOption): ValueSnap<T> {
-            const ctx = context.derive(
-                createChainAccessor(false, writeOption, parser.option, { offset: byteStart + byteSize })
-            );
+            const ctx = context.derive(writeOption, parser.option, { point: byteStart + byteSize });
             try {
-                parser.write(ctx, value, ctx.option.offset);
+                parser.write(ctx, value, ctx.option.point);
                 if (!ctx.option.consume) return ctx.result(value, 0);
                 const writeSize = parser instanceof PrimitiveParser
                     ? parser.byteSize
@@ -155,7 +156,7 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
         }
 
         function result<T>(value: T, size = byteSize): ValueSnap<T> {
-            return createResult(value, createSnap(option.offset, size));
+            return createResult(value, createSnap(option.point, size));
         }
 
         return Object.defineProperties(context, {

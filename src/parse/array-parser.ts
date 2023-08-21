@@ -1,7 +1,7 @@
+import { AdvancedParser, BaseParser, BaseParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ValueSnap } from '../context/parser-context.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { isBoolean, isNumber, isObject, isUndefined } from '../utils/type-util.ts';
-import { AdvancedParser, BaseParser, BaseParserConfig } from '../context/base-parser.ts';
 import { PrimitiveParser, Uint8 } from './primitive-parser.ts';
 
 export type ArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
@@ -145,7 +145,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             // 回到初始位置，写入正确的size
             const [ dataStart ] = ctx.take;
             const afterSize = ctx.size;
-            this.writeConfigNumber(ctx, size, afterSize - beforeSize, { offset: dataStart, consume: false });
+            this.writeConfigNumber(ctx, size, afterSize - beforeSize, { point: dataStart, consume: false });
         }
 
         if (!isUndefined(ends)) {
@@ -162,10 +162,10 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
     }
 }
 
-export function createArrayParser<T>(config: ArrayParserConfig<T>) {
-    return new ArrayParser<T>(config);
-}
+const ArrayParserCreator = createParserCreator(ArrayParser);
 
 export {
-    ArrayParser as Array,
+    ArrayParserCreator,
+    ArrayParserCreator as Array,
+    ArrayParserCreator as array,
 };

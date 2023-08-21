@@ -10,7 +10,7 @@ export type ScopeAccessor =
 export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor) => Result
 
 export type ContextOption = {
-    offset: number,
+    point: number, // fixed, cannot computable
     consume: boolean,
     ends: number,
     endian: Endian,

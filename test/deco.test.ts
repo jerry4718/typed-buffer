@@ -1,37 +1,35 @@
+import { FieldExpose, FieldIf, FieldType, ParserTarget } from '../mod.ts';
 import * as t from '../mod.ts';
 
-@t.ParserTarget({ endian: 'le' })
+@ParserTarget({ endian: 'be' })
 class Person {
-    @t.FieldType(t.String, { size: t.Uint8, coding: t.Utf8 })
+    @FieldType(t.String, { size: t.Uint8, coding: t.Utf8 })
     name!: string;
 
-    @t.FieldType(t.Uint8)
+    @FieldType(t.Uint8)
     age!: number;
 
-    @t.FieldType(t.Float32)
-    @t.FieldOption({ endian: 'be' })
+    @FieldType(t.Float32)
     height!: number;
 
-    @t.FieldType(t.Float64)
-    @t.FieldOption({ endian: 'be' })
+    @FieldType(t.Float64)
     money!: number;
 
-    /** todo: 根据顶部的endian配置，这里应该读作 Uint16LE */
-    @t.FieldType(t.Uint16)
-    @t.FieldExpose()
+    @FieldType(t.Uint16)
+    @FieldExpose()
     itemType!: number;
 
-    @t.FieldType(t.Uint8)
-    @t.FieldExpose()
+    @FieldType(t.Uint16)
+    @FieldExpose()
     itemCount!: number;
 
-    @t.FieldType((_, scope) => {
+    @FieldType(({ scope }: t.ParserContext) => {
         const option = { count: () => scope.itemCount as number };
-        if (scope.itemType === 1) return new t.Uint32BEArray(option);
-        if (scope.itemType === 2) return new t.Uint32LEArray(option);
+        if (scope.itemType === 1) return t.Uint32Array(option);
+        if (scope.itemType === 2) return t.Uint32Array(option);
         throw Error(`unknown itemType case ${scope.itemType}`);
     })
-    @t.FieldCondition(
+    @FieldIf(
         (_, scope) => scope.itemCount as number > 0,
         Uint32Array.of(),
     )
@@ -39,7 +37,7 @@ class Person {
 }
 
 const testPerson: Omit<Person, 'itemType'> = {
-    name: '123~~~!!!@@@我淦啊',
+    name: 'jerry',
     age: 29,
     height: 1.75,
     money: 9968.22322233,

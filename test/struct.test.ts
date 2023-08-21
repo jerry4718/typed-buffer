@@ -1,9 +1,9 @@
 import { createContext } from '../src/context/parser-context.ts';
 import { ArrayParser } from '../src/parse/array-parser.ts';
 import { Float32, Float64, Uint8 } from '../src/parse/primitive-parser.ts';
-import { getStringParser } from '../src/parse/string-parser.ts';
-import { getStructParser } from '../src/parse/struct-parser.ts';
-import { bu64s, bu64les, u32les, u32bes } from '../src/parse/typed-array-parser.ts';
+import { StringParser } from '../src/parse/string-parser.ts';
+import { StructParser } from '../src/parse/struct-parser.ts';
+import { u32bes, u32les } from '../src/parse/typed-array-parser.ts';
 
 type MusicInfo = {
     name: string,
@@ -58,9 +58,9 @@ const testStructItems2: Pick<PersonStruct, 'itemType'> = {
     itemType: 2,
 };
 
-const TestStructParser = getStructParser<PersonStruct>({
+const TestStructParser = new StructParser<PersonStruct>({
     fields: [
-        { name: 'name', type: getStringParser({ size: Uint8 }) },
+        { name: 'name', type: new StringParser({ size: Uint8 }) },
         { name: 'age', type: Uint8 },
         { name: 'height', type: Float32 },
         { name: 'money', type: Float64 },
@@ -71,8 +71,8 @@ const TestStructParser = getStructParser<PersonStruct>({
             type: (_, scope) => {
                 const option = { count: () => scope.itemCount as number };
                 switch (scope.itemType) {
-                    case 1: return new u32les(option);
-                    case 2: return new u32bes(option);
+                    case 1: return u32les(option);
+                    case 2: return u32bes(option);
                 }
                 throw Error(`unknown itemType case ${scope.itemType}`);
             },
