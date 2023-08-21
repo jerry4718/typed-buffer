@@ -2,9 +2,9 @@
   "name": "binary-parser",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "type": "module",
   "scripts": {
+    "test:deco": "npx ts-node --esm --swc ./test/deco.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -12,5 +12,9 @@
   "dependencies": {
     "@codec-bytes/ascii": "^3.0.0",
     "reflect-metadata": "^0.1.13"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.3.78",
+    "@swc/wasm": "^1.3.75"
   }
 }

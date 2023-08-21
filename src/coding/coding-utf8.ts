@@ -1,4 +1,4 @@
-import { Coding } from './face.ts';
+import { type Coding } from './face.ts';
 
 export const CodingUtf8: Coding = {
     decode(bytes) {

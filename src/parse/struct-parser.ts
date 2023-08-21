@@ -18,24 +18,42 @@ export type StructParserConfig<T> =
     & { type?: new () => T }
     & { fields: StructField<T, keyof T>[] }
 
-export const FieldSnapKey = Symbol.for('@@KeyFieldSnap');
+export const kStructReadSnap = Symbol.for('@@StructReadSnap');
+export const kStructReadKeys = Symbol.for('@@StructReadKeys');
+export const kStructWriteSnap = Symbol.for('@@StructWriteSnap');
+export const kStructWriteKeys = Symbol.for('@@StructWriteKeys');
 
-export type StructObject = object;
-export type StructSnap<T extends StructObject> = { [K in keyof T]: ValueSnap<T[K]> };
+export type StructSnap<T extends object> = { [K in keyof T]: ValueSnap<T[K]> };
 
-function setStructSnap<T extends StructObject>(from: T, snap: StructSnap<T>): boolean {
-    return Reflect.set(from, FieldSnapKey, snap);
+export function getStructReadSnap<T extends object>(target: T): StructSnap<T> | undefined {
+    const structReadKeys: (keyof T)[] = Reflect.getOwnMetadata(kStructReadKeys, target);
+    if (!structReadKeys) return undefined;
+    const structSnap = {} as StructSnap<T>;
+    for (const structReadKey of structReadKeys) {
+        Reflect.set(
+            structSnap,
+            structReadKey,
+            Reflect.getOwnMetadata(kStructReadSnap, target, structReadKey as string),
+        );
+    }
+    return structSnap;
 }
 
-function hasStructSnap<T extends StructObject>(from: T): boolean {
-    return Reflect.has(from, FieldSnapKey);
+export function getStructWriteSnap<T extends object>(target: T): StructSnap<T> | undefined {
+    const structWriteKeys: (keyof T)[] = Reflect.getOwnMetadata(kStructWriteKeys, target);
+    if (!structWriteKeys) return undefined;
+    const structSnap = {} as StructSnap<T>;
+    for (const structWriteKey of structWriteKeys) {
+        Reflect.set(
+            structSnap,
+            structWriteKey,
+            Reflect.getOwnMetadata(kStructWriteSnap, target, structWriteKey as string),
+        );
+    }
+    return structSnap;
 }
 
-export function getStructSnap<T extends StructObject>(from: T): StructSnap<T> | undefined {
-    return Reflect.get(from, FieldSnapKey) as StructSnap<T>;
-}
-
-export class StructParser<T extends StructObject> extends AdvancedParser<T> {
+export class StructParser<T extends object> extends AdvancedParser<T> {
     private readonly fields: StructField<T, keyof T>[];
     private readonly creator: new () => T;
 
@@ -76,8 +94,8 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
     read(ctx: ParserContext): T {
         const section = Reflect.construct(this.creator, []);
 
-        const structSnap = {} as StructSnap<T>;
-        setStructSnap(section, structSnap);
+        const fieldNames: (keyof T)[] = [];
+        Reflect.defineMetadata(kStructReadKeys, fieldNames, section);
 
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
@@ -98,24 +116,16 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
                 ctx.expose(fieldExpose, fieldName, fieldValue);
             }
 
-            Reflect.set(structSnap, fieldName, fieldSnap);
+            if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
+            Reflect.defineMetadata(kStructReadSnap, fieldSnap, section, fieldName as string);
         }
 
         return section;
     }
 
     write(ctx: ParserContext, value: T): T {
-        const structSnap = hasStructSnap(value)
-            ? (() => {
-                const oldSnap = getStructSnap(value)!;
-                Reflect.ownKeys(oldSnap).forEach(key => Reflect.deleteProperty(oldSnap, key));
-                return oldSnap;
-            })()
-            : (() => {
-                const newSnap = {} as StructSnap<T>;
-                setStructSnap(value, newSnap);
-                return newSnap;
-            })();
+        const fieldNames: (keyof T)[] = [];
+        Reflect.defineMetadata(kStructWriteKeys, fieldNames, value);
 
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
@@ -143,7 +153,8 @@ export class StructParser<T extends StructObject> extends AdvancedParser<T> {
                 ctx.expose(fieldExpose, fieldName, fieldValue2);
             }
 
-            Reflect.set(structSnap, fieldName, fieldSnap);
+            if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
+            Reflect.defineMetadata(kStructWriteSnap, fieldSnap, value, fieldName as string);
         }
 
         return value;

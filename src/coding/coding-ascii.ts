@@ -1,5 +1,5 @@
 /// <reference path="../../types/@codec-bytes/ascii.d.ts" />
-import { Coding } from './face.ts';
+import { type Coding } from './face.ts';
 import { _encode, _decode } from '@codec-bytes/ascii';
 
 export const CodingAscii: Coding = {

@@ -1,4 +1,4 @@
-import { FieldExpose, FieldIf, FieldType, ParserTarget } from '../mod.ts';
+import { FieldExpose, FieldIf, FieldType, getStructReadSnap, getStructWriteSnap, ParserTarget } from '../mod.ts';
 import * as t from '../mod.ts';
 
 @ParserTarget({ endian: 'be' })
@@ -58,11 +58,14 @@ const writeContext = t.createContext(new ArrayBuffer(100));
 const writeSpec = writeContext.write(PersonArrayParser, data);
 
 console.log(writeSpec.value);
-// console.log(getStructSpec(writeSpec.value)?.name?.offset);
-// console.log(getStructSpec(writeSpec.value)?.age?.offset);
 console.log(writeContext.buffer.slice(...writeSpec.pos));
 
 const readContext = t.createContext(writeContext.buffer);
-const readSpec = readContext.read(PersonArrayParser);
+const [ readData ] = readContext.read(PersonArrayParser);
 
-console.log(readSpec.value);
+console.log(getStructWriteSnap(data[0]));
+console.log(getStructWriteSnap(data[1]));
+console.log(getStructReadSnap(readData[0]));
+console.log(getStructReadSnap(readData[1]));
+
+Reflect.defineMetadata("name: 111", 111, [])
