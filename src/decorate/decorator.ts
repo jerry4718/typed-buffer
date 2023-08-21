@@ -14,7 +14,7 @@ export const definePropertyDecorator = (decorator: PropertyDecorator): PropertyD
 export const defineMethodDecorator = (decorator: MethodDecorator): MethodDecorator => decorator;
 export const defineParameterDecorator = (decorator: ParameterDecorator): ParameterDecorator => decorator;
 
-export function ParserTarget<T extends object>(config: Partial<ContextOption>) {
+export function ParserTarget<T extends object>(config: Partial<ContextOption> = {}) {
     function decorator<Class extends Constructor<T>>(klass: Class) {
         Reflect.defineMetadata(kParserTarget, config, klass);
 
@@ -126,6 +126,13 @@ export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
         }
 
         return parser;
+    });
+}
+
+export function FieldPoint<T>(point: number | ContextCompute<number>) {
+    return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
+        const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
+        Object.assign(fieldConfig, { point });
     });
 }
 
