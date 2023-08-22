@@ -8,8 +8,8 @@ export class CompressedTransform {
     compressionType!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(NodeTransform<compressionType>),
-        size: ({ scope }: t.ParserContext) => (scope.numNodes as number),
+        item: NodeTransform<compressionType>,
+        count: ({ scope }: t.ParserContext) => (scope.numNodes as number),
     })
     nodeTransforms!: NodeTransform<compressionType>;
 }

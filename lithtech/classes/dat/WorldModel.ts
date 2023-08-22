@@ -1,6 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
-import { Str2H } from '../common/Str2H.ts';
+import { FieldType, ParserTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { Plane } from './Plane.ts';
 import { Surface } from './Surface.ts';
@@ -15,8 +14,8 @@ export class WorldModel {
     @FieldType(t.Uint32)
     worldInfoFlag!: number;
 
-    @FieldType(Str2H)
-    worldNameBox!: Str2H;
+    @FieldType(t.String, { size: t.Uint16 })
+    worldName!: string;
 
     @FieldType(t.Uint32)
     numPoints!: number;
@@ -65,43 +64,43 @@ export class WorldModel {
 
     @FieldType(t.Array, {
         item: t.String({ ends: 0 }),
-        size: ({ scope }: t.ParserContext) => (scope[`numTextureNames`] as number),
+        count: ({ scope }: t.ParserContext) => scope.numTextureNames,
     })
     textureNames!: string;
 
     @FieldType(t.Array, {
         item: t.Uint8,
-        size: ({ scope }: t.ParserContext) => (scope[`numPolygons`] as number),
+        count: ({ scope }: t.ParserContext) => scope.numPolygons,
     })
     vertexCountList!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(Plane),
-        size: ({ scope }: t.ParserContext) => (scope[`numPlanes`] as number),
+        item: Plane,
+        count: ({ scope }: t.ParserContext) => scope.numPlanes,
     })
     planes!: Plane;
 
     @FieldType(t.Array, {
-        item: getTypedParser(Surface),
-        size: ({ scope }: t.ParserContext) => (scope[`numSurfaces`] as number),
+        item: Surface,
+        count: ({ scope }: t.ParserContext) => scope.numSurfaces,
     })
     surfaces!: Surface;
 
     @FieldType(t.Array, {
-        item: getTypedParser(WorldModelPolygon<vertexCountList[Index]>),
-        size: ({ scope }: t.ParserContext) => (scope[`numPolygons`] as number),
+        item: WorldModelPolygon<vertexCountList[Index]>,
+        count: ({ scope }: t.ParserContext) => scope.numPolygons,
     })
     polygons!: WorldModelPolygon;
 
     @FieldType(t.Array, {
-        item: getTypedParser(WorldModelNode),
-        size: ({ scope }: t.ParserContext) => (scope[`numNodes`] as number),
+        item: WorldModelNode,
+        count: ({ scope }: t.ParserContext) => scope.numNodes,
     })
     nodes!: WorldModelNode;
 
     @FieldType(t.Array, {
-        item: getTypedParser(Vector3),
-        size: ({ scope }: t.ParserContext) => (scope[`numPoints`] as number),
+        item: Vector3,
+        count: ({ scope }: t.ParserContext) => scope.numPoints,
     })
     points!: Vector3;
 
@@ -110,8 +109,4 @@ export class WorldModel {
 
     @FieldType(t.Uint32)
     sections!: number;
-
-    get worldName() {
-        return this.worldNameBox.data;
-    }
 }

@@ -4,6 +4,7 @@ import { ContextCompute, ContextOption, ParserContext } from './types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { BaseParser } from './base-parser.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
+import { Ascii } from '../coding/codings.ts';
 
 // 探测当前运行环境的端序情况
 function nativeEndianness(): Endian {
@@ -20,6 +21,7 @@ const defaultContextOption: ContextOption = {
     consume: true,
     ends: 0x00,
     endian: nativeEndianness(),
+    coding: Ascii,
 };
 
 export interface SnapInfo {

@@ -1,14 +1,14 @@
 import * as t from '../../../mod.ts';
-import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
+import { FieldType, ParserTarget } from '../../../mod.ts';
 import { BoneSet } from './BoneSet.ts';
 import { MeshType } from './enums/MeshType.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 import { VertexContainer } from './VertexContainer.ts';
+import { BaseMesh } from './BaseMesh.ts';
 
 @ParserTarget()
-export class SkeletalMesh {
-    @FieldType(LodMeshInfo)
-    meshInfo!: LodMeshInfo;
+export class SkeletalMesh extends BaseMesh {
+    declare meshInfo: LodMeshInfo;
 
     @FieldType(t.Uint8)
     reIndexedBone!: number;
@@ -23,14 +23,14 @@ export class SkeletalMesh {
     matrixPalette!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(VertexContainer<meshInfo.numVertexes, meshInfo.maxBonesPerFace, vertexTypeMap[Index], MeshType.SkeletalMesh>),
+        item: VertexContainer<meshInfo.numVertexes, meshInfo.maxBonesPerFace, vertexTypeMap[Index], MeshType.SkeletalMesh>,
         size: 4,
     })
     vertexContainer!: VertexContainer;
 
     @FieldType(t.Array, {
         item: t.Uint16,
-        size: ({ scope }: t.ParserContext) => (scope[`meshInfo.numFaces * 3`] as number),
+        count: ({ scope }: t.ParserContext) => scope.meshInfo.numFaces * 3,
     })
     vertexIndex!: number;
 
@@ -38,8 +38,8 @@ export class SkeletalMesh {
     numBoneSet!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(BoneSet),
-        size: ({ scope }: t.ParserContext) => (scope[`numBoneSet`] as number),
+        item: BoneSet,
+        count: ({ scope }: t.ParserContext) => scope.numBoneSet,
     })
     boneSet!: BoneSet;
 }

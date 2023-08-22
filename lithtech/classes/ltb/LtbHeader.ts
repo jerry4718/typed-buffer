@@ -1,6 +1,5 @@
 import * as t from '../../../mod.ts';
 import { FieldType, ParserTarget } from '../../../mod.ts';
-import { Str2H } from '../common/Str2H.ts';
 
 @ParserTarget()
 export class LtbHeader {
@@ -10,10 +9,7 @@ export class LtbHeader {
     @FieldType(t.Uint16)
     fileVersion!: number;
 
-    @FieldType(t.Array, {
-        item: t.Uint32,
-        size: 4,
-    })
+    @FieldType(t.Array, { item: t.Uint32, count: 4 })
     spaceUnknown!: number;
 
     @FieldType(t.Int32)
@@ -64,13 +60,9 @@ export class LtbHeader {
     @FieldType(t.Int32)
     animationDataSize!: number;
 
-    @FieldType(Str2H)
-    commandStringBox!: Str2H;
+    @FieldType(t.String, { size: t.Uint16 })
+    commandString!: string;
 
     @FieldType(t.Float32)
     internalRadius!: number;
-
-    get commandString() {
-        return this.commandStringBox.data;
-    }
 }

@@ -13,7 +13,7 @@ export class WorldModelPolygon {
 
     @FieldType(t.Array, {
         item: t.Uint32,
-        size: ({ scope }: t.ParserContext) => (scope[`numVertexIndexes`] as number),
+        count: ({ scope }: t.ParserContext) => scope.numVertexIndexes,
     })
     vertexIndexes!: number;
 }

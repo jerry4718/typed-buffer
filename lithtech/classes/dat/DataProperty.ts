@@ -2,13 +2,12 @@ import * as t from '../../../mod.ts';
 import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
 import { ColorRgb } from '../common/ColorRgb.ts';
 import { Quaternion } from '../common/Quaternion.ts';
-import { Str2H } from '../common/Str2H.ts';
 import { Vector3 } from '../common/Vector3.ts';
 
 @ParserTarget()
 export class DataProperty {
-    @FieldType(Str2H)
-    nameBox!: Str2H;
+    @FieldType(t.String, { size: t.Uint16 })
+    name!: string;
 
     @FieldType(t.Uint8)
     typeCode!: number;
@@ -20,7 +19,7 @@ export class DataProperty {
     dataLength!: number;
 
     @FieldType(({ scope }: t.ParserContext) => {
-        if (scope.typeCode === 0) return getTypedParser(Str2H);
+        if (scope.typeCode === 0) return t.String({ size: t.Uint16 });
         if (scope.typeCode === 1) return getTypedParser(Vector3);
         if (scope.typeCode === 2) return getTypedParser(ColorRgb);
         if (scope.typeCode === 3) return t.Float32;
@@ -29,11 +28,7 @@ export class DataProperty {
         if (scope.typeCode === 6) return t.Int32;
         if (scope.typeCode === 7) return getTypedParser(Quaternion);
     })
-    data!: Str2H | Vector3 | ColorRgb | number | Quaternion;
-
-    get name() {
-        return this.nameBox.data;
-    }
+    data!: string | Vector3 | ColorRgb | number | Quaternion;
 
     get type() {
         if (this.typeCode === 0x00) return 'string';

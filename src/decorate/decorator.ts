@@ -95,7 +95,7 @@ export function FieldType<T>(parserSwitch: ContextCompute<BaseParser<T> | { new(
 export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
     // 原始数据类型的Parser实例
     if (input instanceof PrimitiveParser) {
-        return createFieldTypeDecorator(input);
+        return createFieldTypeDecorator<T>(input);
     }
     // createParserCreator创建而来的creator
     if (isParserCreator(input)) {
@@ -108,11 +108,11 @@ export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
     // 已经标记了ParserTarget的class
     // + 如果存在循环引用，这里会无法正确判断，所以在下面部分，将type指定为动态
     if (Reflect.hasOwnMetadata(kParserCached, input)) {
-        return createFieldTypeDecorator(Reflect.getOwnMetadata(kParserCached, input));
+        return createFieldTypeDecorator<T>(Reflect.getOwnMetadata(kParserCached, input));
     }
 
     // 此时input签名应该是ContextCompute<BaseParser<T> | { new(): T }>或者循环引用
-    return createFieldTypeDecorator((context, scope) => {
+    return createFieldTypeDecorator<T>((context, scope) => {
         // 处理循环依赖(如果存在循环依赖，这里应该已经加载完毕)
         if (Reflect.hasOwnMetadata(kParserCached, input)) {
             return Reflect.getOwnMetadata(kParserCached, input);

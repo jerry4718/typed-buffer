@@ -19,7 +19,7 @@ export class NodeTransform {
             if (scope.compressionType === AnimCompressionType.CmpRelevant16) return getTypedParser(CompressedVector3);
             if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return getTypedParser(Vector3);
         },
-        size: ({ scope }: t.ParserContext) => (scope.numPositions as number),
+        count: ({ scope }: t.ParserContext) => (scope.numPositions as number),
     })
     positions!: Vector3 | CompressedVector3;
 
@@ -32,7 +32,7 @@ export class NodeTransform {
             if (scope.compressionType === AnimCompressionType.CmpRelevant16) return getTypedParser(CompressedQuaternion);
             if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return getTypedParser(CompressedQuaternion);
         },
-        size: ({ scope }: t.ParserContext) => (scope[`numRotations`] as number),
+        count: ({ scope }: t.ParserContext) => scope.numRotations,
     })
     rotations!: Quaternion | CompressedQuaternion;
 }

@@ -1,6 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
-import { Str2H } from '../common/Str2H.ts';
+import { FieldType, ParserTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { CompressedTransform } from './CompressedTransform.ts';
 import { AnimCompressionType } from './enums/AnimCompressionType.ts';
@@ -12,8 +11,8 @@ export class Animation {
     @FieldType(Vector3)
     extents!: Vector3;
 
-    @FieldType(Str2H)
-    nameBox!: Str2H;
+    @FieldType(t.String, { size: t.Uint16 })
+    name!: string;
 
     @FieldType(t.Int32)
     compressionType!: number;
@@ -25,8 +24,8 @@ export class Animation {
     numKeyframes!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(Keyframe),
-        size: ({ scope }: t.ParserContext) => (scope[`numKeyframes`] as number),
+        item: Keyframe,
+        count: ({ scope }: t.ParserContext) => scope.numKeyframes,
     })
     keyframes!: Keyframe;
 
@@ -35,8 +34,4 @@ export class Animation {
         return CompressedTransform<compressionType>;
     })
     nodeKeyframeTransforms!: UncompressedTransform<numKeyframes> | CompressedTransform<compressionType>;
-
-    get name() {
-        return this.nameBox.data;
-    }
 }

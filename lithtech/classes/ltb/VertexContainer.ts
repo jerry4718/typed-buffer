@@ -1,7 +1,7 @@
-import { DataMark } from './enum.ts';
 import * as t from '../../../mod.ts';
-import { FieldIf, FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
+import { FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
 import { VertexInfo } from './VertexInfo.ts';
+import { DataMark } from './enums/DataMark.ts';
 
 @ParserTarget()
 export class VertexContainer {
@@ -9,17 +9,17 @@ export class VertexContainer {
     numVertexes!: number;
     @FieldValue(t.Uint32)
     maxBonesPerFace!: number;
-    @FieldValue(t.Uint32)
+    @FieldValue(({ scope }: t.ParserContext) => scope.vertexTypeMap[scope.$index])
     mask!: number;
     @FieldValue(t.Uint32)
     meshType!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(VertexInfo),
-        count: ({ scope }: t.ParserContext) => (scope.numVertexes as number),
+        item: VertexInfo,
+        count: ({ scope }: t.ParserContext) => scope.mesgInfo.numVertexes,
     })
-    @FieldIf(({ scope }: t.ParserContext) => scope.mask as number > 0)
-    vertexInfos!: VertexInfo;
+    @FieldIf(({ scope }: t.ParserContext) => scope.mask > 0)
+    vertexInfos!: VertexInfo[];
 
     get hasPosition() {
         return (this.mask >> DataMark.LiePosition & 1) > 0;

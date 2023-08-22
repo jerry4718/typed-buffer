@@ -1,19 +1,18 @@
 import * as t from '../../../mod.ts';
-import { FieldIf, FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
-import { Str2H } from '../common/Str2H.ts';
+import { FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
 import { RenderObject } from './RenderObject.ts';
 
 @ParserTarget()
 export class Piece {
-    @FieldType(Str2H)
-    nameBox!: Str2H;
+    @FieldType(t.String, { size: t.Uint16 })
+    name!: string;
 
     @FieldType(t.Uint32)
     numLod!: number;
 
     @FieldType(t.Array, {
         item: t.Float32,
-        size: ({ scope }: t.ParserContext) => (scope[`numLod`] as number),
+        count: ({ scope }: t.ParserContext) => scope.numLod,
     })
     @FieldIf(({ scope }: t.ParserContext) => scope.numLod !== 0)
     lodDistances!: number;
@@ -25,13 +24,9 @@ export class Piece {
     lodMax!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(RenderObject),
-        size: ({ scope }: t.ParserContext) => (scope[`numLod`] as number),
+        item: RenderObject,
+        count: ({ scope }: t.ParserContext) => scope.numLod,
     })
     @FieldIf(({ scope }: t.ParserContext) => scope.numLod !== 0)
     renderObjects!: RenderObject;
-
-    get name() {
-        return this.nameBox.data;
-    }
 }

@@ -11,14 +11,14 @@ export class UncompressedTransform {
     isVertexAnimation!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(Vector3),
-        size: ({ scope }: t.ParserContext) => (scope.numKeyframes as number),
+        item: Vector3,
+        count: ({ scope }: t.ParserContext) => (scope.numKeyframes as number),
     })
     positions!: Vector3;
 
     @FieldType(t.Array, {
-        item: getTypedParser(Quaternion),
-        size: ({ scope }: t.ParserContext) => (scope.numKeyframes as number),
+        item: Quaternion,
+        count: ({ scope }: t.ParserContext) => (scope.numKeyframes as number),
     })
     rotations!: Quaternion;
 }

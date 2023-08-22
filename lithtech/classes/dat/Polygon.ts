@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
+import { FieldType, ParserTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { Plane } from './Plane.ts';
 
@@ -12,8 +12,8 @@ export class Polygon {
     numVertexesPos!: number;
 
     @FieldType(t.Array, {
-        item: getTypedParser(Vector3),
-        size: ({ scope }: t.ParserContext) => (scope[`numVertexesPos`] as number),
+        item: Vector3,
+        count: ({ scope }: t.ParserContext) => (scope.numVertexesPos as number),
     })
     vertexesPos!: Vector3;
 }

@@ -37,7 +37,7 @@ export class RenderObject {
 
     @FieldType(t.Array, {
         item: t.Uint8,
-        size: ({ scope }: t.ParserContext) => (scope[`numUsedNodes`] as number),
+        count: ({ scope }: t.ParserContext) => scope.numUsedNodes,
     })
     usedNodes!: number;
 }
