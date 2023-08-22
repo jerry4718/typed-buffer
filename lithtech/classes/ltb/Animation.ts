@@ -3,7 +3,7 @@ import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
 import { Str2H } from '../common/Str2H.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { CompressedTransform } from './CompressedTransform.ts';
-import { AnimCompressionType } from './enum.ts';
+import { AnimCompressionType } from './enums/AnimCompressionType.ts';
 import { Keyframe } from './Keyframe.ts';
 import { UncompressedTransform } from './UncompressedTransform.ts';
 

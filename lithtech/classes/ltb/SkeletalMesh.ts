@@ -1,7 +1,7 @@
 import * as t from '../../../mod.ts';
 import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
 import { BoneSet } from './BoneSet.ts';
-import { MeshType } from './enum.ts';
+import { MeshType } from './enums/MeshType.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 import { VertexContainer } from './VertexContainer.ts';
 

@@ -4,7 +4,7 @@ import { Animation } from './Animation.ts';
 import { AnimBinding } from './AnimBinding.ts';
 import { BoneNode } from './BoneNode.ts';
 import { ChildModel } from './ChildModel.ts';
-import { ObbVersion } from './enum.ts';
+import { ObbVersion } from './enums/ObbVersion.ts';
 import { ModelOBB } from './ModelOBB.ts';
 import { Piece } from './Piece.ts';
 import { Socket } from './Socket.ts';

@@ -4,7 +4,7 @@ import { CompressedQuaternion } from '../common/CompressedQuaternion.ts';
 import { CompressedVector3 } from '../common/CompressedVector3.ts';
 import { Quaternion } from '../common/Quaternion.ts';
 import { Vector3 } from '../common/Vector3.ts';
-import { AnimCompressionType } from './enum.ts';
+import { AnimCompressionType } from './enums/AnimCompressionType.ts';
 
 @ParserTarget()
 export class NodeTransform {
