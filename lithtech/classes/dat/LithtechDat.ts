@@ -22,26 +22,26 @@ export class LithtechDat {
     worldTree!: WorldTree;
 
     @FieldType(WorldData)
-    @FieldPoint(({ scope }: t.ParserContext) => (scope[`header.world_data_pos`] as number))
+    @FieldPoint(({ scope }: t.ParserContext) => ((scope.header as DatHeader).worldDataPos as number))
     worldData!: WorldData;
 
     @FieldType(t.Uint32)
-    @FieldPoint(({ scope }: t.ParserContext) => (scope[`header.blind_data_pos`] as number))
+    @FieldPoint(({ scope }: t.ParserContext) => ((scope.header as DatHeader).blindDataPos as number))
     blindDataLen!: number;
 
     @FieldType(LightData)
-    @FieldPoint(({ scope }: t.ParserContext) => (scope[`header.light_data_pos`] as number))
+    @FieldPoint(({ scope }: t.ParserContext) => ((scope.header as DatHeader).lightDataPos as number))
     lightData!: LightData;
 
     @FieldType(PhysicsData)
-    @FieldPoint(({ scope }: t.ParserContext) => (scope[`header.physics_data_pos`] as number))
+    @FieldPoint(({ scope }: t.ParserContext) => ((scope.header as DatHeader).physicsDataPos as number))
     physicsData!: PhysicsData;
 
     @FieldType(ParticleData)
-    @FieldPoint(({ scope }: t.ParserContext) => (scope[`header.particle_data_pos`] as number))
+    @FieldPoint(({ scope }: t.ParserContext) => ((scope.header as DatHeader).particleDataPos as number))
     particleData!: ParticleData;
 
     @FieldType(RenderData)
-    @FieldPoint(({ scope }: t.ParserContext) => (scope[`header.render_data_pos`] as number))
+    @FieldPoint(({ scope }: t.ParserContext) => ((scope.header as DatHeader).renderDataPos as number))
     renderData!: RenderData;
 }
