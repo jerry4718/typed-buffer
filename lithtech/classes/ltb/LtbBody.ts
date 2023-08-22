@@ -82,5 +82,4 @@ export class LtbBody {
         size: ({ scope }: t.ParserContext) => (scope[`numAnimBindings`] as number),
     })
     animBindings!: AnimBinding;
-
 }

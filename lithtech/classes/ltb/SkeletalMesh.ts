@@ -42,5 +42,4 @@ export class SkeletalMesh {
         size: ({ scope }: t.ParserContext) => (scope[`numBoneSet`] as number),
     })
     boneSet!: BoneSet;
-
 }

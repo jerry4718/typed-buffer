@@ -49,5 +49,4 @@ export class VertexInfo {
     @FieldType(Vector3)
     @FieldIf(({ scope }: t.ParserContext) => scope.scope.hasBasisVector)
     t!: Vector3;
-
 }

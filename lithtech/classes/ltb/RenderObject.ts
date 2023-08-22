@@ -40,5 +40,4 @@ export class RenderObject {
         size: ({ scope }: t.ParserContext) => (scope[`numUsedNodes`] as number),
     })
     usedNodes!: number;
-
 }
