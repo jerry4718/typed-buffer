@@ -1,11 +1,9 @@
 import { Endian } from '../common.ts';
 import { ValueSnap } from './parser-context.ts';
+import { Coding } from '../coding/face.ts';
+import { SafeAny } from '../utils/prototype-util.ts';
 
-export type ScopeAccessor =
-    & object
-    & { [k in string]: unknown }
-    & { [k in symbol]: unknown }
-    & { [k in number]: unknown }
+export type ScopeAccessor = Record<string | symbol | number, SafeAny>
 
 export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor) => Result
 
@@ -14,11 +12,12 @@ export type ContextOption = {
     consume: boolean,
     ends: number,
     endian: Endian,
+    coding: Coding,
 };
 
 export type ParserContext = {
     buffer: ArrayBuffer,
-    option: ContextOption,
+    option: Required<ContextOption>,
     scope: ScopeAccessor,
     read<T>(parser: Parser<T>, option?: Partial<ContextOption>): ValueSnap<T>,
     write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): ValueSnap<T>,

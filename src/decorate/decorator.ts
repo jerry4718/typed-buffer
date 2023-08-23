@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { BaseParser, isParserClass, isParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption } from '../context/types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
-import { StructField, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
+import { StructFieldActual, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
 import { Constructor, getInheritedMetadata, getPrototypeMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
 
 const kParserTarget = Symbol('@@ParserTarget') as MetadataKey<Partial<ContextOption>>;
@@ -14,7 +14,7 @@ export const definePropertyDecorator = (decorator: PropertyDecorator): PropertyD
 export const defineMethodDecorator = (decorator: MethodDecorator): MethodDecorator => decorator;
 export const defineParameterDecorator = (decorator: ParameterDecorator): ParameterDecorator => decorator;
 
-export function ParserTarget<T extends object>(config: Partial<ContextOption>) {
+export function ParserTarget<T extends object>(config: Partial<ContextOption> = {}) {
     function decorator<Class extends Constructor<T>>(klass: Class) {
         Reflect.defineMetadata(kParserTarget, config, klass);
 
@@ -26,7 +26,7 @@ export function ParserTarget<T extends object>(config: Partial<ContextOption>) {
     return defineClassDecorator(decorator as ClassDecorator);
 }
 
-type FieldConfig<K extends number | string | symbol, T> = StructField<{ [k in K]: T }, K>
+type FieldConfig<K extends number | string | symbol, T> = StructFieldActual<{ [k in K]: T }, K>
 
 export function getTypedParser<T extends object>(klass: Constructor<T>): StructParser<T> {
     return Reflect.getOwnMetadata(kParserCached, klass);
@@ -88,14 +88,13 @@ function createFieldTypeDecorator<T>(parser: FieldConfig<string | symbol, T>['ty
 }
 
 export function FieldType<T>(parser: PrimitiveParser<T>): PropertyDecorator
-export function FieldType<T, O>(parserCreator: (option: O) => BaseParser<T>, config: O): PropertyDecorator
-export function FieldType<T, O>(parserClass: { new(option: O): BaseParser<T> }, config: O): PropertyDecorator
-export function FieldType<T>(typeClass: { new(): T }): PropertyDecorator
-export function FieldType<T>(parserSwitch: ContextCompute<BaseParser<T> | { new(): T }>): PropertyDecorator
+export function FieldType<T, O>(parserCreator: ((option: O) => BaseParser<T>) | (new(option: O) => BaseParser<T>), config: O): PropertyDecorator
+export function FieldType<T>(typeClass: new() => T): PropertyDecorator
+export function FieldType(parserSwitch: ContextCompute<BaseParser<SafeAny> | (new () => SafeAny)>): PropertyDecorator
 export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
     // 原始数据类型的Parser实例
     if (input instanceof PrimitiveParser) {
-        return createFieldTypeDecorator(input);
+        return createFieldTypeDecorator<T>(input);
     }
     // createParserCreator创建而来的creator
     if (isParserCreator(input)) {
@@ -108,11 +107,11 @@ export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
     // 已经标记了ParserTarget的class
     // + 如果存在循环引用，这里会无法正确判断，所以在下面部分，将type指定为动态
     if (Reflect.hasOwnMetadata(kParserCached, input)) {
-        return createFieldTypeDecorator(Reflect.getOwnMetadata(kParserCached, input));
+        return createFieldTypeDecorator<T>(Reflect.getOwnMetadata(kParserCached, input));
     }
 
     // 此时input签名应该是ContextCompute<BaseParser<T> | { new(): T }>或者循环引用
-    return createFieldTypeDecorator((context, scope) => {
+    return createFieldTypeDecorator<T>((context, scope) => {
         // 处理循环依赖(如果存在循环依赖，这里应该已经加载完毕)
         if (Reflect.hasOwnMetadata(kParserCached, input)) {
             return Reflect.getOwnMetadata(kParserCached, input);
@@ -126,6 +125,13 @@ export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
         }
 
         return parser;
+    });
+}
+
+export function FieldPoint<T>(point: number | ContextCompute<number>) {
+    return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
+        const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
+        Object.assign(fieldConfig, { point });
     });
 }
 
@@ -147,5 +153,19 @@ export function FieldExpose<T>(expose: boolean | string | symbol = true) {
     return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
         const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
         Object.assign(fieldConfig, { expose });
+    });
+}
+
+export function FieldSetup<T>(name: string, value: SafeAny | ContextCompute<SafeAny>) {
+    return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
+        const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
+        Object.assign(fieldConfig, { setup: [ ...(fieldConfig.setup || []), { name, value } ] });
+    });
+}
+
+export function FieldResolve<T>(resolve: T | ContextCompute<T>) {
+    return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
+        const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
+        Object.assign(fieldConfig, { resolve });
     });
 }
