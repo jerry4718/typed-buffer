@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { Plane } from './Plane.ts';
 import { Surface } from './Surface.ts';
@@ -63,46 +63,47 @@ export class WorldModel {
     numTextureNames!: number;
 
     @FieldType(t.Array, {
-        item: t.String({ ends: 0 }),
-        count: ({ scope }: t.ParserContext) => scope.numTextureNames,
+        item: t.String({ ends: 0x00 }),
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numTextureNames,
     })
-    textureNames!: string;
+    textureNames!: string[];
 
     @FieldType(t.Array, {
         item: t.Uint8,
-        count: ({ scope }: t.ParserContext) => scope.numPolygons,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPolygons,
     })
-    vertexCountList!: number;
+    @FieldExpose()
+    vertexCountList!: number[];
 
     @FieldType(t.Array, {
         item: Plane,
-        count: ({ scope }: t.ParserContext) => scope.numPlanes,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPlanes,
     })
-    planes!: Plane;
+    planes!: Plane[];
 
     @FieldType(t.Array, {
         item: Surface,
-        count: ({ scope }: t.ParserContext) => scope.numSurfaces,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numSurfaces,
     })
-    surfaces!: Surface;
+    surfaces!: Surface[];
 
     @FieldType(t.Array, {
-        item: WorldModelPolygon<vertexCountList[Index]>,
-        count: ({ scope }: t.ParserContext) => scope.numPolygons,
+        item: WorldModelPolygon,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPolygons,
     })
-    polygons!: WorldModelPolygon;
+    polygons!: WorldModelPolygon[];
 
     @FieldType(t.Array, {
         item: WorldModelNode,
-        count: ({ scope }: t.ParserContext) => scope.numNodes,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numNodes,
     })
-    nodes!: WorldModelNode;
+    nodes!: WorldModelNode[];
 
     @FieldType(t.Array, {
         item: Vector3,
-        count: ({ scope }: t.ParserContext) => scope.numPoints,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPoints,
     })
-    points!: Vector3;
+    points!: Vector3[];
 
     @FieldType(t.Int32)
     rootNodeIndex!: number;

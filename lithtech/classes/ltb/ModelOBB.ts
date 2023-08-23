@@ -18,7 +18,7 @@ export class ModelOBB {
     iNode!: number;
 
     @FieldType(t.Float32)
-    @FieldIf(({ scope }: t.ParserContext) => {
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => {
         if (scope.header.version === ObbVersion.V23) return false;
         if (scope.header.version === ObbVersion.V24) return true;
         if (scope.header.version === ObbVersion.V25) return true;

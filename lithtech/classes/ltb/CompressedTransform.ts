@@ -4,12 +4,9 @@ import { NodeTransform } from './NodeTransform.ts';
 
 @ParserTarget()
 export class CompressedTransform {
-    @FieldValue(t.Int32)
-    compressionType!: number;
-
     @FieldType(t.Array, {
-        item: NodeTransform<compressionType>,
-        count: ({ scope }: t.ParserContext) => (scope.numNodes as number),
+        item: NodeTransform,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.header.numNodes,
     })
-    nodeTransforms!: NodeTransform<compressionType>;
+    nodeTransforms!: NodeTransform[];
 }

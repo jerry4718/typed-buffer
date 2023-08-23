@@ -1,63 +1,58 @@
 import * as t from '../../../mod.ts';
-import { FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
-import { VertexInfo } from './VertexInfo.ts';
+import { FieldExpose, FieldIf, FieldResolve, FieldType, ParserTarget } from '../../../mod.ts';
 import { DataMark } from './enums/DataMark.ts';
+import { VertexInfo } from './VertexInfo.ts';
 
 @ParserTarget()
 export class VertexContainer {
-    @FieldValue(t.Uint32)
-    numVertexes!: number;
-    @FieldValue(t.Uint32)
-    maxBonesPerFace!: number;
-    @FieldValue(({ scope }: t.ParserContext) => scope.vertexTypeMap[scope.$index])
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexTypeMap[scope.$index])
+    @FieldExpose()
     mask!: number;
-    @FieldValue(t.Uint32)
-    meshType!: number;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LiePosition & 1) > 0)
+    @FieldExpose()
+    hasPosition!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LieNormal & 1) > 0)
+    @FieldExpose()
+    hasNormal!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LieColor & 1) > 0)
+    @FieldExpose()
+    hasColor!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LieUv1 & 1) > 0)
+    @FieldExpose()
+    hasUv1!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LieUv2 & 1) > 0)
+    @FieldExpose()
+    hasUv2!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LieUv3 & 1) > 0)
+    @FieldExpose()
+    hasUv3!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LieUv4 & 1) > 0)
+    @FieldExpose()
+    hasUv4!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask >> DataMark.LieBasisVector & 1) > 0)
+    @FieldExpose()
+    hasBasisVector!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition || scope.hasNormal || scope.hasColor || scope.hasBasisVector)
+    @FieldExpose()
+    isVertexUsed!: boolean;
+
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv1 || scope.hasUv2 || scope.hasUv3 || scope.hasUv4)
+    @FieldExpose()
+    isFaceVertexUsed!: boolean;
 
     @FieldType(t.Array, {
         item: VertexInfo,
-        count: ({ scope }: t.ParserContext) => scope.mesgInfo.numVertexes,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.mesgInfo.numVertexes,
     })
-    @FieldIf(({ scope }: t.ParserContext) => scope.mask > 0)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.mask > 0)
     vertexInfos!: VertexInfo[];
-
-    get hasPosition() {
-        return (this.mask >> DataMark.LiePosition & 1) > 0;
-    }
-
-    get hasNormal() {
-        return (this.mask >> DataMark.LieNormal & 1) > 0;
-    }
-
-    get hasColor() {
-        return (this.mask >> DataMark.LieColor & 1) > 0;
-    }
-
-    get hasUv1() {
-        return (this.mask >> DataMark.LieUv1 & 1) > 0;
-    }
-
-    get hasUv2() {
-        return (this.mask >> DataMark.LieUv2 & 1) > 0;
-    }
-
-    get hasUv3() {
-        return (this.mask >> DataMark.LieUv3 & 1) > 0;
-    }
-
-    get hasUv4() {
-        return (this.mask >> DataMark.LieUv4 & 1) > 0;
-    }
-
-    get hasBasisVector() {
-        return (this.mask >> DataMark.LieBasisVector & 1) > 0;
-    }
-
-    get isVertexUsed() {
-        return this.hasPosition || this.hasNormal || this.hasColor || this.hasBasisVector;
-    }
-
-    get isFaceVertexUsed() {
-        return this.hasUv1 || this.hasUv2 || this.hasUv3 || this.hasUv4;
-    }
 }

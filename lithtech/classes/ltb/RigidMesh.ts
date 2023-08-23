@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldSetup, FieldType, ParserTarget } from '../../../mod.ts';
 import { MeshType } from './enums/MeshType.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 import { VertexContainer } from './VertexContainer.ts';
@@ -16,15 +16,13 @@ export class RigidMesh extends BaseMesh {
     @FieldType(t.Uint32)
     bone!: number;
 
-    @FieldType(t.Array, {
-        item: VertexContainer<meshInfo.numVertexes, meshInfo.maxBonesPerFace, vertexTypeMap[Index], MeshType.RigidMesh>,
-        size: 4,
-    })
-    vertexContainer!: VertexContainer;
+    @FieldType(t.Array, { item: VertexContainer, count: 4 })
+    @FieldSetup('meshType', MeshType.RigidMesh)
+    vertexContainer!: VertexContainer[];
 
     @FieldType(t.Array, {
         item: t.Uint16,
-        count: ({ scope }: t.ParserContext) => ((scope.meshInfo as LodMeshInfo).numFaces * 3),
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.meshInfo.numFaces * 3,
     })
-    vertexIndex!: number;
+    vertexIndex!: number[];
 }

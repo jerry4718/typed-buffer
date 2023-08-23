@@ -8,7 +8,7 @@ export class WorldModelRenderBlock {
     name!: string;
 
     @FieldType(t.Array, { item: RenderBlock, count: t.Uint32, })
-    renderBlocks!: RenderBlock;
+    renderBlocks!: RenderBlock[];
 
     @FieldType(t.Uint32)
     noChildFlag!: number;

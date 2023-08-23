@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, getTypedParser, ParserTarget } from '../../../mod.ts';
+import { FieldType, ParserTarget } from '../../../mod.ts';
 import { CompressedQuaternion } from '../common/CompressedQuaternion.ts';
 import { CompressedVector3 } from '../common/CompressedVector3.ts';
 import { Quaternion } from '../common/Quaternion.ts';
@@ -8,31 +8,31 @@ import { AnimCompressionType } from './enums/AnimCompressionType.ts';
 
 @ParserTarget()
 export class NodeTransform {
-    @FieldValue(t.Int32)
-    compressionType!: number;
     @FieldType(t.Uint32)
     numPositions!: number;
 
     @FieldType(t.Array, {
-        item: ({ scope }: t.ParserContext) => {
-            if (scope.compressionType === AnimCompressionType.CmpRelevant) return getTypedParser(Vector3);
-            if (scope.compressionType === AnimCompressionType.CmpRelevant16) return getTypedParser(CompressedVector3);
-            if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return getTypedParser(Vector3);
+        item: (_: t.ParserContext, scope: t.ScopeAccessor) => {
+            if (scope.compressionType === AnimCompressionType.CmpRelevant) return Vector3;
+            if (scope.compressionType === AnimCompressionType.CmpRelevant16) return CompressedVector3;
+            if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return Vector3;
+            throw Error('cannot match [positions] type');
         },
-        count: ({ scope }: t.ParserContext) => (scope.numPositions as number),
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => (scope.numPositions as number),
     })
-    positions!: Vector3 | CompressedVector3;
+    positions!: Vector3[] | CompressedVector3[];
 
     @FieldType(t.Uint32)
     numRotations!: number;
 
     @FieldType(t.Array, {
-        item: ({ scope }: t.ParserContext) => {
-            if (scope.compressionType === AnimCompressionType.CmpRelevant) return getTypedParser(Quaternion);
-            if (scope.compressionType === AnimCompressionType.CmpRelevant16) return getTypedParser(CompressedQuaternion);
-            if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return getTypedParser(CompressedQuaternion);
+        item: (_: t.ParserContext, scope: t.ScopeAccessor) => {
+            if (scope.compressionType === AnimCompressionType.CmpRelevant) return Quaternion;
+            if (scope.compressionType === AnimCompressionType.CmpRelevant16) return CompressedQuaternion;
+            if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return CompressedQuaternion;
+            throw Error('cannot match [rotations] type');
         },
-        count: ({ scope }: t.ParserContext) => scope.numRotations,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numRotations,
     })
-    rotations!: Quaternion | CompressedQuaternion;
+    rotations!: Quaternion[] | CompressedQuaternion[];
 }

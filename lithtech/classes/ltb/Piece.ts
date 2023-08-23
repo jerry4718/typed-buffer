@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
 import { RenderObject } from './RenderObject.ts';
 
 @ParserTarget()
@@ -8,14 +8,14 @@ export class Piece {
     name!: string;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numLod!: number;
 
     @FieldType(t.Array, {
         item: t.Float32,
-        count: ({ scope }: t.ParserContext) => scope.numLod,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numLod,
     })
-    @FieldIf(({ scope }: t.ParserContext) => scope.numLod !== 0)
-    lodDistances!: number;
+    lodDistances!: number[];
 
     @FieldType(t.Uint32)
     lodMin!: number;
@@ -25,8 +25,7 @@ export class Piece {
 
     @FieldType(t.Array, {
         item: RenderObject,
-        count: ({ scope }: t.ParserContext) => scope.numLod,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numLod,
     })
-    @FieldIf(({ scope }: t.ParserContext) => scope.numLod !== 0)
-    renderObjects!: RenderObject;
+    renderObjects!: RenderObject[];
 }

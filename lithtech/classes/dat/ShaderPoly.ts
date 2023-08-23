@@ -6,7 +6,7 @@ import { Plane } from './Plane.ts';
 @ParserTarget()
 export class ShaderPoly {
     @FieldType(t.Array, { item: Vector3, count: t.Uint8 })
-    vertexesPos!: Vector3;
+    vertexesPos!: Vector3[];
 
     @FieldType(Plane)
     plane!: Plane;

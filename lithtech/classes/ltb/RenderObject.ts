@@ -11,8 +11,8 @@ export class RenderObject {
     @FieldType(t.Uint32)
     numTextures!: number;
 
-    @FieldType(t.Array, { item: t.Uint32, size: 4 })
-    textures!: number;
+    @FieldType(t.Array, { item: t.Uint32, count: 4 })
+    textures!: number[];
 
     @FieldType(t.Uint32)
     renderStyle!: number;
@@ -23,7 +23,7 @@ export class RenderObject {
     @FieldType(t.Uint32)
     renderObjectType!: number;
 
-    @FieldType(({ scope }: t.ParserContext) => {
+    @FieldType((_: t.ParserContext, scope: t.ScopeAccessor) => {
         if (scope.renderObjectType === 4) return RigidMesh;
         if (scope.renderObjectType === 5) return SkeletalMesh;
         if (scope.renderObjectType === 6) return VertexAnimatedMesh;
@@ -37,7 +37,7 @@ export class RenderObject {
 
     @FieldType(t.Array, {
         item: t.Uint8,
-        count: ({ scope }: t.ParserContext) => scope.numUsedNodes,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numUsedNodes,
     })
-    usedNodes!: number;
+    usedNodes!: number[];
 }

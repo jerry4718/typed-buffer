@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { CompressedTransform } from './CompressedTransform.ts';
 import { AnimCompressionType } from './enums/AnimCompressionType.ts';
@@ -15,23 +15,25 @@ export class Animation {
     name!: string;
 
     @FieldType(t.Int32)
+    @FieldExpose()
     compressionType!: number;
 
     @FieldType(t.Uint32)
     interpolationTime!: number;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numKeyframes!: number;
 
     @FieldType(t.Array, {
         item: Keyframe,
-        count: ({ scope }: t.ParserContext) => scope.numKeyframes,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numKeyframes,
     })
-    keyframes!: Keyframe;
+    keyframes!: Keyframe[];
 
-    @FieldType(({ scope }: t.ParserContext) => {
-        if (scope.compressionType === AnimCompressionType.CmpNone.toI) return UncompressedTransform<numKeyframes>;
-        return CompressedTransform<compressionType>;
+    @FieldType((_: t.ParserContext, scope: t.ScopeAccessor) => {
+        if (scope.compressionType === AnimCompressionType.CmpNone) return UncompressedTransform;
+        return CompressedTransform;
     })
-    nodeKeyframeTransforms!: UncompressedTransform<numKeyframes> | CompressedTransform<compressionType>;
+    nodeKeyframeTransforms!: UncompressedTransform[] | CompressedTransform[];
 }

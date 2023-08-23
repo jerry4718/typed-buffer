@@ -11,11 +11,11 @@ export class LightData {
     blockSize!: Vector3;
 
     @FieldType(t.Array, { item: t.Uint32, count: 3 })
-    lookupSize!: number;
+    lookupSize!: number[];
 
     @FieldType(t.Uint32)
     numLightDataGrid!: number;
 
     @FieldType(t.Array, { item: t.Uint8, count: t.Uint32 })
-    lightDataGrid!: number;
+    lightDataGrid!: number[];
 }

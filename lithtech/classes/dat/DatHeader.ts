@@ -25,5 +25,5 @@ export class DatHeader {
     renderDataPos!: number;
 
     @FieldType(t.Array, { item: t.Uint32, count: 8 })
-    future!: number;
+    future!: number[];
 }

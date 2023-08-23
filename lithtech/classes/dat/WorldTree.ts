@@ -17,7 +17,7 @@ export class WorldTree {
     @FieldType(t.Uint32)
     dummyTerrainDepth!: number;
 
-    @FieldType(t.Array, { item: t.Uint8, count: ({ scope }: t.ParserContext) => (scope.childNumNodes as number * 0.125 + 1) })
+    @FieldType(t.Array, { item: t.Uint8, count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.childNumNodes * 0.125 + 1 })
     worldLayout!: number[];
 
     @FieldType(t.Uint32)
@@ -25,7 +25,7 @@ export class WorldTree {
 
     @FieldType(t.Array, {
         item: WorldModel,
-        count: ({ scope }: t.ParserContext) => scope.numWorldModels,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numWorldModels,
     })
-    worldModels!: WorldModel;
+    worldModels!: WorldModel[];
 }

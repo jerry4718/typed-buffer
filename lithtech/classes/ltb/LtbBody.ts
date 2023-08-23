@@ -28,7 +28,7 @@ export class LtbBody {
 
     @FieldType(t.Array, {
         item: ChildModel,
-        count: ({ scope }: t.ParserContext) => scope.numChildModels - 1,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numChildModels - 1,
     })
     childModels!: ChildModel[];
 

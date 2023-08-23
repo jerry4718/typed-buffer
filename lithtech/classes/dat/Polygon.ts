@@ -13,7 +13,7 @@ export class Polygon {
 
     @FieldType(t.Array, {
         item: Vector3,
-        count: ({ scope }: t.ParserContext) => (scope.numVertexesPos as number),
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numVertexesPos,
     })
-    vertexesPos!: Vector3;
+    vertexesPos!: Vector3[];
 }

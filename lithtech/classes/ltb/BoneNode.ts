@@ -17,5 +17,5 @@ export class BoneNode {
     bindMatrix!: Matrix;
 
     @FieldType(t.Array, { item: BoneNode, count: t.Uint32 })
-    children!: BoneNode;
+    children!: BoneNode[];
 }

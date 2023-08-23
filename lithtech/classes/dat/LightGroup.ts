@@ -14,7 +14,7 @@ export class LightGroup {
     @FieldType(t.Uint32)
     lenNIntensityData!: number;
 
-    @FieldType(t.Array, { item: t.Uint8, count: ({ scope }: t.ParserContext) => scope.lenNIntensityData })
+    @FieldType(t.Array, { item: t.Uint8, count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.lenNIntensityData })
     nIntensityData!: number[];
 
     @FieldType(t.Array, { item: LightMapSectionArray, count: t.Uint32 })

@@ -9,9 +9,6 @@ export class WorldModelNode {
     @FieldType(t.Uint16)
     reserved!: number;
 
-    @FieldType(t.Array, {
-        item: t.Int32,
-        size: 2,
-    })
-    nodeSidesIndices!: number;
+    @FieldType(t.Array, { item: t.Int32, count: 2, })
+    nodeSidesIndices!: number[];
 }

@@ -9,45 +9,45 @@ import { Vector2 } from '../common/Vector2.ts';
 @ParserTarget()
 export class VertexInfo {
     @FieldType(Vector3)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasPosition)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition)
     position!: Vector3;
 
     @FieldType(t.Array, {
         item: VertexWeightBlend,
-        count: ({ scope }: t.ParserContext) => scope.mesgInfo.maxBonesPerFace,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.meshInfo.maxBonesPerFace,
     })
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasPosition && scope.meshType === MeshType.SkeletalMesh)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition && scope.meshType === MeshType.SkeletalMesh)
     weightBlend!: VertexWeightBlend[];
 
     @FieldType(Vector3)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasNormal)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasNormal)
     normal!: Vector3;
 
     @FieldType(ColorRgba)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasColor)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasColor)
     color!: ColorRgba;
 
     @FieldType(Vector2)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasUv1)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv1)
     uv1!: Vector2;
 
     @FieldType(Vector2)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasUv2)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv2)
     uv2!: Vector2;
 
     @FieldType(Vector2)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasUv3)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv3)
     uv3!: Vector2;
 
     @FieldType(Vector2)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasUv4)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv4)
     uv4!: Vector2;
 
     @FieldType(Vector3)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasBasisVector)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasBasisVector)
     s!: Vector3;
 
     @FieldType(Vector3)
-    @FieldIf(({ scope }: t.ParserContext) => scope.hasBasisVector)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasBasisVector)
     t!: Vector3;
 }

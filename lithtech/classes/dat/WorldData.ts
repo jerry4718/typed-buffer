@@ -5,5 +5,5 @@ import { WorldDataItem } from './WorldDataItem.ts';
 @ParserTarget()
 export class WorldData {
     @FieldType(t.Array, { item: WorldDataItem, count: t.Uint32 })
-    worldDataList!: WorldDataItem;
+    worldDataList!: WorldDataItem[];
 }

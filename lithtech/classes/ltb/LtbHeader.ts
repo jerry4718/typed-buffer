@@ -10,7 +10,7 @@ export class LtbHeader {
     fileVersion!: number;
 
     @FieldType(t.Array, { item: t.Uint32, count: 4 })
-    spaceUnknown!: number;
+    spaceUnknown!: number[];
 
     @FieldType(t.Int32)
     version!: number;

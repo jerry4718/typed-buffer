@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, ParserTarget } from '../../../mod.ts';
 import { DataProperty } from './DataProperty.ts';
 
 @ParserTarget()
@@ -11,5 +11,5 @@ export class WorldDataItem {
     type!: string;
 
     @FieldType(t.Array, { item: DataProperty, count: t.Uint32 })
-    dataProperties!: DataProperty;
+    dataProperties!: DataProperty[];
 }

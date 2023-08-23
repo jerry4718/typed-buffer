@@ -6,12 +6,6 @@ export class WeightSet {
     @FieldType(t.String, { size: t.Uint16 })
     name!: string;
 
-    @FieldType(t.Uint32)
-    numNodes!: number;
-
-    @FieldType(t.Array, {
-        item: t.Float32,
-        count: ({ scope }: t.ParserContext) => (scope.numNodes as number),
-    })
-    nodeWeights!: number;
+    @FieldType(t.Array, { item: t.Float32, count: t.Uint32 })
+    nodeWeights!: number[];
 }

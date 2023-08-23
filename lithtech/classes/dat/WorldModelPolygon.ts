@@ -3,8 +3,6 @@ import { FieldType, ParserTarget } from '../../../mod.ts';
 
 @ParserTarget()
 export class WorldModelPolygon {
-    @FieldValue(t.Uint32)
-    numVertexIndexes!: number;
     @FieldType(t.Uint32)
     surfaceIndex!: number;
 
@@ -13,7 +11,7 @@ export class WorldModelPolygon {
 
     @FieldType(t.Array, {
         item: t.Uint32,
-        count: ({ scope }: t.ParserContext) => scope.numVertexIndexes,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexCountList[scope.$index],
     })
-    vertexIndexes!: number;
+    vertexIndexes!: number[];
 }

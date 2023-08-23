@@ -13,7 +13,7 @@ export class RenderSection {
     numTriangles!: number;
 
     @FieldType(t.String, { size: t.Uint16 })
-    textureEffect!: string;
+    textureEffect!: string[];
 
     @FieldType(t.Uint32)
     lightMapWidth!: number;
@@ -24,6 +24,6 @@ export class RenderSection {
     @FieldType(t.Uint32)
     lenLightMapData!: number;
 
-    @FieldType(t.Array, { item: t.Uint8, count: ({ scope }: t.ParserContext) => (scope.lenLightMapData as number) })
+    @FieldType(t.Array, { item: t.Uint8, count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.lenLightMapData })
     lightMapData!: number[];
 }
