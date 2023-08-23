@@ -1,6 +1,6 @@
 import { AdvancedParser, BaseParser, BaseParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
-import { isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
+import { assertType, isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
 import { ValueSnap } from '../context/parser-context.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 
@@ -12,7 +12,7 @@ export type StructFieldBasic<T, K extends keyof T> = {
 }
 
 export type StructFieldVirtual<T, K extends keyof T> = StructFieldBasic<T, K> & {
-    resolve?: T[K] | ContextCompute<T[K]>,
+    resolve: T[K] | ContextCompute<T[K]>,
 }
 
 export type StructFieldActual<T, K extends keyof T> = StructFieldBasic<T, K> & {
@@ -22,7 +22,7 @@ export type StructFieldActual<T, K extends keyof T> = StructFieldBasic<T, K> & {
     default?: T[K] | ContextCompute<T[K]>,
 };
 
-type StructField<T, K extends keyof T> =
+export type StructField<T, K extends keyof T> =
     | (StructFieldVirtual<T, K>)
     | (StructFieldActual<T, K>)
 
@@ -84,7 +84,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         throw Error('Cannot resolve that type as any Parser');
     }
 
-    resolveOption(ctx: ParserContext, fieldConfig: StructField<T, keyof T>): ContextOption {
+    resolveOption(ctx: ParserContext, fieldConfig: StructFieldActual<T, keyof T>): ContextOption {
         const composeOptions: Partial<ContextOption>[] = [];
         const inputOption = fieldConfig.option;
         const inputPoint = (fieldConfig as StructFieldActual<T, keyof T>).point;
@@ -124,26 +124,34 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         for (const fieldConfig of this.fields) {
             this.applySetup(ctx, fieldConfig);
             const fieldName = fieldConfig.name;
-            // todo: 处理resolve配置
-            const fieldParser = this.resolveParser(ctx, fieldConfig);
-            const fieldOption = this.resolveOption(ctx, fieldConfig);
-            const fieldIf = this.resolveIf(ctx, fieldConfig);
 
-            const fieldSnap = fieldIf
-                ? ctx.read(fieldParser, fieldOption)
-                : ctx.result(fieldConfig.default, 0);
+            if (Object.hasOwn(fieldConfig, 'resolve') && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
+                const fieldResolve = fieldConfig.resolve;
+                const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;
+                Reflect.set(section, fieldName, resolvedValue);
+            }
 
-            const [ fieldValue ] = fieldSnap;
-            Reflect.set(section, fieldName, fieldValue);
+            if (Object.hasOwn(fieldConfig, 'type') && assertType<StructFieldActual<T, keyof T>>(fieldConfig)) {
+                const fieldParser = this.resolveParser(ctx, fieldConfig);
+                const fieldOption = this.resolveOption(ctx, fieldConfig);
+                const fieldIf = this.resolveIf(ctx, fieldConfig);
 
+                const fieldSnap = fieldIf
+                    ? ctx.read(fieldParser, fieldOption)
+                    : ctx.result(fieldConfig.default, 0);
+
+                if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
+                Reflect.defineMetadata(kStructReadSnap, fieldSnap, section, fieldName as string);
+
+                const [ fieldValue ] = fieldSnap;
+                Reflect.set(section, fieldName, fieldValue);
+            }
+            const fieldValue = Reflect.get(section, fieldName);
             const fieldExpose = fieldConfig.expose;
 
             if (!isUndefined(fieldExpose)) {
                 ctx.expose(fieldExpose, fieldName, fieldValue);
             }
-
-            if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
-            Reflect.defineMetadata(kStructReadSnap, fieldSnap, section, fieldName as string);
         }
 
         return section;
@@ -156,33 +164,40 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         for (const fieldConfig of this.fields) {
             this.applySetup(ctx, fieldConfig);
             const fieldName = fieldConfig.name;
-            // todo: 处理resolve配置
-            const fieldParser = this.resolveParser(ctx, fieldConfig);
-            const fieldOption = this.resolveOption(ctx, fieldConfig);
-            const fieldIf = this.resolveIf(ctx, fieldConfig);
-
             const fieldValue = Reflect.get(value, fieldName);
 
-            if (fieldName === 'itemType') {
-                console.log('itemType');
+            if (Object.hasOwn(fieldConfig, 'resolve') && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
+                const fieldResolve = fieldConfig.resolve;
+                const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;
+                if (fieldValue !== resolvedValue) console.warn(`field [${String(fieldName)}] cannot compare with resolved`);
             }
 
-            // todo: why judge condition on write?
-            const fieldSnap = fieldIf
-                ? ctx.write(fieldParser, fieldValue, fieldOption)
-                // todo: why use default on write?
-                : ctx.result(fieldConfig.default, 0);
+            if (Object.hasOwn(fieldConfig, 'type') && assertType<StructFieldActual<T, keyof T>>(fieldConfig)) {
+                const fieldParser = this.resolveParser(ctx, fieldConfig);
+                const fieldOption = this.resolveOption(ctx, fieldConfig);
+                const fieldIf = this.resolveIf(ctx, fieldConfig);
 
-            const [ fieldValue2 ] = fieldSnap;
+                const fieldValue = Reflect.get(value, fieldName);
+
+                if (fieldName === 'itemType') {
+                    console.log('itemType');
+                }
+
+                // todo: why judge condition on write?
+                const fieldSnap = fieldIf
+                    ? ctx.write(fieldParser, fieldValue, fieldOption)
+                    // todo: why use default on write?
+                    : ctx.result(fieldConfig.default, 0);
+
+                if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
+                Reflect.defineMetadata(kStructWriteSnap, fieldSnap, value, fieldName as string);
+            }
 
             const fieldExpose = fieldConfig.expose;
 
             if (!isUndefined(fieldExpose)) {
-                ctx.expose(fieldExpose, fieldName, fieldValue2);
+                ctx.expose(fieldExpose, fieldName, fieldValue);
             }
-
-            if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
-            Reflect.defineMetadata(kStructWriteSnap, fieldSnap, value, fieldName as string);
         }
 
         return value;

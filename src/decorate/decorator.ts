@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { BaseParser, isParserClass, isParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption } from '../context/types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
-import { StructField, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
+import { StructFieldActual, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
 import { Constructor, getInheritedMetadata, getPrototypeMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
 
 const kParserTarget = Symbol('@@ParserTarget') as MetadataKey<Partial<ContextOption>>;
@@ -26,7 +26,7 @@ export function ParserTarget<T extends object>(config: Partial<ContextOption> = 
     return defineClassDecorator(decorator as ClassDecorator);
 }
 
-type FieldConfig<K extends number | string | symbol, T> = StructField<{ [k in K]: T }, K>
+type FieldConfig<K extends number | string | symbol, T> = StructFieldActual<{ [k in K]: T }, K>
 
 export function getTypedParser<T extends object>(klass: Constructor<T>): StructParser<T> {
     return Reflect.getOwnMetadata(kParserCached, klass);
@@ -88,10 +88,9 @@ function createFieldTypeDecorator<T>(parser: FieldConfig<string | symbol, T>['ty
 }
 
 export function FieldType<T>(parser: PrimitiveParser<T>): PropertyDecorator
-export function FieldType<T, O>(parserCreator: (option: O) => BaseParser<T>, config: O): PropertyDecorator
-export function FieldType<T, O>(parserClass: { new(option: O): BaseParser<T> }, config: O): PropertyDecorator
-export function FieldType<T>(typeClass: { new(): T }): PropertyDecorator
-export function FieldType<T>(parserSwitch: ContextCompute<BaseParser<T> | { new(): T }>): PropertyDecorator
+export function FieldType<T, O>(parserCreator: ((option: O) => BaseParser<T>) | (new(option: O) => BaseParser<T>), config: O): PropertyDecorator
+export function FieldType<T>(typeClass: new() => T): PropertyDecorator
+export function FieldType(parserSwitch: ContextCompute<BaseParser<SafeAny> | (new () => SafeAny)>): PropertyDecorator
 export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
     // 原始数据类型的Parser实例
     if (input instanceof PrimitiveParser) {
@@ -154,5 +153,19 @@ export function FieldExpose<T>(expose: boolean | string | symbol = true) {
     return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
         const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
         Object.assign(fieldConfig, { expose });
+    });
+}
+
+export function FieldSetup<T>(name: string, value: SafeAny | ContextCompute<SafeAny>) {
+    return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
+        const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
+        Object.assign(fieldConfig, { setup: [ ...(fieldConfig.setup || []), { name, value } ] });
+    });
+}
+
+export function FieldResolve<T>(resolve: T | ContextCompute<T>) {
+    return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
+        const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
+        Object.assign(fieldConfig, { resolve });
     });
 }
