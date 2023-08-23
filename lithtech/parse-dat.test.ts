@@ -12,6 +12,9 @@ const LithtechDatParser = t.getTypedParser(LithtechDat);
 
 const readContext = t.createContext(datBuffer.buffer, { DebugStruct: [ LithtechDat, RenderData, RenderBlock, WorldModelRenderBlock ] });
 
-const lithtechDat = readContext.read(LithtechDatParser);
+console.time('lithtechDat');
+const [ lithtechDat, snap ] = readContext.read(LithtechDatParser);
+console.timeEnd('lithtechDat');
 
 console.log(lithtechDat);
+console.log(snap);

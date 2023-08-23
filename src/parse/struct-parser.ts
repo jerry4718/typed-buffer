@@ -130,7 +130,12 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         for (const fieldConfig of this.fields) {
             this.applySetup(ctx, fieldConfig);
             const fieldName = fieldConfig.name;
-            ctx.expose(true, '$path', `${parentPath}.${fieldName as string}`);
+            const fieldPath = `${parentPath}.${fieldName as string}`;
+            ctx.expose(true, '$path', fieldPath);
+
+            if (ctx.option.DebugStruct.includes(this.creator)) {
+                console.time(fieldPath);
+            }
 
             if (Object.hasOwn(fieldConfig, 'resolve') && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
                 const fieldResolve = fieldConfig.resolve;
@@ -139,6 +144,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
             }
 
             if (Object.hasOwn(fieldConfig, 'type') && assertType<StructFieldActual<T, keyof T>>(fieldConfig)) {
+
                 const fieldParser = this.resolveParser(ctx, fieldConfig);
                 const fieldOption = this.resolveOption(ctx, fieldConfig);
                 const fieldIf = this.resolveIf(ctx, fieldConfig);
@@ -152,16 +158,16 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
 
                 const [ fieldValue ] = fieldSnap;
                 Reflect.set(section, fieldName, fieldValue);
-
-                if (ctx.option.DebugStruct.includes(this.creator)) {
-                    console.log(parentPath, fieldName);
-                }
             }
             const fieldValue = Reflect.get(section, fieldName);
             const fieldExpose = fieldConfig.expose;
 
             if (!isUndefined(fieldExpose)) {
                 ctx.expose(fieldExpose, fieldName, fieldValue);
+            }
+
+            if (ctx.option.DebugStruct.includes(this.creator)) {
+                console.timeEnd(fieldPath);
             }
         }
 

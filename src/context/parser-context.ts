@@ -77,49 +77,67 @@ export function createResult<T>(value: T, snap: SnapInfo): ValueSnap<T> {
     );
 }
 
-const kAccessChain = Symbol.for('@@AccessChain');
+const kAccessChain = Symbol('@@AccessChain');
+const kAccessTarget = Symbol('@@AccessTarget');
 
-function createChainAccessor<T extends object>(space: boolean, ...access: (T | undefined)[]): Required<T> {
+function createChainAccessor<T extends object>(useTarget: boolean, ...accesses: (T | undefined)[]): Required<T> {
     const chain: T[] = [];
-    for (let i = 1; i < arguments.length; i++) {
-        const arg = arguments[i];
+    for (const arg of accesses) {
         if (isUndefined(arg)) continue;
-        if (!space && !Object.keys(arg).length) continue;
-        if (kAccessChain in arg) {
-            const copy = slice.call(Reflect.get(arg, kAccessChain));
+        const hasAccessTarget = kAccessTarget in arg;
+        const hasAccessChain = kAccessChain in arg;
+        if (useTarget && hasAccessTarget) {
+            const target = Reflect.get(arg, kAccessTarget) as T;
+            if (!chain.includes(target)) push.call(chain, target);
+        }
+        if (hasAccessChain) {
+            const copy = Reflect.get(arg, kAccessChain) as T[];
             push.apply(chain, copy.filter(ctm => !chain.includes(ctm)));
+        }
+        if (hasAccessTarget || hasAccessChain) {
             continue;
         }
-        chain.push(arg);
+        if (!useTarget && !Object.keys(arg).length) continue;
+        if (!chain.includes(arg)) push.call(chain, arg);
     }
 
-    const target = { [kAccessChain]: chain } as T;
+    const target = {} as T;
 
-    if (chain.length > 10) {
-        console.log(chain.length);
-    }
+    const hasKeys = new Set<string | symbol>();
+
+    // if (chain.length > 10) {
+    //     console.log(chain.length);
+    // }
 
     function has<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K): boolean {
+        if (propKey === kAccessTarget) return true;
         if (propKey === kAccessChain) return true;
-        if (space && propKey in target) return true;
+        if (useTarget && propKey in target) return true;
+        if (hasKeys.has(propKey)) return true;
         for (const scope of chain) {
-            if (scope && propKey in scope) return true;
+            if (propKey in scope) {
+                hasKeys.add(propKey);
+                return true;
+            }
         }
         return false;
     }
 
     function get<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, receiver: SafeAny): T[K] | undefined {
-        if (propKey === kAccessChain) return [ target, ...chain ] as T[K];
-        if (space && propKey in target) return Reflect.get(target, propKey, receiver);
+        if (propKey === kAccessTarget) return target as T[K];
+        if (propKey === kAccessChain) return chain as T[K];
+        if (useTarget && propKey in target) return Reflect.get(target, propKey, receiver);
         for (const scope of chain) {
-            if (scope && propKey in scope) return Reflect.get(scope, propKey, receiver);
+            if (propKey in scope) return Reflect.get(scope, propKey, receiver);
         }
         return undefined;
     }
 
     function set<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, value: T[K], receiver: SafeAny): boolean {
+        if (propKey === kAccessTarget) return false;
         if (propKey === kAccessChain) return false;
-        if (!space) return false;
+        if (!useTarget) return false;
+        hasKeys.add(propKey);
         return Reflect.set(target, propKey, value, receiver);
     }
 
