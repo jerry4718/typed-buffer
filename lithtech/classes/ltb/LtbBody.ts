@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
 import { Animation } from './Animation.ts';
 import { AnimBinding } from './AnimBinding.ts';
 import { BoneNode } from './BoneNode.ts';
@@ -24,6 +24,7 @@ export class LtbBody {
     weightSets!: WeightSet[];
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numChildModels!: number;
 
     @FieldType(t.Array, {

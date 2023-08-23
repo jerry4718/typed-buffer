@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
 import { ColorRgb } from '../common/ColorRgb.ts';
 import { Quaternion } from '../common/Quaternion.ts';
 import { Vector3 } from '../common/Vector3.ts';
@@ -10,6 +10,7 @@ export class DataProperty {
     name!: string;
 
     @FieldType(t.Uint8)
+    @FieldExpose()
     typeCode!: number;
 
     @FieldType(t.Uint32)

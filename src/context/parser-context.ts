@@ -1,10 +1,11 @@
-import { Endian } from '../common.ts';
-import { isBoolean, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
-import { ContextCompute, ContextOption, ParserContext } from './types.ts';
-import { PrimitiveParser } from '../parse/primitive-parser.ts';
-import { BaseParser } from './base-parser.ts';
-import { SafeAny } from '../utils/prototype-util.ts';
 import { Ascii } from '../coding/codings.ts';
+import { Endian } from '../common.ts';
+import { PrimitiveParser } from '../parse/primitive-parser.ts';
+import { push, slice } from '../utils/proto-fn.ts';
+import { SafeAny } from '../utils/prototype-util.ts';
+import { isBoolean, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
+import { BaseParser } from './base-parser.ts';
+import { ContextCompute, ContextOption, ParserContext } from './types.ts';
 
 // 探测当前运行环境的端序情况
 function nativeEndianness(): Endian {
@@ -22,6 +23,7 @@ const defaultContextOption: ContextOption = {
     ends: 0x00,
     endian: nativeEndianness(),
     coding: Ascii,
+    DebugStruct: [],
 };
 
 export interface SnapInfo {
@@ -75,11 +77,30 @@ export function createResult<T>(value: T, snap: SnapInfo): ValueSnap<T> {
     );
 }
 
-function createChainAccessor<T extends object>(space: boolean, ...access: (T | undefined)[]): T {
-    const target = {} as T;
-    const chain = access.filter(s => !isUndefined(s));
+const kAccessChain = Symbol.for('@@AccessChain');
+
+function createChainAccessor<T extends object>(space: boolean, ...access: (T | undefined)[]): Required<T> {
+    const chain: T[] = [];
+    for (let i = 1; i < arguments.length; i++) {
+        const arg = arguments[i];
+        if (isUndefined(arg)) continue;
+        if (!space && !Object.keys(arg).length) continue;
+        if (kAccessChain in arg) {
+            const copy = slice.call(Reflect.get(arg, kAccessChain));
+            push.apply(chain, copy.filter(ctm => !chain.includes(ctm)));
+            continue;
+        }
+        chain.push(arg);
+    }
+
+    const target = { [kAccessChain]: chain } as T;
+
+    if (chain.length > 10) {
+        console.log(chain.length);
+    }
 
     function has<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K): boolean {
+        if (propKey === kAccessChain) return true;
         if (space && propKey in target) return true;
         for (const scope of chain) {
             if (scope && propKey in scope) return true;
@@ -88,6 +109,7 @@ function createChainAccessor<T extends object>(space: boolean, ...access: (T | u
     }
 
     function get<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, receiver: SafeAny): T[K] | undefined {
+        if (propKey === kAccessChain) return [ target, ...chain ] as T[K];
         if (space && propKey in target) return Reflect.get(target, propKey, receiver);
         for (const scope of chain) {
             if (scope && propKey in scope) return Reflect.get(scope, propKey, receiver);
@@ -96,11 +118,12 @@ function createChainAccessor<T extends object>(space: boolean, ...access: (T | u
     }
 
     function set<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, value: T[K], receiver: SafeAny): boolean {
+        if (propKey === kAccessChain) return false;
         if (!space) return false;
         return Reflect.set(target, propKey, value, receiver);
     }
 
-    return new Proxy(target, { has, get, set });
+    return new Proxy(target, { has, get, set }) as Required<T>;
 }
 
 export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption> = {}): ParserContext {
@@ -118,10 +141,10 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
             const ctx = context.derive(readOption, parser.option, { point: byteStart + byteSize });
             try {
                 const value = parser.read(ctx, ctx.option.point);
-                if (!ctx.option.consume) return ctx.result(value, 0);
                 const readSize = parser instanceof PrimitiveParser
                     ? parser.byteSize
                     : ctx.size;
+                if (!ctx.option.consume) return ctx.result(value, 0);
                 byteSize += readSize;
                 return ctx.result(value, readSize);
             } catch (e) {
@@ -163,6 +186,7 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
 
         return Object.defineProperties(context, {
             buffer: { writable: false, value: buffer },
+            view: { writable: false, value: new DataView(buffer) },
             option: { writable: false, value: option },
             scope: { writable: false, value: scope },
             read: { writable: false, value: read },

@@ -13,9 +13,7 @@ export class LightData {
     @FieldType(t.Array, { item: t.Uint32, count: 3 })
     lookupSize!: number[];
 
-    @FieldType(t.Uint32)
-    numLightDataGrid!: number;
-
+    /* RLE compressed data */
     @FieldType(t.Array, { item: t.Uint8, count: t.Uint32 })
     lightDataGrid!: number[];
 }

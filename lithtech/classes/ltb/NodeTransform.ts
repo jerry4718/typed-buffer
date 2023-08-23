@@ -8,9 +8,6 @@ import { AnimCompressionType } from './enums/AnimCompressionType.ts';
 
 @ParserTarget()
 export class NodeTransform {
-    @FieldType(t.Uint32)
-    numPositions!: number;
-
     @FieldType(t.Array, {
         item: (_: t.ParserContext, scope: t.ScopeAccessor) => {
             if (scope.compressionType === AnimCompressionType.CmpRelevant) return Vector3;
@@ -18,12 +15,9 @@ export class NodeTransform {
             if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return Vector3;
             throw Error('cannot match [positions] type');
         },
-        count: (_: t.ParserContext, scope: t.ScopeAccessor) => (scope.numPositions as number),
+        count: t.Uint32,
     })
     positions!: Vector3[] | CompressedVector3[];
-
-    @FieldType(t.Uint32)
-    numRotations!: number;
 
     @FieldType(t.Array, {
         item: (_: t.ParserContext, scope: t.ScopeAccessor) => {
@@ -32,7 +26,7 @@ export class NodeTransform {
             if (scope.compressionType === AnimCompressionType.CmpRelevantRot16) return CompressedQuaternion;
             throw Error('cannot match [rotations] type');
         },
-        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numRotations,
+        count: t.Uint32,
     })
     rotations!: Quaternion[] | CompressedQuaternion[];
 }

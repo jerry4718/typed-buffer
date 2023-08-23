@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldSetup, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldSetup, FieldType, ParserTarget } from '../../../mod.ts';
 import { BoneSet } from './BoneSet.ts';
 import { MeshType } from './enums/MeshType.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
@@ -14,6 +14,7 @@ export class SkeletalMesh extends BaseMesh {
     reIndexedBone!: number;
 
     @FieldType(t.Array, { item: t.Uint32, count: 4 })
+    @FieldExpose()
     vertexTypeMap!: number[];
 
     @FieldType(t.Uint8)

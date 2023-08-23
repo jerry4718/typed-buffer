@@ -21,9 +21,6 @@ export class RenderSection {
     @FieldType(t.Uint32)
     lightMapHeight!: number;
 
-    @FieldType(t.Uint32)
-    lenLightMapData!: number;
-
-    @FieldType(t.Array, { item: t.Uint8, count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.lenLightMapData })
+    @FieldType(t.Array, { item: t.Uint8, count: t.Uint32 })
     lightMapData!: number[];
 }

@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
 import { RenderObject } from './RenderObject.ts';
 
 @ParserTarget()

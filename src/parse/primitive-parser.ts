@@ -22,7 +22,7 @@ type PrimitiveParserConfig<T> =
     & PrimitiveParserOptionRequired<T>;
 
 function isLittleEndian(endian?: Endian): boolean {
-    if (isUndefined(endian)) throw Error('endian loosed')
+    if (isUndefined(endian)) throw Error('endian loosed');
     if (endian === BigEndian) return false;
     if (endian === LittleEndian) return true;
     throw Error('endian only support "le" or "be"');
@@ -44,7 +44,7 @@ export class PrimitiveParser<T> extends BaseParser<T> {
 
     read(ctx: ParserContext, byteOffset: number): T {
         const littleEndian = isLittleEndian(this.endian || ctx.option.endian);
-        return this.getter.call(new DataView(ctx.buffer), byteOffset, littleEndian);
+        return this.getter.call(ctx.view, byteOffset, littleEndian);
     }
 
     write(ctx: ParserContext, value: T, byteOffset: number): T {

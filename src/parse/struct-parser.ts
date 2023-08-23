@@ -121,9 +121,16 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         const fieldNames: (keyof T)[] = [];
         Reflect.defineMetadata(kStructReadKeys, fieldNames, section);
 
+        const parentPath = ctx.scope.$path || '';
+
+        if (ctx.option.DebugStruct.includes(this.creator)) {
+            console.log(parentPath, '{');
+        }
+
         for (const fieldConfig of this.fields) {
             this.applySetup(ctx, fieldConfig);
             const fieldName = fieldConfig.name;
+            ctx.expose(true, '$path', `${parentPath}.${fieldName as string}`);
 
             if (Object.hasOwn(fieldConfig, 'resolve') && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
                 const fieldResolve = fieldConfig.resolve;
@@ -145,6 +152,10 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
 
                 const [ fieldValue ] = fieldSnap;
                 Reflect.set(section, fieldName, fieldValue);
+
+                if (ctx.option.DebugStruct.includes(this.creator)) {
+                    console.log(parentPath, fieldName);
+                }
             }
             const fieldValue = Reflect.get(section, fieldName);
             const fieldExpose = fieldConfig.expose;
@@ -152,6 +163,10 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
             if (!isUndefined(fieldExpose)) {
                 ctx.expose(fieldExpose, fieldName, fieldValue);
             }
+        }
+
+        if (ctx.option.DebugStruct.includes(this.creator)) {
+            console.log(parentPath, '}');
         }
 
         return section;

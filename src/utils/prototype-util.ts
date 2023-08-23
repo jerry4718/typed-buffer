@@ -6,6 +6,7 @@ export type Constructor<T> = Function & (new (...args: unknown[]) => T)
 export type SafeAny = any;
 
 export const FunctionPrototype = Object.getPrototypeOf(Function);
+export const ObjectPrototype = Object.prototype;
 
 export function isExtendFrom<P>(childClass: unknown, parentClass: Constructor<P>): childClass is Constructor<P> {
     for (

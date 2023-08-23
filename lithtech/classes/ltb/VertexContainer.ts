@@ -51,7 +51,7 @@ export class VertexContainer {
 
     @FieldType(t.Array, {
         item: VertexInfo,
-        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.mesgInfo.numVertexes,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.meshInfo.numVertexes,
     })
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.mask > 0)
     vertexInfos!: VertexInfo[];

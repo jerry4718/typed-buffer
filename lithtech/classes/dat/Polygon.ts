@@ -8,12 +8,6 @@ export class Polygon {
     @FieldType(Plane)
     plane!: Plane;
 
-    @FieldType(t.Uint32)
-    numVertexesPos!: number;
-
-    @FieldType(t.Array, {
-        item: Vector3,
-        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numVertexesPos,
-    })
+    @FieldType(t.Array, { item: Vector3, count: t.Uint32 })
     vertexesPos!: Vector3[];
 }

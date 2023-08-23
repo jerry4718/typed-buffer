@@ -105,11 +105,14 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         const $index = isFunction(indexName) ? ctx.compute(indexName) : indexName;
         const items: T[] = [];
 
+        const parentPath = ctx.scope.$path || '';
+
         if (!isUndefined(count)) {
-            ctx.expose(true, $index, items.length);
             // 使用传入的 count 选项获取数组长度
             const [ countValue ] = this.readConfigNumber(ctx, count);
             for (let readIndex = 0; readIndex < countValue; readIndex++) {
+                ctx.expose(true, $index, items.length);
+                ctx.expose(true, '$path', `${parentPath}[${items.length}]`);
                 const [ item ] = ctx.read(itemParser);
                 items.push(item);
             }
@@ -121,6 +124,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
             while (true) {
                 ctx.expose(true, $index, items.length);
+                ctx.expose(true, '$path', `${parentPath}[${items.length}]`);
                 const collectSize = ctx.size - sizeSnap.size;
                 if (collectSize > sizeValue) throw Error('Invalid array data read');
                 if (collectSize === sizeValue) break;
@@ -135,6 +139,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
             while (true) {
                 ctx.expose(true, $index, items.length);
+                ctx.expose(true, '$path', `${parentPath}[${items.length}]`);
                 const [ next ] = ctx.read(Uint8, { consume: false });
                 if (next === endsJudge) break;
                 const [ item ] = ctx.read(itemParser);

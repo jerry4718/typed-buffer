@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
 import { NullMesh } from './NullMesh.ts';
 import { RigidMesh } from './RigidMesh.ts';
 import { SkeletalMesh } from './SkeletalMesh.ts';
@@ -21,6 +21,7 @@ export class RenderObject {
     renderPriority!: number;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     renderObjectType!: number;
 
     @FieldType((_: t.ParserContext, scope: t.ScopeAccessor) => {
@@ -32,12 +33,6 @@ export class RenderObject {
     })
     lodMesh!: RigidMesh | SkeletalMesh | VertexAnimatedMesh | NullMesh | UnknownMesh;
 
-    @FieldType(t.Uint8)
-    numUsedNodes!: number;
-
-    @FieldType(t.Array, {
-        item: t.Uint8,
-        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numUsedNodes,
-    })
+    @FieldType(t.Array, { item: t.Uint8, count: t.Uint8 })
     usedNodes!: number[];
 }

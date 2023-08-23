@@ -13,10 +13,12 @@ export type ContextOption = {
     ends: number,
     endian: Endian,
     coding: Coding,
+    DebugStruct?: (new () => SafeAny)[],
 };
 
 export type ParserContext = {
     buffer: ArrayBuffer,
+    view: DataView,
     option: Required<ContextOption>,
     scope: ScopeAccessor,
     read<T>(parser: Parser<T>, option?: Partial<ContextOption>): ValueSnap<T>,

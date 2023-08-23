@@ -18,18 +18,22 @@ export class WorldModel {
     worldName!: string;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numPoints!: number;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numPlanes!: number;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numSurfaces!: number;
 
     @FieldType(t.Uint32)
     reserved1!: number;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numPolygons!: number;
 
     @FieldType(t.Uint32)
@@ -45,6 +49,7 @@ export class WorldModel {
     reserved4!: number;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numNodes!: number;
 
     @FieldType(Vector3)
@@ -60,6 +65,7 @@ export class WorldModel {
     textureNameSize!: number;
 
     @FieldType(t.Uint32)
+    @FieldExpose()
     numTextureNames!: number;
 
     @FieldType(t.Array, {
