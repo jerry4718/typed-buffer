@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { AnimCompressionType } from './enums/AnimCompressionType.ts';
 import { Keyframe } from './Keyframe.ts';

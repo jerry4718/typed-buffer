@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import * as t from '../mod.ts';
 import { getStructReadSnap } from '../mod.ts';
 import { Animation } from './classes/ltb/Animation.ts';
@@ -16,30 +17,28 @@ import { VertexContainer } from './classes/ltb/VertexContainer.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-(async () => {
-    const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@blue@574.ltb'));
-    console.log(ltbBuffer.buffer);
+const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@blue@574.ltb'));
+console.log(ltbBuffer.buffer);
 
-    const LithtechLtbParser = t.getTypedParser(LithtechLtb);
+const LithtechLtbParser = t.getTypedParser(LithtechLtb);
 
-    const readContext = t.createContext(ltbBuffer.buffer, {
-        DebugStruct: [
-            RigidMesh,
-            SkeletalMesh,
-            VertexAnimatedMesh,
-            NullMesh,
-            UnknownMesh,
+const readContext = t.createContext(ltbBuffer.buffer, {
+    DebugStruct: [
+        RigidMesh,
+        SkeletalMesh,
+        VertexAnimatedMesh,
+        NullMesh,
+        UnknownMesh,
 
-            VertexContainer,
-            Animation,
-            AnimBinding,
-        ],
-    });
+        VertexContainer,
+        Animation,
+        AnimBinding,
+    ],
+});
 
-    const [ lithtechLtb, selfSnap ] = readContext.read(LithtechLtbParser);
+const [ lithtechLtb, selfSnap ] = readContext.read(LithtechLtbParser);
 
-    const fieldSnap = getStructReadSnap(lithtechLtb);
-    // console.log(lithtechLtb);
-    console.log(selfSnap);
-    console.log(fieldSnap);
-})();
+const fieldSnap = getStructReadSnap(lithtechLtb);
+// console.log(lithtechLtb);
+console.log(selfSnap);
+console.log(fieldSnap);
