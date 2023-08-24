@@ -1,7 +1,7 @@
 import { PrimitiveParser } from './primitive-parser.ts';
 import { ParserContext } from "../context/types.ts";
 import { AdvancedParser } from "../context/base-parser.ts";
-import { ValueSnap } from "../context/parser-context.ts";
+import { SnapTuple } from "../context/parser-context.ts";
 
 export type RepeatParserNumberOption<T> = ((ctx: ParserContext) => number) | PrimitiveParser<number> | number;
 

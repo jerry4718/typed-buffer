@@ -1,3 +1,4 @@
+import { getStructReadSnap } from '../mod.ts';
 import { RenderBlock } from './classes/dat/RenderBlock.ts';
 import { WorldModelRenderBlock } from './classes/dat/WorldModelRenderBlock.ts';
 import * as t from '../mod.ts';
@@ -16,5 +17,8 @@ console.time('lithtechDat');
 const [ lithtechDat, snap ] = readContext.read(LithtechDatParser);
 console.timeEnd('lithtechDat');
 
+const selfSnap = snap
+const fieldSnap = getStructReadSnap(lithtechDat)
 console.log(lithtechDat);
-console.log(snap);
+console.log(selfSnap);
+console.log(fieldSnap)

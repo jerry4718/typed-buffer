@@ -4,7 +4,10 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "test:deco": "npx ts-node --esm --swc ./test/deco.test.ts"
+    "test:deco": "npx ts-node --esm --swc ./test/deco.test.ts",
+    "test:parse-dat": "npx ts-node --esm --swc ./lithtech/parse-dat.node.ts",
+    "test:parse-ltb": "npx ts-node --esm --swc ./lithtech/parse-ltb.node.ts",
+    "bun:parse-ltb": "bun run ./lithtech/parse-ltb.node.ts"
   },
   "keywords": [],
   "author": "",

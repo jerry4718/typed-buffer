@@ -7,6 +7,11 @@ export type SafeAny = any;
 
 export const FunctionPrototype = Object.getPrototypeOf(Function);
 export const ObjectPrototype = Object.prototype;
+export const ArrayPrototype = Array.prototype;
+export const ObjectPrototypeKeys = Reflect.ownKeys(ObjectPrototype);
+export const PublicSymbolAccessors = Reflect.ownKeys(Symbol)
+    .map(k => Reflect.get(Symbol, k))
+    .filter(s => typeof s === 'symbol');
 
 export function isExtendFrom<P>(childClass: unknown, parentClass: Constructor<P>): childClass is Constructor<P> {
     for (

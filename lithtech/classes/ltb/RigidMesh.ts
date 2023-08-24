@@ -3,11 +3,14 @@ import { FieldExpose, FieldSetup, FieldType, ParserTarget } from '../../../mod.t
 import { MeshType } from './enums/MeshType.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 import { VertexContainer } from './VertexContainer.ts';
-import { BaseMesh } from './BaseMesh.ts';
 
 @ParserTarget()
-export class RigidMesh extends BaseMesh {
-    declare meshInfo: LodMeshInfo;
+export class RigidMesh extends LodMeshInfo {
+    declare objSize: number;
+    declare numVertexes: number;
+    declare numFaces: number;
+    declare maxBonesPerFace: number;
+    declare maxBonesPerVert: number;
 
     @FieldType(t.Array, { item: t.Uint32, count: 4 })
     @FieldExpose()
@@ -22,7 +25,7 @@ export class RigidMesh extends BaseMesh {
 
     @FieldType(t.Array, {
         item: t.Uint16,
-        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.meshInfo.numFaces * 3,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numFaces * 3,
     })
     vertexIndex!: number[];
 }

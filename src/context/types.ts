@@ -1,11 +1,11 @@
 import { Endian } from '../common.ts';
-import { ValueSnap } from './parser-context.ts';
+import { SnapTuple } from './parser-context.ts';
 import { Coding } from '../coding/face.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 
 export type ScopeAccessor = Record<string | symbol | number, SafeAny>
 
-export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor) => Result
+export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor, option: ContextOption) => Result
 
 export type ContextOption = {
     point: number, // fixed, cannot computable
@@ -13,7 +13,7 @@ export type ContextOption = {
     ends: number,
     endian: Endian,
     coding: Coding,
-    DebugStruct?: (new () => SafeAny)[],
+    DebugStruct: (new () => SafeAny)[],
 };
 
 export type ParserContext = {
@@ -21,13 +21,15 @@ export type ParserContext = {
     view: DataView,
     option: Required<ContextOption>,
     scope: ScopeAccessor,
-    read<T>(parser: Parser<T>, option?: Partial<ContextOption>): ValueSnap<T>,
-    write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): ValueSnap<T>,
-    expose(condition: string | boolean | symbol, name: string | number | symbol, value: unknown): void,
+    read<T>(parser: Parser<T>, option?: Partial<ContextOption>): SnapTuple<T>,
+    write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T>,
+    expose(name: string | number | symbol, value: unknown): void,
     compute<Result>(getter: ContextCompute<Result>): Result,
-    result<T>(value: T, size?: number): ValueSnap<T>,
+    result<T>(value: T, size?: number): SnapTuple<T>,
     derive(...options: (Partial<ContextOption> | undefined)[]): ParserContext,
+    start: number,
     size: number,
+    end: number,
     take: [ number, number ],
 }
 

@@ -4,11 +4,14 @@ import { BoneSet } from './BoneSet.ts';
 import { MeshType } from './enums/MeshType.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 import { VertexContainer } from './VertexContainer.ts';
-import { BaseMesh } from './BaseMesh.ts';
 
 @ParserTarget()
-export class SkeletalMesh extends BaseMesh {
-    declare meshInfo: LodMeshInfo;
+export class SkeletalMesh extends LodMeshInfo {
+    declare objSize: number;
+    declare numVertexes: number;
+    declare numFaces: number;
+    declare maxBonesPerFace: number;
+    declare maxBonesPerVert: number;
 
     @FieldType(t.Uint8)
     reIndexedBone!: number;
@@ -26,7 +29,7 @@ export class SkeletalMesh extends BaseMesh {
 
     @FieldType(t.Array, {
         item: t.Uint16,
-        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.meshInfo.numFaces * 3,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numFaces * 3,
     })
     vertexIndex!: number[];
 

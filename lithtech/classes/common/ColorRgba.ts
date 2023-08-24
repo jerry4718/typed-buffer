@@ -15,7 +15,7 @@ export class ColorRgba {
     @FieldType(t.Uint8)
     a!: number;
 
-    get originHex () {
-        return (this.r << 24) & (this.g << 16) & (this.b << 8) & this.a
+    get originHex() {
+        return (this.r << 24) & (this.g << 16) & (this.b << 8) & this.a;
     }
 }

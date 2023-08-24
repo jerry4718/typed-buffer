@@ -1,6 +1,14 @@
+import * as t from '../../../mod.ts';
 import { Ascii, FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
-import { LtbBody } from './LtbBody.ts';
+import { Animation } from './Animation.ts';
+import { AnimBinding } from './AnimBinding.ts';
+import { BoneNode } from './BoneNode.ts';
+import { ChildModel } from './ChildModel.ts';
 import { LtbHeader } from './LtbHeader.ts';
+import { ModelOBB } from './ModelOBB.ts';
+import { Piece } from './Piece.ts';
+import { Socket } from './Socket.ts';
+import { WeightSet } from './WeightSet.ts';
 
 @ParserTarget({ endian: 'le', coding: Ascii })
 export class LithtechLtb {
@@ -8,6 +16,34 @@ export class LithtechLtb {
     @FieldExpose()
     header!: LtbHeader;
 
-    @FieldType(LtbBody)
-    body!: LtbBody;
+    @FieldType(t.Array, { item: ModelOBB, count: t.Int32 })
+    modelOBBs!: ModelOBB[];
+
+    @FieldType(t.Array, { item: Piece, count: t.Int32 })
+    pieces!: Piece[];
+
+    @FieldType(BoneNode)
+    boneTree!: BoneNode;
+
+    @FieldType(t.Array, { item: WeightSet, count: t.Uint32 })
+    weightSets!: WeightSet[];
+
+    @FieldType(t.Uint32)
+    @FieldExpose()
+    numChildModels!: number;
+
+    @FieldType(t.Array, {
+        item: ChildModel,
+        count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numChildModels - 1,
+    })
+    childModels!: ChildModel[];
+
+    @FieldType(t.Array, { item: Animation, count: t.Uint32 })
+    animations!: Animation[];
+
+    @FieldType(t.Array, { item: Socket, count: t.Uint32 })
+    sockets!: Socket[];
+
+    @FieldType(t.Array, { item: AnimBinding, count: t.Uint32 })
+    animBindings!: AnimBinding[];
 }

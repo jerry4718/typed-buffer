@@ -1,8 +1,11 @@
 import { ParserTarget } from '../../../mod.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
-import { BaseMesh } from './BaseMesh.ts';
 
 @ParserTarget()
-export class VertexAnimatedMesh extends BaseMesh {
-    declare meshInfo: LodMeshInfo;
+export class VertexAnimatedMesh extends LodMeshInfo {
+    declare objSize: number;
+    declare numVertexes: number;
+    declare numFaces: number;
+    declare maxBonesPerFace: number;
+    declare maxBonesPerVert: number;
 }
