@@ -110,7 +110,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         if (!isUndefined(count)) {
             // 使用传入的 count 选项获取数组长度
             const [ countValue ] = this.readConfigNumber(ctx, count);
-            for (let readIndex = 0; countValue; readIndex++) {
+            for (let readIndex = 0; readIndex < countValue; readIndex++) {
                 ctx.expose($index, items.length);
                 ctx.expose('$path', `${parentPath}[${items.length}]`);
                 const [ itemValue ] = ctx.read(itemParser);
