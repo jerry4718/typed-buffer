@@ -5,7 +5,7 @@ import { isUndefined } from '../utils/type-util.ts';
 const kAccessChain = Symbol('@@AccessChain');
 const kAccessTarget = Symbol('@@AccessTarget');
 
-export function createAccessChain<T extends object, R = T extends Partial<infer P> ? P : T>(useTarget: boolean, ...accesses: (Partial<T> | T | undefined)[]): R {
+export function createAccessChain<T extends object, R = T extends Partial<infer P> ? P : T>(useTarget: boolean, ...accesses: (T | undefined)[]): R {
     const chain: T[] = [];
     for (const arg of accesses) {
         if (isUndefined(arg)) continue;
@@ -29,6 +29,10 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
     const target = {} as T;
 
     const hasKeys = new Set<string | symbol>();
+
+    // if (chain.length > 20) {
+    //     debugger
+    // }
 
     function has<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K): boolean {
         if (propKey === kAccessTarget) return true;

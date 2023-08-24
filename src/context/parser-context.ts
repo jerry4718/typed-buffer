@@ -27,6 +27,7 @@ const defaultContextOption: ContextOption = {
     DebugStruct: [],
 };
 
+// todo: closure => to class or not to class?
 export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption> = {}): ParserContext {
     const rootOption = createAccessChain(false, option, defaultContextOption);
     const view = new DataView(buffer);
@@ -43,6 +44,7 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
 
         function read<T>(parser: BaseParser<T>, patchOption?: Partial<ContextOption>): SnapTuple<T> {
             const readOption = createAccessChain(false, patchOption, parser.option, { point: byteStart + byteSize });
+            // 判断parser是否为Primitive，Primitive直接在ctx中读取，避免创建多余的subContext
             if (parser instanceof PrimitiveParser) {
                 const { point, consume, endian } = createAccessChain(false, readOption, contextOption);
                 const primitiveContext = { buffer, view, option: { endian } } as ParserContext;
