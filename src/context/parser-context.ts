@@ -2,9 +2,11 @@ import { Ascii } from '../coding/codings.ts';
 import { Endian } from '../common.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { createAccessChain } from './access-chain.ts';
-import { BaseParser } from './base-parser.ts';
-import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from './types.ts';
+import { AdvancedParser, BaseParser } from './base-parser.ts';
+import { ContextCompute, ContextConstant, ContextOption, ParserContext, ScopeAccessor } from './types.ts';
 import { createResult, SnapTuple } from './snap-tuple.ts';
+import pick from 'lodash-es/pick';
+import omit from 'lodash-es/omit';
 
 export * from './snap-tuple.ts';
 
@@ -18,38 +20,51 @@ function nativeEndianness(): Endian {
     throw Error('never');
 }
 
-const defaultContextOption: ContextOption = {
+const defaultContextConstant: ContextConstant = Object.freeze({
+    $path: '$path',
+    path: 'root',
+    endian: nativeEndianness(),
+    DebugStruct: [],
+});
+
+const defaultContextOption: ContextOption = Object.freeze({
     point: 0,
     consume: true,
     ends: 0x00,
     endian: nativeEndianness(),
     coding: Ascii,
     DebugStruct: [],
-};
+});
 
 // todo: closure => to class or not to class?
-export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption> = {}): ParserContext {
-    const rootOption = createAccessChain(false, option, defaultContextOption);
+export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextConstant & ContextOption> = {}): ParserContext {
     const view = new DataView(buffer);
+
+    const pickConstant = pick(inputOption, [ '$path', 'path', 'endian', 'DebugStruct' ]);
+    const pickOption = omit(inputOption, [ '$path', 'path', 'endian', 'DebugStruct' ]);
+
+    const rootConstant = createAccessChain(false, pickConstant, defaultContextConstant);
+    const rootOption = createAccessChain(false, pickOption, defaultContextOption);
+
+    const { $path, path: rootPath, endian: rootEndian } = rootConstant;
+    const rootScope: ScopeAccessor = { [$path]: rootPath };
 
     function create(parent?: ParserContext, ...options: (ContextOption | undefined)[]): ParserContext {
         const context = {} as ParserContext;
-        const contextScope = createAccessChain(true, parent?.scope);
+        const contextScope = createAccessChain(true, parent?.scope || rootScope);
         const contextOption = createAccessChain(false, ...options, parent?.option, rootOption);
 
-        if (!parent) contextScope.$path = '';
-
-        const byteStart = contextOption.point!;
+        const byteStart = contextOption.point;
         let byteSize = 0;
 
         function read<T>(parser: BaseParser<T>, patchOption?: Partial<ContextOption>): SnapTuple<T> {
-            const readOption = createAccessChain(false, patchOption, parser.option, { point: byteStart + byteSize });
+            const readOption = createAccessChain(false, patchOption, { point: byteStart + byteSize });
             // 判断parser是否为Primitive，Primitive直接在ctx中读取，避免创建多余的subContext
             if (parser instanceof PrimitiveParser) {
-                const { point, consume, endian } = createAccessChain(false, readOption, contextOption);
-                const primitiveContext = { buffer, view, option: { endian } } as ParserContext;
+                const { point, consume } = createAccessChain(false, readOption, contextOption);
+                const primitiveContext = { buffer, view } as ParserContext;
 
-                const value = parser.read(primitiveContext, point);
+                const value = parser.read(primitiveContext, point, rootEndian);
 
                 const readSize = parser.byteSize;
                 if (consume) byteSize += readSize;
@@ -57,20 +72,24 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
                 return createResult(value, point, readSize);
             }
 
-            const ctx = context.derive(readOption);
-            const value = parser.read(ctx, ctx.option.point);
-            const readSize = ctx.size;
-            if (ctx.option.consume) byteSize += readSize;
-            return ctx.result(value, readSize);
+            if (parser instanceof AdvancedParser) {
+                const ctx = context.derive(readOption, parser.option);
+                const value = parser.read(ctx, ctx.option.point);
+                const readSize = ctx.size;
+                if (ctx.option.consume) byteSize += readSize;
+                return ctx.result(value, readSize);
+            }
+
+            throw Error('unknown Parser type');
         }
 
-        function write<T>(parser: BaseParser<T>, value: T, patchOption?: ContextOption): SnapTuple<T> {
-            const writeOption = createAccessChain(false, patchOption, parser.option, { point: byteStart + byteSize });
+        function write<T>(parser: BaseParser<T>, value: T, patchOption?: Partial<ContextOption>): SnapTuple<T> {
+            const writeOption = createAccessChain(false, patchOption, { point: byteStart + byteSize });
             if (parser instanceof PrimitiveParser) {
-                const { point, consume, endian } = createAccessChain(false, writeOption, contextOption);
-                const primitiveContext = { buffer, view, option: { endian } } as ParserContext;
+                const { point, consume } = createAccessChain(false, writeOption, contextOption);
+                const primitiveContext = { buffer, view } as ParserContext;
 
-                parser.write(primitiveContext, value, point);
+                parser.write(primitiveContext, value, point, rootEndian);
 
                 const writeSize = parser.byteSize;
                 if (consume) byteSize += writeSize;
@@ -78,11 +97,14 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
                 return createResult(value, point, writeSize);
             }
 
-            const ctx = context.derive(writeOption);
-            parser.write(ctx, value, ctx.option.point);
-            const writeSize = ctx.size;
-            if (ctx.option.consume) byteSize += writeSize;
-            return ctx.result(value, writeSize);
+            if (parser instanceof AdvancedParser) {
+                const ctx = context.derive(writeOption, parser.option);
+                parser.write(ctx, value, ctx.option.point);
+                const writeSize = ctx.size;
+                if (ctx.option.consume) byteSize += writeSize;
+                return ctx.result(value, writeSize);
+            }
+            throw Error('unknown Parser type');
         }
 
         return Object.defineProperties(
@@ -90,6 +112,7 @@ export function createContext(buffer: ArrayBuffer, option: Partial<ContextOption
             {
                 buffer: { writable: false, value: buffer },
                 view: { writable: false, value: view },
+                constant: { writable: false, value: rootConstant },
                 option: { writable: false, value: contextOption },
                 scope: { writable: false, value: contextScope },
                 read: { writable: false, value: read },

@@ -24,6 +24,8 @@ const LithtechLtbParser = t.getTypedParser(LithtechLtb);
 
 const readContext = t.createContext(ltbBuffer.buffer, {
     DebugStruct: [
+        LithtechLtb,
+
         RigidMesh,
         SkeletalMesh,
         VertexAnimatedMesh,

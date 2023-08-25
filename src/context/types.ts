@@ -7,19 +7,32 @@ export type ScopeAccessor = Record<string | symbol | number, SafeAny>
 
 export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor, option: ContextOption) => Result
 
-// 承载一些令人尴尬的配置信息
+// 可动态配置的option
 export type ContextOption = {
     point: number, // fixed, cannot computable
     consume: boolean,
     ends: number,
     endian: Endian,
     coding: Coding,
+};
+
+// 固定的配置，我们认定这些配置不需要在解析过程中发生改变
+export type ContextConstant = {
+    $path: string | symbol,
+    path: string,
+    /**
+     * 所有数据都是基于原始数类型做的读写处理，
+     * 所以endian会被最频繁的访问，
+     * 所以还是将他分离到Constant中，只支持在起点和终点配置
+     */
+    endian: Endian,
     DebugStruct: (new () => SafeAny)[],
 };
 
 export type ParserContext = {
     buffer: ArrayBuffer,
     view: DataView,
+    constant: ContextConstant,
     /* 灵活的配置参数，可在每一层自由定制 */
     option: Required<ContextOption>,
     /* 作用域，提供一些上下文产生的数据的访问功能 */

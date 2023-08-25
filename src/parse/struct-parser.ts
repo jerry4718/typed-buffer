@@ -1,4 +1,4 @@
-import { AdvancedParser, BaseParser, BaseParserConfig, createParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, BaseParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { assertType, isBoolean, isFunction, isNumber, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
 import { SnapTuple } from '../context/parser-context.ts';
@@ -17,6 +17,7 @@ export type StructFieldVirtual<T, K extends keyof T> = StructFieldBasic<T, K> & 
 
 export type StructFieldActual<T, K extends keyof T> = StructFieldBasic<T, K> & {
     type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>,
+    lazy?: boolean,
     point?: number | ContextCompute<number>,
     if?: boolean | ContextCompute<boolean>,
     default?: T[K] | ContextCompute<T[K]>,
@@ -27,7 +28,7 @@ export type StructField<T, K extends keyof T> =
     | (StructFieldActual<T, K>)
 
 export type StructParserConfig<T> =
-    & BaseParserConfig
+    & AdvancedParserConfig
     & { type?: new () => T }
     & { fields: StructField<T, keyof T>[] }
 
@@ -142,21 +143,25 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         const fieldNames: (keyof T)[] = [];
         Reflect.defineMetadata(kStructReadKeys, fieldNames, section);
 
-        const parentPath = ctx.scope.$path || '';
+        const parentPath = ctx.scope[ctx.constant.$path];
+        const parentStart = `${parentPath} {`;
+        const parentEnd = `${parentPath} }`;
 
-        if (ctx.option.DebugStruct.includes(this.creator)) {
-            console.log(parentPath, '{');
+        if (ctx.constant.DebugStruct.includes(this.creator)) {
+            console.log(parentStart);
+            console.time(parentEnd);
         }
 
         for (const fieldConfig of this.fields) {
+            const fieldName = fieldConfig.name;
+            const fieldPath = `${parentPath}.${String(fieldName)}`;
+            ctx.expose(ctx.constant.$path, fieldPath);
+
             const { isStructFieldVirtual, isStructFieldActual } = this.judgeFieldConfig(fieldConfig);
 
             this.applySetup(ctx, fieldConfig);
-            const fieldName = fieldConfig.name;
-            const fieldPath = `${parentPath}.${String(fieldName)}`;
-            ctx.expose('$path', fieldPath);
 
-            if (ctx.option.DebugStruct.includes(this.creator)) {
+            if (ctx.constant.DebugStruct.includes(this.creator)) {
                 console.time(fieldPath);
             }
 
@@ -183,13 +188,13 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
                 this.applyExpose(ctx, fieldConfig, readRes);
             }
 
-            if (ctx.option.DebugStruct.includes(this.creator)) {
+            if (ctx.constant.DebugStruct.includes(this.creator)) {
                 console.timeEnd(fieldPath);
             }
         }
 
-        if (ctx.option.DebugStruct.includes(this.creator)) {
-            console.log(parentPath, '}');
+        if (ctx.constant.DebugStruct.includes(this.creator)) {
+            console.timeEnd(parentEnd);
         }
 
         return section;
@@ -232,7 +237,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
 
                 if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
                 Reflect.defineMetadata(kStructWriteSnap, fieldSnap, value, fieldName as string);
-                this.applyExpose(ctx, fieldConfig, value as T[keyof T]);
+                this.applyExpose(ctx, fieldConfig, fieldValue);
             }
         }
 

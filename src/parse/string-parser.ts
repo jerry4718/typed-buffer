@@ -1,14 +1,14 @@
 // 字符串解析器
 import { type Coding, Utf8 } from '../coding/codings.ts';
-import { AdvancedParser, BaseParserConfig, createParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
 import { slice } from '../utils/proto-fn.ts';
-import { ArrayParser, ArrayParserConfigComputed, ArrayParserCountReader } from './array-parser.ts';
+import { ArrayParser, ArrayParserConfigComputed, ArrayConfigLoopCount } from './array-parser.ts';
 import { Uint8 } from './primitive-parser.ts';
 
 type StringParserConfig =
-    & BaseParserConfig
-    & Exclude<ArrayParserConfigComputed, ArrayParserCountReader>
+    & AdvancedParserConfig
+    & Exclude<ArrayParserConfigComputed<number>, ArrayConfigLoopCount>
     & { coding?: Coding }
 
 export class StringParser extends AdvancedParser<string> {

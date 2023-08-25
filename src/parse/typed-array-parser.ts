@@ -37,9 +37,9 @@ class BaseTypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Insta
 function extendBaseTypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Instance>>(
     constructor: TypedArrayFactory<Item, Instance>,
     item: PrimitiveParser<Item>,
-): (new(option: ArrayParserConfigComputed) => BaseTypedArrayParser<Item, Instance>) {
+): (new(option: ArrayParserConfigComputed<Item>) => BaseTypedArrayParser<Item, Instance>) {
     return class TypedArrayParser extends BaseTypedArrayParser<Item, Instance> {
-        constructor(option: ArrayParserConfigComputed) {
+        constructor(option: ArrayParserConfigComputed<Item>) {
             super(constructor, { ...option, item });
         }
     };
