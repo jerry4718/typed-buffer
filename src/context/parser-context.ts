@@ -33,7 +33,6 @@ const defaultContextOption: ContextOption = Object.freeze({
     ends: 0x00,
     endian: nativeEndianness(),
     coding: Ascii,
-    DebugStruct: [],
 });
 
 // todo: closure => to class or not to class?
@@ -129,7 +128,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
         );
     }
 
-    return create(void 0);
+    return create();
 }
 
 function compute<Result>(ctx: ParserContext, scope: ScopeAccessor, option: ContextOption, getter: ContextCompute<Result>): Result {

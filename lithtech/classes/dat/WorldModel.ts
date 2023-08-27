@@ -14,6 +14,7 @@ export class WorldModel {
     @FieldType(t.Uint32)
     worldInfoFlag!: number;
 
+    // todo: 在dat86时，这里字符串可以看出来，已解析部分出现了一个byte的偏移(暂未溯源)
     @FieldType(t.String, { size: t.Uint16 })
     worldName!: string;
 

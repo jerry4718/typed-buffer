@@ -28,7 +28,7 @@ export class DataProperty {
         if (scope.typeCode === 5) return t.Uint8;
         if (scope.typeCode === 6) return t.Int32;
         if (scope.typeCode === 7) return Quaternion;
-        throw Error(`cannot match [data] type from [typeCode:${scope.typeCode}]`)
+        throw Error(`cannot match [data] type from [typeCode:${scope.typeCode}]`);
     })
     data!: string | Vector3 | ColorRgb | number | Quaternion;
 

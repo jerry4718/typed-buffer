@@ -20,7 +20,6 @@ export class RigidMesh extends LodMeshInfo {
     bone!: number;
 
     @FieldType(t.Array, { item: VertexContainer, count: 4 })
-    @FieldSetup('meshType', MeshType.RigidMesh)
     vertexContainer!: VertexContainer[];
 
     @FieldType(t.Array, {

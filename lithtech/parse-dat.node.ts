@@ -8,19 +8,30 @@ import { RenderBlock } from './classes/dat/RenderBlock.ts';
 import { WorldModelRenderBlock } from './classes/dat/WorldModelRenderBlock.ts';
 import { LithtechDat } from './classes/dat/LithtechDat.ts';
 import { RenderData } from './classes/dat/RenderData.ts';
+import { WorldTree } from './classes/dat/WorldTree.ts';
+import { WorldModel } from './classes/dat/WorldModel.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// const datBuffer = await fs.readFile(path.join(__dirname, './files/YIKIMSEHRI.DAT'));
-const datBuffer = await fs.readFile(path.join(__dirname, './files/sa_worlds@project@tank.dat'));
+// const datBuffer = await fs.readFile(path.join(__dirname, './files/elevator.dat'));
+// const datBuffer = await fs.readFile(path.join(__dirname, './files/lastone3.dat'));
+// const datBuffer = await fs.readFile(path.join(__dirname, './files/sa_worlds@project@tank.dat'));
+const datBuffer = await fs.readFile(path.join(__dirname, './files/YIKIMSEHRI.DAT'));
 console.log(datBuffer.buffer);
 
 const LithtechDatParser = t.getTypedParser(LithtechDat);
 
 const readContext = t.createContext(datBuffer.buffer, {
     DebugStruct: [
-        LithtechDat, RenderData, RenderBlock, WorldModelRenderBlock,
+        LithtechDat,
+
+        WorldTree,
+        WorldModel,
+
+        RenderData,
+        RenderBlock,
+        WorldModelRenderBlock,
     ],
 });
 

@@ -85,7 +85,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         if (config instanceof PrimitiveParser) return ctx.write(config, value, option);
         if (isFunction(value) || isNumber(value)) return ctx.result(value, 0);
         throw Error('one of NumberOption is not valid');
-    }
+     }
 
     endsCompute(ctx: ParserContext) {
         const ends = this.ends!;

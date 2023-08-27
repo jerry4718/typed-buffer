@@ -24,7 +24,6 @@ export class SkeletalMesh extends LodMeshInfo {
     matrixPalette!: number;
 
     @FieldType(t.Array, { item: VertexContainer, count: 4 })
-    @FieldSetup('meshType', MeshType.SkeletalMesh)
     vertexContainer!: VertexContainer[];
 
     @FieldType(t.Array, {

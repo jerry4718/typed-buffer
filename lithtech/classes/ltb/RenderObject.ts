@@ -5,6 +5,7 @@ import { RigidMesh } from './RigidMesh.ts';
 import { SkeletalMesh } from './SkeletalMesh.ts';
 import { UnknownMesh } from './UnknownMesh.ts';
 import { VertexAnimatedMesh } from './VertexAnimatedMesh.ts';
+import { MeshType } from './enums/MeshType.ts';
 
 @ParserTarget()
 export class RenderObject {
@@ -25,10 +26,10 @@ export class RenderObject {
     renderObjectType!: number;
 
     @FieldType((_: t.ParserContext, scope: t.ScopeAccessor) => {
-        if (scope.renderObjectType === 4) return RigidMesh;
-        if (scope.renderObjectType === 5) return SkeletalMesh;
-        if (scope.renderObjectType === 6) return VertexAnimatedMesh;
-        if (scope.renderObjectType === 7) return NullMesh;
+        if (scope.renderObjectType === MeshType.RigidMesh) return RigidMesh;
+        if (scope.renderObjectType === MeshType.SkeletalMesh) return SkeletalMesh;
+        if (scope.renderObjectType === MeshType.VertexAnimatedMesh) return VertexAnimatedMesh;
+        if (scope.renderObjectType === MeshType.NullMesh) return NullMesh;
         return UnknownMesh;
     })
     lodMesh!: RigidMesh | SkeletalMesh | VertexAnimatedMesh | NullMesh | UnknownMesh;

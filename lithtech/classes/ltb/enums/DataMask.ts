@@ -1,0 +1,18 @@
+export enum DataMask {
+    PosPosition = 0,
+    PosNormal = 1,
+    PosColor = 2,
+    PosUv1 = 4,
+    PosUv2 = 5,
+    PosUv3 = 6,
+    PosUv4 = 7,
+    PosBasisVector = 8,
+    Position = (1 << PosPosition),
+    Normal = (1 << PosNormal),
+    Color = (1 << PosColor),
+    Uv1 = (1 << PosUv1),
+    Uv2 = (1 << PosUv2),
+    Uv3 = (1 << PosUv3),
+    Uv4 = (1 << PosUv4),
+    BasisVector = (1 << PosBasisVector),
+}

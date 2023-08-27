@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { BaseParser, isParserClass, isParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, BaseParser, isParserClass, isParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption } from '../context/types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { StructFieldActual, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
@@ -47,7 +47,7 @@ function convertTypedParser<T extends object>(klass: Constructor<T>): StructPars
             const fieldName = fieldItem.name;
             const composedIndex = composedFields.findIndex(composed => composed.name === fieldName);
             const composeTo = composedIndex > -1
-                ? composedFields[composedIndex]
+                ? composedFields[ composedIndex ]
                 : {} as LocalField;
             Object.assign(composeTo, fieldItem);
             if (composedIndex === -1) composedFields.push(composeTo);
@@ -72,7 +72,7 @@ function ensureFieldConfig<K extends string | symbol, T>(proto: object, property
     const fieldIndex = fields.findIndex(field => field.name === propertyKey);
 
     const ensureConfig = fieldIndex > -1
-        ? fields[fieldIndex]
+        ? fields[ fieldIndex ]
         : { name: propertyKey } as FieldConfig<K, T>;
 
     if (fieldIndex === -1) fields.push(ensureConfig);
@@ -88,7 +88,7 @@ function createFieldTypeDecorator<T>(parser: FieldConfig<string | symbol, T>['ty
 }
 
 export function FieldType<T>(parser: PrimitiveParser<T>): PropertyDecorator
-export function FieldType<T, O>(parserCreator: ((option: O) => BaseParser<T>) | (new(option: O) => BaseParser<T>), config: O): PropertyDecorator
+export function FieldType<T, O>(parserCreator: ((option: O) => AdvancedParser<T>) | (new(option: O) => AdvancedParser<T>), config: O): PropertyDecorator
 export function FieldType<T>(typeClass: new() => T): PropertyDecorator
 export function FieldType(parserSwitch: ContextCompute<BaseParser<SafeAny> | (new () => SafeAny)>): PropertyDecorator
 export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {

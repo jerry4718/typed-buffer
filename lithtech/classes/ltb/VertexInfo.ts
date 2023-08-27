@@ -16,7 +16,7 @@ export class VertexInfo {
         item: VertexWeightBlend,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.maxBonesPerFace,
     })
-    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition && scope.meshType === MeshType.SkeletalMesh)
+    @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition && scope.renderObjectType === MeshType.SkeletalMesh)
     weightBlend!: VertexWeightBlend[];
 
     @FieldType(Vector3)
