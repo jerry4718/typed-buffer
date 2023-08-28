@@ -5,6 +5,10 @@ import { isUndefined } from '../utils/type-util.ts';
 const kAccessChain = Symbol('@@AccessChain');
 const kAccessTarget = Symbol('@@AccessTarget');
 
+// export function linkedAccessChain<T extends object, R = T extends Partial<infer P> ? P : T>(useTarget: boolean, ...accesses: (T | undefined)[]): R {
+//
+// }
+
 export function createAccessChain<T extends object, R = T extends Partial<infer P> ? P : T>(useTarget: boolean, ...accesses: (T | undefined)[]): R {
     const chain: T[] = [];
     for (const arg of accesses) {

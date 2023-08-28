@@ -1,3 +1,5 @@
+import { ArrayParser } from './array-parser.ts';
+import { PrimitiveParser } from './primitive-parser.ts';
 import { AdvancedParser, BaseParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { assertType, isBoolean, isFunction, isNumber, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
@@ -6,7 +8,6 @@ import { SafeAny } from '../utils/prototype-util.ts';
 
 export type StructFieldBasic<T, K extends keyof T> = {
     name: K,
-    option?: ContextOption,
     expose?: boolean | string | symbol,
     setup?: { name: string, value: SafeAny | ContextCompute<SafeAny> }[],
 }
@@ -17,7 +18,6 @@ export type StructFieldVirtual<T, K extends keyof T> = StructFieldBasic<T, K> & 
 
 export type StructFieldActual<T, K extends keyof T> = StructFieldBasic<T, K> & {
     type: BaseParser<T[K]> | ContextCompute<BaseParser<T[K]> | undefined>,
-    lazy?: boolean,
     point?: number | ContextCompute<number>,
     if?: boolean | ContextCompute<boolean>,
     default?: T[K] | ContextCompute<T[K]>,
@@ -96,23 +96,22 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         throw Error('Cannot resolve that type as any Parser');
     }
 
-    resolveOption(ctx: ParserContext, fieldConfig: StructFieldActual<T, keyof T>): ContextOption {
-        const composeOptions: Partial<ContextOption>[] = [];
-        const inputOption = fieldConfig.option;
+    resolveOption(ctx: ParserContext, fieldConfig: StructFieldActual<T, keyof T>): Partial<ContextOption> | undefined {
         const inputPoint = (fieldConfig as StructFieldActual<T, keyof T>).point;
 
-        if (!isUndefined(inputOption)) composeOptions.push(inputOption);
-        if (!isUndefined(inputPoint) && isNumber(inputPoint)) composeOptions.push({ point: inputPoint });
-        if (!isUndefined(inputPoint) && isFunction(inputPoint)) composeOptions.push({ point: ctx.compute(inputPoint)! });
-
-        return Object.assign({}, ...composeOptions);
+        if (!isUndefined(inputPoint)) {
+            if (isNumber(inputPoint)) return { point: inputPoint };
+            if (isFunction(inputPoint)) return { point: ctx.compute(inputPoint)! };
+        }
     }
 
     resolveIf(ctx: ParserContext, fieldConfig: StructFieldActual<T, keyof T>): boolean {
         const fieldIf = fieldConfig.if;
 
-        if (!isUndefined(fieldIf) && isBoolean(fieldIf)) return fieldIf;
-        if (!isUndefined(fieldIf) && isFunction(fieldIf)) return ctx.compute(fieldIf);
+        if (!isUndefined(fieldIf)) {
+            if (isBoolean(fieldIf)) return fieldIf;
+            if (isFunction(fieldIf)) return ctx.compute(fieldIf);
+        }
 
         return true;
     }
@@ -137,7 +136,56 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         }
     }
 
+    sizeof(ctx?: ParserContext): number {
+        const actualFields = this.fields.filter(field => 'type' in field) as StructFieldActual<T, keyof T>[];
+        if (actualFields.length === 0) return 0;
+
+        if (!ctx) {
+            let countSize = 0;
+            for (const { type: fieldType, if: fieldIf } of actualFields) {
+                if (fieldIf) return NaN;
+
+                if (fieldType instanceof PrimitiveParser) {
+                    countSize += fieldType.byteSize;
+                    continue;
+                }
+
+                if (fieldType instanceof AdvancedParser) {
+                    countSize += fieldType.sizeof();
+                    continue;
+                }
+                return NaN;
+            }
+            return countSize;
+        }
+
+        let countSize = 0;
+        for (const field of actualFields) {
+            if (isNaN(countSize)) return countSize;
+            const fieldIf = this.resolveIf(ctx, field);
+            if (!fieldIf) continue;
+
+            const fieldParser = this.resolveParser(ctx, field);
+            const fieldOption = this.resolveOption(ctx, field);
+
+            if (!(fieldOption?.consume || ctx.option.consume)) continue;
+
+            if (fieldParser instanceof PrimitiveParser) {
+                countSize += fieldParser.byteSize;
+                continue;
+            }
+
+            if (fieldParser instanceof AdvancedParser) {
+                countSize += fieldParser.sizeof(ctx);
+                continue;
+            }
+            return NaN;
+        }
+        return countSize;
+    }
+
     read(ctx: ParserContext): T {
+        const debug = ctx.constant.DebugStruct.includes(this.creator);
         const section = Reflect.construct(this.creator, []);
 
         const fieldNames: (keyof T)[] = [];
@@ -147,7 +195,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         const parentStart = `${parentPath} {`;
         const parentEnd = `${parentPath} }`;
 
-        if (ctx.constant.DebugStruct.includes(this.creator)) {
+        if (debug) {
             console.log(parentStart);
             console.time(parentEnd);
         }
@@ -161,7 +209,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
 
             this.applySetup(ctx, fieldConfig);
 
-            if (ctx.constant.DebugStruct.includes(this.creator)) {
+            if (debug) {
                 console.time(fieldPath);
             }
 
@@ -188,12 +236,12 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
                 this.applyExpose(ctx, fieldConfig, readRes);
             }
 
-            if (ctx.constant.DebugStruct.includes(this.creator)) {
+            if (debug) {
                 console.timeEnd(fieldPath);
             }
         }
 
-        if (ctx.constant.DebugStruct.includes(this.creator)) {
+        if (debug) {
             console.timeEnd(parentEnd);
         }
 

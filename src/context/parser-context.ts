@@ -51,7 +51,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
     function create(parent?: ParserContext, ...options: (ContextOption | undefined)[]): ParserContext {
         const context = {} as ParserContext;
         const contextScope = createAccessChain(true, parent?.scope || rootScope);
-        const contextOption = createAccessChain(false, ...options, parent?.option, rootOption);
+        const contextOption = createAccessChain(false, ...options, parent?.option || rootOption);
 
         const byteStart = contextOption.point;
         let byteSize = 0;

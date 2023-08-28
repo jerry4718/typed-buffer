@@ -35,8 +35,8 @@ class BaseTypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Insta
 }
 
 function extendBaseTypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Instance>>(
-    constructor: TypedArrayFactory<Item, Instance>,
     item: PrimitiveParser<Item>,
+    constructor: TypedArrayFactory<Item, Instance>,
 ): (new(option: ArrayParserConfigComputed<Item>) => BaseTypedArrayParser<Item, Instance>) {
     return class TypedArrayParser extends BaseTypedArrayParser<Item, Instance> {
         constructor(option: ArrayParserConfigComputed<Item>) {
@@ -46,36 +46,36 @@ function extendBaseTypedArrayParser<Item, Instance extends TypedArrayInstance<It
 }
 
 export const
-    Int8ArrayParser = extendBaseTypedArrayParser(TypedArray.Int8Array, Int8),
-    Uint8ArrayParser = extendBaseTypedArrayParser(TypedArray.Uint8Array, Uint8),
-    Int16ArrayParser = extendBaseTypedArrayParser(TypedArray.Int16Array, Int16),
-    Uint16ArrayParser = extendBaseTypedArrayParser(TypedArray.Uint16Array, Uint16),
-    Int32ArrayParser = extendBaseTypedArrayParser(TypedArray.Int32Array, Int32),
-    Uint32ArrayParser = extendBaseTypedArrayParser(TypedArray.Uint32Array, Uint32),
-    Float32ArrayParser = extendBaseTypedArrayParser(TypedArray.Float32Array, Float32),
-    Float64ArrayParser = extendBaseTypedArrayParser(TypedArray.Float64Array, Float64),
-    BigInt64ArrayParser = extendBaseTypedArrayParser(TypedArray.BigInt64Array, BigInt64),
-    BigUint64ArrayParser = extendBaseTypedArrayParser(TypedArray.BigUint64Array, BigUint64);
+    Int8ArrayParser = extendBaseTypedArrayParser(Int8, TypedArray.Int8Array),
+    Uint8ArrayParser = extendBaseTypedArrayParser(Uint8, TypedArray.Uint8Array),
+    Int16ArrayParser = extendBaseTypedArrayParser(Int16, TypedArray.Int16Array),
+    Uint16ArrayParser = extendBaseTypedArrayParser(Uint16, TypedArray.Uint16Array),
+    Int32ArrayParser = extendBaseTypedArrayParser(Int32, TypedArray.Int32Array),
+    Uint32ArrayParser = extendBaseTypedArrayParser(Uint32, TypedArray.Uint32Array),
+    Float32ArrayParser = extendBaseTypedArrayParser(Float32, TypedArray.Float32Array),
+    Float64ArrayParser = extendBaseTypedArrayParser(Float64, TypedArray.Float64Array),
+    BigInt64ArrayParser = extendBaseTypedArrayParser(BigInt64, TypedArray.BigInt64Array),
+    BigUint64ArrayParser = extendBaseTypedArrayParser(BigUint64, TypedArray.BigUint64Array);
 
 export const
-    Int16BEArrayParser = extendBaseTypedArrayParser(TypedArray.Int16Array, Int16BE),
-    Uint16BEArrayParser = extendBaseTypedArrayParser(TypedArray.Uint16Array, Uint16BE),
-    Int32BEArrayParser = extendBaseTypedArrayParser(TypedArray.Int32Array, Int32BE),
-    Uint32BEArrayParser = extendBaseTypedArrayParser(TypedArray.Uint32Array, Uint32BE),
-    Float32BEArrayParser = extendBaseTypedArrayParser(TypedArray.Float32Array, Float32BE),
-    Float64BEArrayParser = extendBaseTypedArrayParser(TypedArray.Float64Array, Float64BE),
-    BigInt64BEArrayParser = extendBaseTypedArrayParser(TypedArray.BigInt64Array, BigInt64BE),
-    BigUint64BEArrayParser = extendBaseTypedArrayParser(TypedArray.BigUint64Array, BigUint64BE);
+    Int16BEArrayParser = extendBaseTypedArrayParser(Int16BE, TypedArray.Int16Array),
+    Uint16BEArrayParser = extendBaseTypedArrayParser(Uint16BE, TypedArray.Uint16Array),
+    Int32BEArrayParser = extendBaseTypedArrayParser(Int32BE, TypedArray.Int32Array),
+    Uint32BEArrayParser = extendBaseTypedArrayParser(Uint32BE, TypedArray.Uint32Array),
+    Float32BEArrayParser = extendBaseTypedArrayParser(Float32BE, TypedArray.Float32Array),
+    Float64BEArrayParser = extendBaseTypedArrayParser(Float64BE, TypedArray.Float64Array),
+    BigInt64BEArrayParser = extendBaseTypedArrayParser(BigInt64BE, TypedArray.BigInt64Array),
+    BigUint64BEArrayParser = extendBaseTypedArrayParser(BigUint64BE, TypedArray.BigUint64Array);
 
 export const
-    Int16LEArrayParser = extendBaseTypedArrayParser(TypedArray.Int16Array, Int16LE),
-    Uint16LEArrayParser = extendBaseTypedArrayParser(TypedArray.Uint16Array, Uint16LE),
-    Int32LEArrayParser = extendBaseTypedArrayParser(TypedArray.Int32Array, Int32LE),
-    Uint32LEArrayParser = extendBaseTypedArrayParser(TypedArray.Uint32Array, Uint32LE),
-    Float32LEArrayParser = extendBaseTypedArrayParser(TypedArray.Float32Array, Float32LE),
-    Float64LEArrayParser = extendBaseTypedArrayParser(TypedArray.Float64Array, Float64LE),
-    BigInt64LEArrayParser = extendBaseTypedArrayParser(TypedArray.BigInt64Array, BigInt64LE),
-    BigUint64LEArrayParser = extendBaseTypedArrayParser(TypedArray.BigUint64Array, BigUint64LE);
+    Int16LEArrayParser = extendBaseTypedArrayParser(Int16LE, TypedArray.Int16Array),
+    Uint16LEArrayParser = extendBaseTypedArrayParser(Uint16LE, TypedArray.Uint16Array),
+    Int32LEArrayParser = extendBaseTypedArrayParser(Int32LE, TypedArray.Int32Array),
+    Uint32LEArrayParser = extendBaseTypedArrayParser(Uint32LE, TypedArray.Uint32Array),
+    Float32LEArrayParser = extendBaseTypedArrayParser(Float32LE, TypedArray.Float32Array),
+    Float64LEArrayParser = extendBaseTypedArrayParser(Float64LE, TypedArray.Float64Array),
+    BigInt64LEArrayParser = extendBaseTypedArrayParser(BigInt64LE, TypedArray.BigInt64Array),
+    BigUint64LEArrayParser = extendBaseTypedArrayParser(BigUint64LE, TypedArray.BigUint64Array);
 
 const
     Int8ArrayCreator = createParserCreator(Int8ArrayParser),

@@ -40,12 +40,12 @@ const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
 
 export class ArrayParser<T> extends AdvancedParser<T[]> {
-    private readonly item: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<T> | (new() => T)>;
-    private readonly count?: ArrayParserOptionNumber;
-    private readonly size?: ArrayParserOptionNumber;
-    private readonly ends?: ArrayParserOptionEos;
-    private readonly until?: ArrayParserOptionUntil<T>;
+    private readonly itemOption: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<T> | (new() => T)>;
     private readonly indexName: ContextCompute<string> | string;
+    private readonly countOption?: ArrayParserOptionNumber;
+    private readonly sizeOption?: ArrayParserOptionNumber;
+    private readonly endsOption?: ArrayParserOptionEos;
+    private readonly untilOption?: ArrayParserOptionUntil<T>;
 
     constructor(option: ArrayParserConfig<T>) {
         super(option);
@@ -57,12 +57,12 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         if (Number(!isUndefined(count)) + Number(!isUndefined(size)) + Number(!isUndefined(ends)) !== 1) {
             throw new Error('Invalid parser options. Only one of [size] or [end].');
         }
-        this.item = item;
+        this.itemOption = item;
         this.indexName = index || '$index';
-        this.count = count;
-        this.size = size;
-        this.ends = ends;
-        this.until = until;
+        this.countOption = count;
+        this.sizeOption = size;
+        this.endsOption = ends;
+        this.untilOption = until;
     }
 
     resolveItemParser(ctx: ParserContext, item: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<T> | (new() => T)>): BaseParser<T> {
@@ -85,27 +85,78 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         if (config instanceof PrimitiveParser) return ctx.write(config, value, option);
         if (isFunction(value) || isNumber(value)) return ctx.result(value, 0);
         throw Error('one of NumberOption is not valid');
-     }
+    }
 
     endsCompute(ctx: ParserContext) {
-        const ends = this.ends!;
+        const ends = this.endsOption!;
         if (isBoolean(ends)) return endsFlag(ctx.option.ends);
         if (isNumber(ends)) return ends;
         return ctx.compute(ends);
     }
 
+    sizeof(ctx?: ParserContext): number {
+        const { itemOption, countOption, sizeOption, endsOption, untilOption } = this;
+        if (!isUndefined(endsOption)) return NaN;
+        if (!isUndefined(untilOption)) return NaN;
+
+        if (isNumber(sizeOption)) return sizeOption;
+        if (!ctx) {
+            if (!isUndefined(endsOption)) return NaN;
+            if (!isUndefined(untilOption)) return NaN;
+            if (!isUndefined(sizeOption)) return NaN;
+
+            if (isNumber(countOption)) {
+                if (itemOption instanceof PrimitiveParser) {
+                    return countOption * itemOption.byteSize;
+                }
+
+                if (itemOption instanceof AdvancedParser) {
+                    return countOption * itemOption.sizeof();
+                }
+            }
+
+            return NaN;
+        }
+
+        if (!isUndefined(sizeOption)) {
+            // 使用传入的 size 选项获取数组长度
+            const [ sizeValue, sizeSnap ] = this.readConfigNumber(ctx, sizeOption, { consume: false });
+            return sizeValue + sizeSnap.size;
+        }
+
+        const itemParser = this.resolveItemParser(ctx, itemOption);
+
+        // todo: 未完成的逻辑
+        if (!isUndefined(countOption)) {
+            // 使用传入的 count 选项获取数组长度
+            const [ countValue ] = this.readConfigNumber(ctx, countOption, { consume: false });
+
+            if (itemParser instanceof PrimitiveParser) {
+                return countValue * itemParser.byteSize;
+            }
+
+            if (itemParser instanceof AdvancedParser) {
+                return countValue * itemParser.sizeof();
+            }
+            return NaN;
+        }
+        // if (itemParser)
+
+        return NaN;
+    }
+
     read(ctx: ParserContext): T[] {
-        const { item, indexName, count, size, ends, until } = this;
-        const itemParser = this.resolveItemParser(ctx, item);
+        const { itemOption, indexName, countOption, sizeOption, endsOption, untilOption } = this;
+        const itemParser = this.resolveItemParser(ctx, itemOption);
 
         const $index = isFunction(indexName) ? ctx.compute(indexName) : indexName;
         const items: T[] = [];
 
         const parentPath = ctx.scope[ctx.constant.$path];
 
-        if (!isUndefined(count)) {
+        if (!isUndefined(countOption)) {
             // 使用传入的 count 选项获取数组长度
-            const [ countValue ] = this.readConfigNumber(ctx, count);
+            const [ countValue ] = this.readConfigNumber(ctx, countOption);
             for (let readIndex = 0; readIndex < countValue; readIndex++) {
                 ctx.expose($index, items.length);
                 ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
@@ -114,9 +165,9 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             }
         }
 
-        if (!isUndefined(size)) {
+        if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项获取数组长度
-            const [ sizeValue, sizeSnap ] = this.readConfigNumber(ctx, size);
+            const [ sizeValue, sizeSnap ] = this.readConfigNumber(ctx, sizeOption);
 
             while (true) {
                 ctx.expose($index, items.length);
@@ -129,7 +180,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             }
         }
 
-        if (!isUndefined(ends)) {
+        if (!isUndefined(endsOption)) {
             // 使用 endsJudge 来确定读取Array的长度
             const endsJudge = this.endsCompute(ctx);
 
@@ -144,13 +195,13 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             ctx.read(Uint8);
         }
 
-        if (!isUndefined(until)) {
+        if (!isUndefined(untilOption)) {
             while (true) {
                 ctx.expose($index, items.length);
                 ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
                 const [ itemValue ] = ctx.read(itemParser);
                 items.push(itemValue);
-                if (ctx.compute(until.bind(void 0, itemValue))) break;
+                if (ctx.compute(untilOption.bind(void 0, itemValue))) break;
             }
         }
 
@@ -158,22 +209,22 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
     }
 
     write(ctx: ParserContext, items: T[]): T[] {
-        const { item, indexName, count, size, ends, until } = this;
-        const itemParser = this.resolveItemParser(ctx, item);
+        const { itemOption, indexName, countOption, sizeOption, endsOption, untilOption } = this;
+        const itemParser = this.resolveItemParser(ctx, itemOption);
         const $index = isFunction(indexName) ? ctx.compute(indexName) : indexName;
 
-        if (!isUndefined(count)) {
+        if (!isUndefined(countOption)) {
             // 使用传入的 count 选项写入数组长度
-            this.writeConfigNumber(ctx, count, items.length);
+            this.writeConfigNumber(ctx, countOption, items.length);
             for (const [ idx, item ] of items.entries()) {
                 ctx.expose($index, idx);
                 ctx.write(itemParser, item);
             }
         }
 
-        if (!isUndefined(size)) {
+        if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项写入数组长度（暂时未知具体长度，先写0，以获取offset）
-            this.writeConfigNumber(ctx, size, 0);
+            this.writeConfigNumber(ctx, sizeOption, 0);
             const beforeSize = ctx.size;
 
             for (const [ idx, item ] of items.entries()) {
@@ -183,10 +234,10 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
             // 回到初始位置，写入正确的size
             const afterSize = ctx.size;
-            this.writeConfigNumber(ctx, size, afterSize - beforeSize, { point: ctx.start, consume: false });
+            this.writeConfigNumber(ctx, sizeOption, afterSize - beforeSize, { point: ctx.start, consume: false });
         }
 
-        if (!isUndefined(ends)) {
+        if (!isUndefined(endsOption)) {
             const endsMark = this.endsCompute(ctx);
 
             for (const [ idx, item ] of items.entries()) {
@@ -200,12 +251,12 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             ctx.write(Uint8, endsMark);
         }
 
-        if (!isUndefined(until)) {
+        if (!isUndefined(untilOption)) {
             const lastIndex = items.length - 1;
             for (const [ idx, item ] of items.entries()) {
                 ctx.expose($index, idx);
                 ctx.write(itemParser, item);
-                const matchedUntil = ctx.compute(until.bind(void 0, item));
+                const matchedUntil = ctx.compute(untilOption.bind(void 0, item));
                 if (matchedUntil && idx !== lastIndex) throw Error('Matching the \'until\' logic too early');
                 if (!matchedUntil && idx === lastIndex) throw Error('Last item does not match the \'until\' logic');
             }

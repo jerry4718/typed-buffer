@@ -35,7 +35,7 @@ const readContext = t.createContext(ltbBuffer.buffer, {
 
         VertexContainer,
         Animation,
-        AnimBinding,
+        // AnimBinding,
     ],
 });
 

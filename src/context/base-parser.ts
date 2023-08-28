@@ -18,6 +18,8 @@ export abstract class AdvancedParser<T> extends BaseParser<T> {
         super();
         this.option = config?.option;
     }
+
+    abstract sizeof(context?: ParserContext): number;
 }
 
 /* hack** decorator 中使用的判断标记 */
