@@ -23,6 +23,10 @@ class BaseTypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Insta
         this.basicArrayParser = new ArrayParser<Item>(config);
     }
 
+    sizeof(context?: ParserContext): number {
+        return this.basicArrayParser.sizeof(context);
+    }
+
     read(ctx: ParserContext): Instance {
         const [ baseArray ] = ctx.read(this.basicArrayParser);
         return this.typedFactory.from(baseArray);

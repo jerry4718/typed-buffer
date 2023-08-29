@@ -14,14 +14,15 @@ import { WorldModel } from './classes/dat/WorldModel.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// const datBuffer = await fs.readFile(path.join(__dirname, './files/sa_worlds@project@ware_house.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/elevator.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/lastone3.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/sa_worlds@project@tank.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/school_ffa.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/ware_house2.dat'));
-// const datBuffer = await fs.readFile(path.join(__dirname, './files/observer.dat'));
-const datBuffer = await fs.readFile(path.join(__dirname, './files/WESTERN.DAT'));
-// const datBuffer = await fs.readFile(path.join(__dirname, './files/YIKIMSEHRI.DAT'));
+const datBuffer = await fs.readFile(path.join(__dirname, './files/observer.dat'));
+// const datBuffer = await fs.readFile(path.join(__dirname, './files/WESTERN.DAT'));
+// const datBuffer = await fs.readFile(path.join(__dirname, './files/gh2010.dat'));
 console.log(datBuffer.buffer);
 
 const LithtechDatParser = t.getTypedParser(LithtechDat);

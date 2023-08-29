@@ -22,6 +22,10 @@ export class StringParser extends AdvancedParser<string> {
         this.dataParser = new ArrayParser({ item: Uint8, ...computed });
     }
 
+    sizeof(context?: ParserContext): number {
+        return this.dataParser.sizeof(context);
+    }
+
     read(ctx: ParserContext): string {
         const [ readArray ] = ctx.read(this.dataParser);
         const byteArray = readArray instanceof Uint8Array ? readArray : Uint8Array.from(readArray);

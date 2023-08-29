@@ -8,6 +8,7 @@ import { WorldModelPolygon } from './WorldModelPolygon.ts';
 
 @ParserTarget()
 export class WorldModel {
+    // always zero
     @FieldType(t.Uint32)
     reserved!: number;
 

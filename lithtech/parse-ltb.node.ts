@@ -17,7 +17,11 @@ import { VertexContainer } from './classes/ltb/VertexContainer.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@red@573.ltb'));
+// const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@red@573.ltb'));
+// const ltbBuffer = await fs.readFile(path.join(__dirname, './files/522.ltb'));
+// const ltbBuffer = await fs.readFile(path.join(__dirname, './files/cm901_is_3p_new.ltb'));
+const ltbBuffer = await fs.readFile(path.join(__dirname, './files/835.ltb'));
+
 // const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@blue@574.ltb'));
 console.log(ltbBuffer.buffer);
 

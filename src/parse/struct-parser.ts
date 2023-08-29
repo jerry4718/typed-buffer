@@ -116,6 +116,14 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         return true;
     }
 
+    resolveExpose(fieldConfig: StructField<T, keyof T>) {
+        const fieldExpose = fieldConfig.expose;
+        if (!isUndefined(fieldExpose)) {
+            if (isBoolean(fieldExpose)) return fieldConfig.name;
+            if (isString(fieldExpose) || isSymbol(fieldExpose)) return fieldExpose;
+        }
+    }
+
     applySetup(ctx: ParserContext, fieldConfig: StructField<T, keyof T>): boolean {
         const fieldSetup = fieldConfig.setup || [];
 
@@ -127,13 +135,8 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
     }
 
     applyExpose(ctx: ParserContext, fieldConfig: StructField<T, keyof T>, value: T[keyof T]) {
-        const fieldExpose = fieldConfig.expose;
-        if (isBoolean(fieldExpose)) {
-            return ctx.expose(fieldConfig.name, value);
-        }
-        if (isString(fieldExpose) || isSymbol(fieldExpose)) {
-            return ctx.expose(fieldExpose, value);
-        }
+        const exposeKey = this.resolveExpose(fieldConfig);
+        if (!isUndefined(exposeKey)) return ctx.expose(exposeKey, value);
     }
 
     sizeof(ctx?: ParserContext): number {

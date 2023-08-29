@@ -121,7 +121,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项获取数组长度
             const [ sizeValue, sizeSnap ] = this.readConfigNumber(ctx, sizeOption, { consume: false });
-            return sizeValue + sizeSnap.size;
+            return sizeSnap.size + sizeValue;
         }
 
         const itemParser = this.resolveItemParser(ctx, itemOption);
@@ -129,18 +129,17 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         // todo: 未完成的逻辑
         if (!isUndefined(countOption)) {
             // 使用传入的 count 选项获取数组长度
-            const [ countValue ] = this.readConfigNumber(ctx, countOption, { consume: false });
+            const [ countValue, countSnap ] = this.readConfigNumber(ctx, countOption, { consume: false });
 
             if (itemParser instanceof PrimitiveParser) {
-                return countValue * itemParser.byteSize;
+                return countSnap.size + countValue * itemParser.byteSize;
             }
 
             if (itemParser instanceof AdvancedParser) {
-                return countValue * itemParser.sizeof();
+                return countSnap.size + countValue * itemParser.sizeof();
             }
             return NaN;
         }
-        // if (itemParser)
 
         return NaN;
     }
@@ -167,12 +166,13 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项获取数组长度
-            const [ sizeValue, sizeSnap ] = this.readConfigNumber(ctx, sizeOption);
+            const [ sizeValue ] = this.readConfigNumber(ctx, sizeOption);
+            const sizeEnd = ctx.end;
 
             while (true) {
                 ctx.expose($index, items.length);
                 ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
-                const collectSize = ctx.size - sizeSnap.size;
+                const collectSize = ctx.end - sizeEnd;
                 if (collectSize > sizeValue) throw Error('Invalid array data read');
                 if (collectSize === sizeValue) break;
                 const [ itemValue ] = ctx.read(itemParser);

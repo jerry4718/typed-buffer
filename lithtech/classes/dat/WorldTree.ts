@@ -18,7 +18,8 @@ export class WorldTree {
     @FieldType(t.Uint32)
     dummyTerrainDepth!: number;
 
-    @FieldType(t.Array, { item: t.Uint8, count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.childNumNodes * 0.125 + 1 })
+    // Oct-tree stored bitwise
+    @FieldType(t.Array, { item: t.Uint8, count: (_: t.ParserContext, scope: t.ScopeAccessor) => Math.floor(scope.childNumNodes / 8 + 1) })
     worldLayout!: number[];
 
     @FieldType(t.Array, { item: WorldModel, count: t.Uint32 })

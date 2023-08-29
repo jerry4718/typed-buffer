@@ -47,7 +47,7 @@ function convertTypedParser<T extends object>(klass: Constructor<T>): StructPars
             const fieldName = fieldItem.name;
             const composedIndex = composedFields.findIndex(composed => composed.name === fieldName);
             const composeTo = composedIndex > -1
-                ? composedFields[ composedIndex ]
+                ? composedFields[composedIndex]
                 : {} as LocalField;
             Object.assign(composeTo, fieldItem);
             if (composedIndex === -1) composedFields.push(composeTo);
@@ -72,7 +72,7 @@ function ensureFieldConfig<K extends string | symbol, T>(proto: object, property
     const fieldIndex = fields.findIndex(field => field.name === propertyKey);
 
     const ensureConfig = fieldIndex > -1
-        ? fields[ fieldIndex ]
+        ? fields[fieldIndex]
         : { name: propertyKey } as FieldConfig<K, T>;
 
     if (fieldIndex === -1) fields.push(ensureConfig);
@@ -132,13 +132,6 @@ export function FieldPoint<T>(point: number | ContextCompute<number>) {
     return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
         const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
         Object.assign(fieldConfig, { point });
-    });
-}
-
-export function FieldOption<T>(option: Partial<ContextOption>) {
-    return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {
-        const fieldConfig = ensureFieldConfig<K, T>(proto, propertyKey);
-        Object.assign(fieldConfig, { option });
     });
 }
 
