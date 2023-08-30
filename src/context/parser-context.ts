@@ -1,5 +1,5 @@
+import { NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
 import { Ascii } from '../coding/codings.ts';
-import { Endian } from '../common.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { createAccessChain } from './access-chain.ts';
 import { AdvancedParser, BaseParser } from './base-parser.ts';
@@ -10,37 +10,26 @@ import omit from 'lodash-es/omit';
 
 export * from './snap-tuple.ts';
 
-// 探测当前运行环境的端序情况
-function nativeEndianness(): Endian {
-    const testBuffer = new ArrayBuffer(2);
-    new Uint16Array(testBuffer).fill(0x0102);
-    const [ left, right ] = new Uint8Array(testBuffer);
-    if (left === 1 && right === 2) return 'be';
-    if (left === 2 && right === 1) return 'le';
-    throw Error('never');
-}
-
 const defaultContextConstant: ContextConstant = Object.freeze({
     $path: '$path',
     path: 'root',
-    endian: nativeEndianness(),
+    endian: NATIVE_ENDIANNESS,
     DebugStruct: [],
+    ends: 0x00,
+    coding: Ascii,
 });
 
 const defaultContextOption: ContextOption = Object.freeze({
     point: 0,
     consume: true,
-    ends: 0x00,
-    endian: nativeEndianness(),
-    coding: Ascii,
 });
 
 // todo: closure => to class or not to class?
 export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextConstant & ContextOption> = {}): ParserContext {
     const view = new DataView(buffer);
 
-    const pickConstant = pick(inputOption, [ '$path', 'path', 'endian', 'DebugStruct' ]);
-    const pickOption = omit(inputOption, [ '$path', 'path', 'endian', 'DebugStruct' ]);
+    const pickConstant = omit(inputOption, [ 'point', 'consume' ]);
+    const pickOption = pick(inputOption, [ 'point', 'consume' ]);
 
     const rootConstant = createAccessChain(false, pickConstant, defaultContextConstant);
     const rootOption = createAccessChain(false, pickOption, defaultContextOption);
@@ -58,6 +47,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
 
         function read<T>(parser: BaseParser<T>, patchOption?: Partial<ContextOption>): SnapTuple<T> {
             const readOption = createAccessChain(false, patchOption, { point: byteStart + byteSize });
+
             // 判断parser是否为Primitive，Primitive直接在ctx中读取，避免创建多余的subContext
             if (parser instanceof PrimitiveParser) {
                 const { point, consume } = createAccessChain(false, readOption, contextOption);

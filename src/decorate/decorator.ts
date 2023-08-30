@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { AdvancedParser, BaseParser, isParserClass, isParserCreator } from '../context/base-parser.ts';
-import { ContextCompute, ContextOption } from '../context/types.ts';
+import { ContextCompute, ContextConstant, ContextOption } from '../context/types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { StructFieldActual, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
 import { Constructor, getInheritedMetadata, getPrototypeMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
@@ -14,7 +14,7 @@ export const definePropertyDecorator = (decorator: PropertyDecorator): PropertyD
 export const defineMethodDecorator = (decorator: MethodDecorator): MethodDecorator => decorator;
 export const defineParameterDecorator = (decorator: ParameterDecorator): ParameterDecorator => decorator;
 
-export function ParserTarget<T extends object>(config: Partial<ContextOption> = {}) {
+export function ParserTarget<T extends object>(config: Partial<ContextConstant & ContextOption> = {}) {
     function decorator<Class extends Constructor<T>>(klass: Class) {
         Reflect.defineMetadata(kParserTarget, config, klass);
 

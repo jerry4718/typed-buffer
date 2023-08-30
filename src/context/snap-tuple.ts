@@ -75,6 +75,31 @@ class SnapResult<T> {
     }
 }
 
+class SnapUint32Array<T> {
+    private readonly bf: Uint32Array;
+
+    constructor(
+        private readonly value: T,
+        start: number,
+        size: number,
+    ) {
+        this.bf = Uint32Array.of(start, size);
+    }
+
+    get start() {
+        return this.bf.at(0)!;
+    }
+
+    get size() {
+        return this.bf.at(1)!;
+    }
+
+    * [Symbol.iterator]() {
+        yield this.value;
+        yield { start: this.start, size: this.size, end: this.start + this.size };
+    }
+}
+
 class SnapUint32<T> {
     private readonly bf: ArrayBuffer;
 
@@ -132,7 +157,8 @@ class SnapBigIntResult<T> {
 export function createResult<T>(value: T, start: number, size: number): SnapTuple<T> {
     // return new SnapBigIntResult(value, start, size) as unknown as SnapTuple<T>; // 117
     // return new SnapResult(value, start, size) as unknown as SnapTuple<T>; // 119
-    return new SnapUint32(value, start, size) as unknown as SnapTuple<T>; // 103
+    // return new SnapUint32(value, start, size) as unknown as SnapTuple<T>; // 103
+    return new SnapUint32Array(value, start, size) as unknown as SnapTuple<T>; // 119
 }
 
 export interface WithValue<T> {

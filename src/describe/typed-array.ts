@@ -5,6 +5,8 @@ export interface TypedArrayFactory<Item, Instance> {
 
     new(buffer: ArrayBufferLike, byteOffset?: number, length?: number): Instance;
 
+    readonly BYTES_PER_ELEMENT: number;
+
     of(...items: Item[]): Instance;
 
     from(array: ArrayLike<Item>): Instance;
@@ -13,7 +15,11 @@ export interface TypedArrayFactory<Item, Instance> {
 }
 
 export interface TypedArrayInterface<Item, Instance> {
+    readonly buffer: ArrayBuffer;
+    readonly byteOffset: number;
+    readonly byteLength: number;
     readonly length: number;
+    readonly BYTES_PER_ELEMENT: number;
 
     [index: number]: Item;
 

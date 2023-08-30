@@ -11,15 +11,14 @@ export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor, 
 export type ContextOption = {
     point: number, // fixed, cannot computable
     consume: boolean,
-    ends: number,
-    endian: Endian,
-    coding: Coding,
 };
 
 // 固定的配置，我们认定这些配置不需要在解析过程中发生改变
 export type ContextConstant = {
     $path: string | symbol,
     path: string,
+    ends: number,
+    coding: Coding,
     /**
      * 所有数据都是基于原始数类型做的读写处理，
      * 所以endian会被最频繁的访问，

@@ -1,7 +1,6 @@
-import { BigEndian, Endian, LittleEndian } from '../common.ts';
 import { BaseParser } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { isUndefined } from '../utils/type-util.ts';
+import { Endian, isLittleEndian } from '../utils/endianness-util.ts';
 
 type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
 type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
@@ -20,13 +19,6 @@ type PrimitiveParserConfig<T> =
     & PrimitiveParserOptionComposable
     & PrimitiveParserOptionRequired<T>;
 
-function isLittleEndian(endian?: Endian): boolean {
-    if (isUndefined(endian)) throw Error('endian loosed');
-    if (endian === BigEndian) return false;
-    if (endian === LittleEndian) return true;
-    throw Error('endian only support "le" or "be"');
-}
-
 export class PrimitiveParser<T> extends BaseParser<T> {
     private readonly getter: PrimitiveGetter<T>;
     private readonly setter: PrimitiveSetter<T>;
@@ -40,6 +32,10 @@ export class PrimitiveParser<T> extends BaseParser<T> {
         this.getter = config.getter;
         this.setter = config.setter;
         this.endian = config.endian;
+    }
+
+    sizeof(): number {
+        return this.byteSize;
     }
 
     read(ctx: ParserContext, byteOffset: number, endian?: Endian): T {

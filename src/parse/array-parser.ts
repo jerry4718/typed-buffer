@@ -89,7 +89,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
     endsCompute(ctx: ParserContext) {
         const ends = this.endsOption!;
-        if (isBoolean(ends)) return endsFlag(ctx.option.ends);
+        if (isBoolean(ends)) return endsFlag(ctx.constant.ends);
         if (isNumber(ends)) return ends;
         return ctx.compute(ends);
     }
