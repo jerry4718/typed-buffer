@@ -18,6 +18,6 @@ export class LightMapSection {
     @FieldType(t.Uint32)
     lenData!: number;
 
-    @FieldType(t.Array, { item: t.Uint8, count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.lenData })
-    data!: number[];
+    @FieldType(t.Uint8Array, { count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.lenData })
+    data!: Uint8Array;
 }

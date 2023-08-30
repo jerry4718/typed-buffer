@@ -6,6 +6,6 @@ export class WeightSet {
     @FieldType(t.String, { size: t.Uint16 })
     name!: string;
 
-    @FieldType(t.Array, { item: t.Float32, count: t.Uint32 })
-    nodeWeights!: number[];
+    @FieldType(t.Float32Array, { count: t.Uint32 })
+    nodeWeights!: Float32Array;
 }

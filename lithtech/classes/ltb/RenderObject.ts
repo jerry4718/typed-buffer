@@ -12,8 +12,8 @@ export class RenderObject {
     @FieldType(t.Uint32)
     numTextures!: number;
 
-    @FieldType(t.Array, { item: t.Uint32, count: 4 })
-    textures!: number[];
+    @FieldType(t.Uint32Array, { count: 4 })
+    textures!: Uint32Array;
 
     @FieldType(t.Uint32)
     renderStyle!: number;
@@ -34,6 +34,6 @@ export class RenderObject {
     })
     lodMesh!: RigidMesh | SkeletalMesh | VertexAnimatedMesh | NullMesh | UnknownMesh;
 
-    @FieldType(t.Array, { item: t.Uint8, count: t.Uint8 })
-    usedNodes!: number[];
+    @FieldType(t.Uint8Array, { count: t.Uint8 })
+    usedNodes!: Uint8Array;
 }

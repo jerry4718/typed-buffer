@@ -15,7 +15,6 @@ export class WorldModel {
     @FieldType(t.Uint32)
     worldInfoFlag!: number;
 
-    // todo: 在dat86时，这里字符串可以看出来，已解析部分出现了一个byte的偏移(暂未溯源)
     @FieldType(t.String, { size: t.Uint16 })
     worldName!: string;
 
@@ -76,12 +75,11 @@ export class WorldModel {
     })
     textureNames!: string[];
 
-    @FieldType(t.Array, {
-        item: t.Uint8,
+    @FieldType(t.Uint8Array, {
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPolygons,
     })
     @FieldExpose()
-    vertexCountList!: number[];
+    vertexCountList!: Uint8Array;
 
     @FieldType(t.Array, {
         item: Plane,

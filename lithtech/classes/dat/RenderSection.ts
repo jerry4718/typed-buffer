@@ -21,6 +21,6 @@ export class RenderSection {
     @FieldType(t.Uint32)
     lightMapHeight!: number;
 
-    @FieldType(t.Array, { item: t.Uint8, count: t.Uint32 })
-    lightMapData!: number[];
+    @FieldType(t.Uint8Array, { count: t.Uint32 })
+    lightMapData!: Uint8Array;
 }

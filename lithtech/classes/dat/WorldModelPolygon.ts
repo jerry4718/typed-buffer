@@ -9,9 +9,8 @@ export class WorldModelPolygon {
     @FieldType(t.Uint32)
     planeIndex!: number;
 
-    @FieldType(t.Array, {
-        item: t.Uint32,
+    @FieldType(t.Uint32Array, {
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexCountList[scope.$index],
     })
-    vertexIndexes!: number[];
+    vertexIndexes!: Uint32Array;
 }

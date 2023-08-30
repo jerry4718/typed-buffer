@@ -11,11 +11,10 @@ export class Piece {
     @FieldExpose()
     numLod!: number;
 
-    @FieldType(t.Array, {
-        item: t.Float32,
+    @FieldType(t.Float32Array, {
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numLod,
     })
-    lodDistances!: number[];
+    lodDistances!: Float32Array;
 
     @FieldType(t.Uint32)
     lodMin!: number;

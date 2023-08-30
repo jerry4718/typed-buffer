@@ -3,8 +3,8 @@ import { FieldType, ParserTarget } from '../../../mod.ts';
 
 @ParserTarget()
 export class Matrix {
-    @FieldType(t.Array, { item: t.Float32, count: 4 * 4 })
-    data!: number[];
+    @FieldType(t.Float32Array, { count: 4 * 4 })
+    data!: Float32Array;
 
     get rows() {
         return [

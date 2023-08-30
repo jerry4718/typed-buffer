@@ -10,10 +10,10 @@ export class LightData {
     @FieldType(Vector3)
     blockSize!: Vector3;
 
-    @FieldType(t.Array, { item: t.Uint32, count: 3 })
-    lookupSize!: number[];
+    @FieldType(t.Uint32Array, { count: 3 })
+    lookupSize!: Uint32Array;
 
     /* RLE compressed data */
-    @FieldType(t.Array, { item: t.Uint8, count: t.Uint32 })
-    lightDataGrid!: number[];
+    @FieldType(t.Uint8Array, { count: t.Uint32 })
+    lightDataGrid!: Uint8Array;
 }

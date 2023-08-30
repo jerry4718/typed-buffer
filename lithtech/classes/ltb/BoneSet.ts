@@ -9,8 +9,8 @@ export class BoneSet {
     @FieldType(t.Uint16)
     numIndexes!: number;
 
-    @FieldType(t.Array, { item: t.Uint8, count: 4 })
-    boneList!: number[];
+    @FieldType(t.Uint8Array, { count: 4 })
+    boneList!: Uint8Array;
 
     @FieldType(t.Uint32)
     indexBufferIndex!: number;

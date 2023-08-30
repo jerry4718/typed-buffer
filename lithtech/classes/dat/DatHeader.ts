@@ -3,8 +3,8 @@ import { FieldType, ParserTarget } from '../../../mod.ts';
 
 @ParserTarget()
 export class DatHeader {
-    @FieldType(t.Array, { item: t.Uint8, count: 4 })
-    datVersion!: number[];
+    @FieldType(t.Uint8Array, { count: 4 })
+    datVersion!: Uint8Array;
 
     @FieldType(t.Uint32)
     worldDataPos!: number;
@@ -24,6 +24,6 @@ export class DatHeader {
     @FieldType(t.Uint32)
     renderDataPos!: number;
 
-    @FieldType(t.Array, { item: t.Uint32, count: 8 })
-    future!: number[];
+    @FieldType(t.Uint32Array, { count: 8 })
+    future!: Uint32Array;
 }

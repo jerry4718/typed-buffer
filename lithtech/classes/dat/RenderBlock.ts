@@ -37,6 +37,6 @@ export class RenderBlock {
     @FieldType(t.Uint8)
     childFlags!: number;
 
-    @FieldType(t.Array, { item: t.Uint32, count: 2 })
-    childNodeIndices!: number[];
+    @FieldType(t.Uint32Array, { count: 2 })
+    childNodeIndices!: Uint32Array;
 }
