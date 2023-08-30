@@ -1,10 +1,11 @@
+import { AdvancedParser, AdvancedParserConfig, BaseParser, createParserCreator } from '../context/base-parser.ts';
+import { calcGetter, lazyGetter } from '../context/getters.ts';
+import { SnapTuple } from '../context/parser-context.ts';
+import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
+import { SafeAny } from '../utils/prototype-util.ts';
+import { assertType, isBoolean, isFunction, isNumber, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
 import { ArrayParser } from './array-parser.ts';
 import { PrimitiveParser } from './primitive-parser.ts';
-import { AdvancedParser, BaseParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
-import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
-import { assertType, isBoolean, isFunction, isNumber, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
-import { SnapTuple } from '../context/parser-context.ts';
-import { SafeAny } from '../utils/prototype-util.ts';
 
 export type StructFieldBasic<T, K extends keyof T> = {
     name: K,
@@ -235,7 +236,15 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
                 if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
                 Reflect.defineMetadata(kStructReadSnap, readSnap, section, fieldName as string);
 
-                Reflect.set(section, fieldName, readRes);
+                if (isFunction(readRes)) {
+                    Reflect.defineProperty(section, fieldName, { get: readRes });
+                }
+                else if (fieldParser instanceof ArrayParser) {
+                    Reflect.defineProperty(section, fieldName, { get: lazyGetter(() => readRes.map(calcGetter)) });
+                }
+                else {
+                    Reflect.defineProperty(section, fieldName, { writable: false, value: readRes });
+                }
                 this.applyExpose(ctx, fieldConfig, readRes);
             }
 

@@ -1,12 +1,13 @@
-import { NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
+import omit from 'lodash-es/omit';
+import pick from 'lodash-es/pick';
 import { Ascii } from '../coding/codings.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
+import { NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
 import { createAccessChain } from './access-chain.ts';
 import { AdvancedParser, BaseParser } from './base-parser.ts';
-import { ContextCompute, ContextConstant, ContextOption, ParserContext, ScopeAccessor } from './types.ts';
+import { lazyGetter } from './getters.ts';
 import { createResult, SnapTuple } from './snap-tuple.ts';
-import pick from 'lodash-es/pick';
-import omit from 'lodash-es/omit';
+import { ContextCompute, ContextConstant, ContextOption, ParserContext, ScopeAccessor } from './types.ts';
 
 export * from './snap-tuple.ts';
 
@@ -28,11 +29,8 @@ const defaultContextOption: ContextOption = Object.freeze({
 export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextConstant & ContextOption> = {}): ParserContext {
     const view = new DataView(buffer);
 
-    const pickConstant = omit(inputOption, [ 'point', 'consume' ]);
-    const pickOption = pick(inputOption, [ 'point', 'consume' ]);
-
-    const rootConstant = createAccessChain(false, pickConstant, defaultContextConstant);
-    const rootOption = createAccessChain(false, pickOption, defaultContextOption);
+    const rootConstant: ContextConstant = { ...defaultContextConstant, ...omit(inputOption, [ 'point', 'consume' ]) };
+    const rootOption: ContextOption = { ...defaultContextOption, ...pick(inputOption, [ 'point', 'consume' ]) };
 
     const { $path, path: rootPath, endian: rootEndian } = rootConstant;
     const rootScope: ScopeAccessor = { [$path]: rootPath };
@@ -63,7 +61,14 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
 
             if (parser instanceof AdvancedParser) {
                 const ctx = context.derive(readOption, parser.option);
-                const value = parser.read(ctx, ctx.option.point);
+                const readPoint = ctx.option.point;
+                const advanceSize = parser.sizeof();
+                if (!isNaN(advanceSize)) {
+                    const getter = lazyGetter(parser.read.bind(parser, ctx, readPoint));
+                    if (ctx.option.consume) byteSize += advanceSize;
+                    return ctx.result(getter, advanceSize);
+                }
+                const value = parser.read(ctx, readPoint);
                 const readSize = ctx.size;
                 if (ctx.option.consume) byteSize += readSize;
                 return ctx.result(value, readSize);
