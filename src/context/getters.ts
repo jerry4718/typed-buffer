@@ -1,6 +1,6 @@
 import { isFunction, isUndefined } from '../utils/type-util.ts';
 
-export function lazyGetter<T>(getter: () => T) {
+export function lazyGetter<T>(getter: () => T): () => T {
     let value: T;
     return function () {
         if (!isUndefined(value)) return value;

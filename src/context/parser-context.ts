@@ -33,7 +33,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
     const rootOption: ContextOption = { ...defaultContextOption, ...pick(inputOption, [ 'point', 'consume' ]) };
 
     const { $path, path: rootPath, endian: rootEndian } = rootConstant;
-    const rootScope: ScopeAccessor = { [$path]: rootPath };
+    const rootScope: ScopeAccessor = { [ $path ]: rootPath };
 
     function create(parent?: ParserContext, ...options: (ContextOption | undefined)[]): ParserContext {
         const context = {} as ParserContext;
@@ -64,7 +64,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
                 const readPoint = ctx.option.point;
                 const advanceSize = parser.sizeof();
                 if (!isNaN(advanceSize)) {
-                    const getter = lazyGetter(parser.read.bind(parser, ctx, readPoint));
+                    const getter = lazyGetter<T>(parser.read.bind(parser, ctx, readPoint));
                     if (ctx.option.consume) byteSize += advanceSize;
                     return ctx.result(getter, advanceSize);
                 }
@@ -101,6 +101,10 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             throw Error('unknown Parser type');
         }
 
+        function skip(size: number) {
+            byteSize += size;
+        }
+
         return Object.defineProperties(
             context as ParserContext,
             {
@@ -111,6 +115,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
                 scope: { writable: false, value: contextScope },
                 read: { writable: false, value: read },
                 write: { writable: false, value: write },
+                skip: { writable: false, value: skip },
                 expose: { writable: false, value: Reflect.set.bind(void 0, contextScope) },
                 compute: { writable: false, value: compute.bind(void 0, context, contextScope, contextOption) },
                 result: { writable: false, value: <T>(value: T, size = byteSize): SnapTuple<T> => createResult(value, contextOption.point, size) },

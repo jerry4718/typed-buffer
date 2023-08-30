@@ -1,7 +1,7 @@
-export function matchOf(variable: unknown): string {
-	let tag: string = Object.prototype.toString.call(variable);
+import { toString } from './proto-fn.ts';
 
-	return tag.replace(/(^\[[\W\w]+ )|(]$)/g, '');
+export function matchOf(variable: unknown): string {
+	return toString.call(variable).replace(/(^\[[\W\w]+ )|(]$)/g, '');
 }
 
 export function typeOf(variable: unknown): string {

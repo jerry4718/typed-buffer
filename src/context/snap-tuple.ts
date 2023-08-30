@@ -5,7 +5,7 @@ export interface SnapInfo {
     // pos: [ number, number ]
 }
 
-export type SnapTuple<T> = [ T | (() => T), SnapInfo ];
+export type SnapTuple<T> = [ T, SnapInfo ];
 
 const BigInt32Max = BigInt(Math.pow(2, 32) - 1);
 

@@ -1,6 +1,6 @@
 import { AdvancedParser, AdvancedParserConfig, BaseParser, createParserCreator } from '../context/base-parser.ts';
 import { calcGetter, lazyGetter } from '../context/getters.ts';
-import { SnapTuple } from '../context/parser-context.ts';
+import { SnapTuple } from '../context/snap-tuple.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 import { assertType, isBoolean, isFunction, isNumber, isString, isSymbol, isUndefined } from '../utils/type-util.ts';

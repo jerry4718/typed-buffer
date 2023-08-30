@@ -1,164 +1,299 @@
-import { AdvancedParser, createParserCreator } from '../context/base-parser.ts';
-import { ParserContext } from '../context/types.ts';
+import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
+import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
 import * as TypedArray from '../describe/typed-array.ts';
-import { TypedArrayFactory, TypedArrayInstance } from '../describe/typed-array.ts';
-import { ArrayParser, ArrayParserConfig, ArrayParserConfigComputed } from './array-parser.ts';
-import {
-    PrimitiveParser,
-    Int8, Uint8,
-    Int16, Uint16, Int16BE, Uint16BE, Int16LE, Uint16LE,
-    Int32, Uint32, Int32BE, Uint32BE, Int32LE, Uint32LE,
-    BigInt64, BigUint64, BigInt64BE, BigUint64BE, BigInt64LE, BigUint64LE,
-    Float32, Float32BE, Float32LE,
-    Float64, Float64LE, Float64BE,
-} from './primitive-parser.ts';
+import { TypedArrayConstructor, TypedArrayFactory, TypedArrayInstance } from '../describe/typed-array.ts';
+import * as PrimitiveType from './primitive-parser.ts';
+import { PrimitiveParser } from './primitive-parser.ts';
+import { isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
+import { SnapTuple } from '../context/snap-tuple.ts';
+import { changeTypedArrayEndianness, NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
 
-class BaseTypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<Instance> {
-    private readonly typedFactory: TypedArrayFactory<Item, Instance>;
-    private readonly basicArrayParser: ArrayParser<Item>;
+export type TypedArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
+export type TypedArrayParserOptionEos = ContextCompute<number> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
+export type TypedArrayParserOptionUntil<T> = (prev: T, ctx: ParserContext, scope: ScopeAccessor, option: ContextOption) => boolean;
 
-    constructor(typedFactory: TypedArrayFactory<Item, Instance>, config: ArrayParserConfig<Item>) {
-        super(config);
-        this.typedFactory = typedFactory;
-        this.basicArrayParser = new ArrayParser<Item>(config);
+export type TypedArrayConfigLoopCount = { count: TypedArrayParserOptionNumber };
+export type TypedArrayConfigLoopSize = { size: TypedArrayParserOptionNumber };
+export type TypedArrayConfigLoopEnds = { ends: TypedArrayParserOptionEos };
+export type TypedArrayParserLoopUntil<T> = { until: TypedArrayParserOptionUntil<T> };
+
+export type TypedArrayParserReaderPartial<T> =
+    & Partial<TypedArrayConfigLoopCount>
+    & Partial<TypedArrayConfigLoopSize>
+    & Partial<TypedArrayConfigLoopEnds>
+    & Partial<TypedArrayParserLoopUntil<T>>;
+
+export type TypedArrayParserConfigComputed<T> =
+    | TypedArrayConfigLoopCount
+    | TypedArrayConfigLoopSize
+    | TypedArrayConfigLoopEnds
+    | TypedArrayParserLoopUntil<T>;
+
+export type TypedArrayParserConfig<T> =
+    & AdvancedParserConfig
+    & TypedArrayParserConfigComputed<T>;
+
+const DEFAULT_ENDS_FLAG = 0x00;
+const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
+
+export class BaseTypedArrayParser<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<Instance> {
+    private readonly itemParser: PrimitiveParser<Item>;
+    private readonly typedConstructor: TypedArrayConstructor<Item, Instance>;
+    private readonly BYTES_PER_ELEMENT: number;
+    private readonly countOption?: TypedArrayParserOptionNumber;
+    private readonly sizeOption?: TypedArrayParserOptionNumber;
+    private readonly endsOption?: TypedArrayParserOptionEos;
+    private readonly untilOption?: TypedArrayParserOptionUntil<Item>;
+
+    constructor(itemParser: PrimitiveParser<Item>, typedConstructor: TypedArrayConstructor<Item, Instance>, option: TypedArrayParserConfig<Item>) {
+        super(option);
+        const { ...optionPartial } = option;
+        const { count, size, ends, until } = optionPartial as TypedArrayParserReaderPartial<Item>;
+        if (Number(!isUndefined(count)) + Number(!isUndefined(size)) + Number(!isUndefined(ends)) !== 1) {
+            throw new Error('Invalid parser options. Only one of [size] or [end].');
+        }
+        this.itemParser = itemParser;
+        this.typedConstructor = typedConstructor;
+        this.BYTES_PER_ELEMENT = typedConstructor.BYTES_PER_ELEMENT;
+        this.countOption = count;
+        this.sizeOption = size;
+        this.endsOption = ends;
+        this.untilOption = until;
     }
 
-    sizeof(context?: ParserContext): number {
-        return this.basicArrayParser.sizeof(context);
+    readConfigNumber(ctx: ParserContext, config: TypedArrayParserOptionNumber, option?: Partial<ContextOption>): SnapTuple<number> {
+        if (config instanceof PrimitiveParser) return ctx.read(config, option);
+        if (isFunction(config)) return ctx.result(ctx.compute(config), 0);
+        if (isNumber(config)) return ctx.result(config, 0);
+        throw Error('one of NumberOption is not valid');
+    }
+
+    writeConfigNumber(ctx: ParserContext, config: TypedArrayParserOptionNumber, value: number, option?: Partial<ContextOption>): SnapTuple<number> {
+        if (config instanceof PrimitiveParser) return ctx.write(config, value, option);
+        if (isFunction(value) || isNumber(value)) return ctx.result(value, 0);
+        throw Error('one of NumberOption is not valid');
+    }
+
+    endsCompute(ctx: ParserContext) {
+        const ends = this.endsOption!;
+        if (isBoolean(ends)) return endsFlag(ctx.constant.ends);
+        if (isNumber(ends)) return ends;
+        return ctx.compute(ends);
+    }
+
+    sizeof(ctx?: ParserContext): number {
+        const { countOption, sizeOption, endsOption, untilOption } = this;
+        if (!isUndefined(endsOption)) return NaN;
+        if (!isUndefined(untilOption)) return NaN;
+
+        if (isNumber(sizeOption)) return sizeOption;
+        if (!ctx) {
+            if (!isUndefined(endsOption)) return NaN;
+            if (!isUndefined(untilOption)) return NaN;
+            if (!isUndefined(sizeOption)) return NaN;
+
+            if (isNumber(countOption)) {
+                return countOption * this.BYTES_PER_ELEMENT;
+            }
+
+            return NaN;
+        }
+
+        if (!isUndefined(sizeOption)) {
+            // 使用传入的 size 选项获取数组长度
+            const [ sizeValue, sizeSnap ] = this.readConfigNumber(ctx, sizeOption, { consume: false });
+            return sizeSnap.size + sizeValue;
+        }
+
+        return NaN;
+    }
+
+    resolveEndianness(ctx: ParserContext, from: Instance): Instance {
+        const endian = this.itemParser.endian || ctx.constant.endian;
+        if (!endian) return from;
+        if (endian === NATIVE_ENDIANNESS) return from;
+        return changeTypedArrayEndianness(from);
     }
 
     read(ctx: ParserContext): Instance {
-        const [ baseArray ] = ctx.read(this.basicArrayParser);
-        return this.typedFactory.from(baseArray);
+        return this.resolveEndianness(ctx, this.innerRead(ctx));
     }
 
-    write(ctx: ParserContext, value: Instance): Instance {
-        ctx.write(this.basicArrayParser, Array.from(value));
-        return value;
+    write(ctx: ParserContext, typedArray: Instance): Instance {
+        this.innerWrite(ctx, this.resolveEndianness(ctx, typedArray));
+        return typedArray;
+    }
+
+    private innerRead(ctx: ParserContext): Instance {
+        const { countOption, sizeOption, endsOption, untilOption } = this;
+
+        if (!isUndefined(countOption)) {
+            // 使用传入的 count 选项获取数组长度
+            const [ countValue ] = this.readConfigNumber(ctx, countOption);
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + countValue * this.BYTES_PER_ELEMENT);
+            ctx.skip(countValue * this.BYTES_PER_ELEMENT);
+            return Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
+        }
+
+        if (!isUndefined(sizeOption)) {
+            // 使用传入的 size 选项获取数组长度
+            const [ sizeValue ] = this.readConfigNumber(ctx, sizeOption);
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
+            ctx.skip(sizeValue);
+            return Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
+        }
+
+        if (!isUndefined(endsOption)) {
+            // 使用 endsJudge 来确定读取Array的长度
+            const endsJudge = this.endsCompute(ctx);
+
+            const pointBefore = ctx.end;
+            let pointOffset = 0;
+            while (true) {
+                const [ next ] = ctx.read(PrimitiveType.Uint8, { consume: false, point: pointBefore + pointOffset });
+                if (next === endsJudge) break;
+                pointOffset += this.BYTES_PER_ELEMENT;
+            }
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + pointOffset);
+            ctx.skip(pointOffset);
+            return Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
+        }
+
+        if (!isUndefined(untilOption)) {
+            const pointBefore = ctx.end;
+            let pointOffset = 0;
+
+            while (true) {
+                const [ itemValue ] = ctx.read(this.itemParser, { consume: false, point: pointBefore + pointOffset });
+                pointOffset += this.BYTES_PER_ELEMENT;
+                if (ctx.compute(untilOption.bind(void 0, itemValue as Item))) break;
+            }
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + pointOffset);
+            ctx.skip(pointOffset);
+            return Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
+        }
+
+        throw Error('unknown TypedArray option');
+    }
+
+    private innerWrite(ctx: ParserContext, typedArray: Instance) {
+        const { countOption, sizeOption, endsOption, untilOption } = this;
+
+        const countValue = typedArray.length;
+        const sizeValue = typedArray.byteLength;
+
+        if (!isUndefined(countOption)) {
+            // 使用传入的 count 选项写入数组长度
+            this.writeConfigNumber(ctx, countOption, countValue);
+            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            writeView.set(typedArray);
+            ctx.skip(sizeValue);
+            return;
+        }
+
+        if (!isUndefined(sizeOption)) {
+            // 使用传入的 size 选项写入数组长度（暂时未知具体长度，先写0，以获取offset）
+            this.writeConfigNumber(ctx, sizeOption, sizeValue);
+            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            writeView.set(typedArray);
+            ctx.skip(sizeValue);
+            return;
+        }
+
+        if (!isUndefined(endsOption)) {
+            const endsMark = this.endsCompute(ctx);
+            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            writeView.set(typedArray);
+            ctx.skip(sizeValue);
+            ctx.write(PrimitiveType.Uint8, endsMark);
+            return;
+        }
+
+        if (!isUndefined(untilOption)) {
+            const lastIndex = typedArray.length - 1;
+            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            for (const [ idx, item ] of typedArray.entries()) {
+                const matchedUntil = ctx.compute(untilOption.bind(void 0, item));
+                if (matchedUntil && idx !== lastIndex) throw Error('Matching the \'until\' logic too early');
+                if (!matchedUntil && idx === lastIndex) throw Error('Last item does not match the \'until\' logic');
+            }
+            writeView.set(typedArray);
+            ctx.skip(sizeValue);
+            return;
+        }
+
+        throw Error('unknown TypedArray option');
     }
 }
 
-function extendBaseTypedArrayParser<Item, Instance extends TypedArrayInstance<Item, Instance>>(
+function compose<Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>>(
     item: PrimitiveParser<Item>,
     constructor: TypedArrayFactory<Item, Instance>,
-): (new(option: ArrayParserConfigComputed<Item>) => BaseTypedArrayParser<Item, Instance>) {
+): (new(option: TypedArrayParserConfig<Item>) => BaseTypedArrayParser<Item, Instance>) {
     return class TypedArrayParser extends BaseTypedArrayParser<Item, Instance> {
-        constructor(option: ArrayParserConfigComputed<Item>) {
-            super(constructor, { ...option, item });
+        constructor(option: TypedArrayParserConfig<Item>) {
+            super(item, constructor, option);
         }
     };
 }
 
 export const
-    Int8ArrayParser = extendBaseTypedArrayParser(Int8, TypedArray.Int8Array),
-    Uint8ArrayParser = extendBaseTypedArrayParser(Uint8, TypedArray.Uint8Array),
-    Int16ArrayParser = extendBaseTypedArrayParser(Int16, TypedArray.Int16Array),
-    Uint16ArrayParser = extendBaseTypedArrayParser(Uint16, TypedArray.Uint16Array),
-    Int32ArrayParser = extendBaseTypedArrayParser(Int32, TypedArray.Int32Array),
-    Uint32ArrayParser = extendBaseTypedArrayParser(Uint32, TypedArray.Uint32Array),
-    Float32ArrayParser = extendBaseTypedArrayParser(Float32, TypedArray.Float32Array),
-    Float64ArrayParser = extendBaseTypedArrayParser(Float64, TypedArray.Float64Array),
-    BigInt64ArrayParser = extendBaseTypedArrayParser(BigInt64, TypedArray.BigInt64Array),
-    BigUint64ArrayParser = extendBaseTypedArrayParser(BigUint64, TypedArray.BigUint64Array);
+    Int8ArrayParserCreator = createParserCreator(compose(PrimitiveType.Int8, TypedArray.Int8Array)),
+    Uint8ArrayParserCreator = createParserCreator(compose(PrimitiveType.Uint8, TypedArray.Uint8Array)),
+    Int16ArrayParserCreator = createParserCreator(compose(PrimitiveType.Int16, TypedArray.Int16Array)),
+    Uint16ArrayParserCreator = createParserCreator(compose(PrimitiveType.Uint16, TypedArray.Uint16Array)),
+    Int32ArrayParserCreator = createParserCreator(compose(PrimitiveType.Int32, TypedArray.Int32Array)),
+    Uint32ArrayParserCreator = createParserCreator(compose(PrimitiveType.Uint32, TypedArray.Uint32Array)),
+    Float32ArrayParserCreator = createParserCreator(compose(PrimitiveType.Float32, TypedArray.Float32Array)),
+    Float64ArrayParserCreator = createParserCreator(compose(PrimitiveType.Float64, TypedArray.Float64Array)),
+    BigInt64ArrayParserCreator = createParserCreator(compose(PrimitiveType.BigInt64, TypedArray.BigInt64Array)),
+    BigUint64ArrayParserCreator = createParserCreator(compose(PrimitiveType.BigUint64, TypedArray.BigUint64Array));
 
 export const
-    Int16BEArrayParser = extendBaseTypedArrayParser(Int16BE, TypedArray.Int16Array),
-    Uint16BEArrayParser = extendBaseTypedArrayParser(Uint16BE, TypedArray.Uint16Array),
-    Int32BEArrayParser = extendBaseTypedArrayParser(Int32BE, TypedArray.Int32Array),
-    Uint32BEArrayParser = extendBaseTypedArrayParser(Uint32BE, TypedArray.Uint32Array),
-    Float32BEArrayParser = extendBaseTypedArrayParser(Float32BE, TypedArray.Float32Array),
-    Float64BEArrayParser = extendBaseTypedArrayParser(Float64BE, TypedArray.Float64Array),
-    BigInt64BEArrayParser = extendBaseTypedArrayParser(BigInt64BE, TypedArray.BigInt64Array),
-    BigUint64BEArrayParser = extendBaseTypedArrayParser(BigUint64BE, TypedArray.BigUint64Array);
+    Int16BEArrayParserCreator = createParserCreator(compose(PrimitiveType.Int16BE, TypedArray.Int16Array)),
+    Uint16BEArrayParserCreator = createParserCreator(compose(PrimitiveType.Uint16BE, TypedArray.Uint16Array)),
+    Int32BEArrayParserCreator = createParserCreator(compose(PrimitiveType.Int32BE, TypedArray.Int32Array)),
+    Uint32BEArrayParserCreator = createParserCreator(compose(PrimitiveType.Uint32BE, TypedArray.Uint32Array)),
+    Float32BEArrayParserCreator = createParserCreator(compose(PrimitiveType.Float32BE, TypedArray.Float32Array)),
+    Float64BEArrayParserCreator = createParserCreator(compose(PrimitiveType.Float64BE, TypedArray.Float64Array)),
+    BigInt64BEArrayParserCreator = createParserCreator(compose(PrimitiveType.BigInt64BE, TypedArray.BigInt64Array)),
+    BigUint64BEArrayParserCreator = createParserCreator(compose(PrimitiveType.BigUint64BE, TypedArray.BigUint64Array));
 
 export const
-    Int16LEArrayParser = extendBaseTypedArrayParser(Int16LE, TypedArray.Int16Array),
-    Uint16LEArrayParser = extendBaseTypedArrayParser(Uint16LE, TypedArray.Uint16Array),
-    Int32LEArrayParser = extendBaseTypedArrayParser(Int32LE, TypedArray.Int32Array),
-    Uint32LEArrayParser = extendBaseTypedArrayParser(Uint32LE, TypedArray.Uint32Array),
-    Float32LEArrayParser = extendBaseTypedArrayParser(Float32LE, TypedArray.Float32Array),
-    Float64LEArrayParser = extendBaseTypedArrayParser(Float64LE, TypedArray.Float64Array),
-    BigInt64LEArrayParser = extendBaseTypedArrayParser(BigInt64LE, TypedArray.BigInt64Array),
-    BigUint64LEArrayParser = extendBaseTypedArrayParser(BigUint64LE, TypedArray.BigUint64Array);
-
-const
-    Int8ArrayCreator = createParserCreator(Int8ArrayParser),
-    Uint8ArrayCreator = createParserCreator(Uint8ArrayParser),
-    Int16ArrayCreator = createParserCreator(Int16ArrayParser),
-    Uint16ArrayCreator = createParserCreator(Uint16ArrayParser),
-    Int32ArrayCreator = createParserCreator(Int32ArrayParser),
-    Uint32ArrayCreator = createParserCreator(Uint32ArrayParser),
-    Float32ArrayCreator = createParserCreator(Float32ArrayParser),
-    Float64ArrayCreator = createParserCreator(Float64ArrayParser),
-    BigInt64ArrayCreator = createParserCreator(BigInt64ArrayParser),
-    BigUint64ArrayCreator = createParserCreator(BigUint64ArrayParser);
-
-const
-    Int16BEArrayCreator = createParserCreator(Int16BEArrayParser),
-    Uint16BEArrayCreator = createParserCreator(Uint16BEArrayParser),
-    Int32BEArrayCreator = createParserCreator(Int32BEArrayParser),
-    Uint32BEArrayCreator = createParserCreator(Uint32BEArrayParser),
-    Float32BEArrayCreator = createParserCreator(Float32BEArrayParser),
-    Float64BEArrayCreator = createParserCreator(Float64BEArrayParser),
-    BigInt64BEArrayCreator = createParserCreator(BigInt64BEArrayParser),
-    BigUint64BEArrayCreator = createParserCreator(BigUint64BEArrayParser);
-
-const
-    Int16LEArrayCreator = createParserCreator(Int16LEArrayParser),
-    Uint16LEArrayCreator = createParserCreator(Uint16LEArrayParser),
-    Int32LEArrayCreator = createParserCreator(Int32LEArrayParser),
-    Uint32LEArrayCreator = createParserCreator(Uint32LEArrayParser),
-    Float32LEArrayCreator = createParserCreator(Float32LEArrayParser),
-    Float64LEArrayCreator = createParserCreator(Float64LEArrayParser),
-    BigInt64LEArrayCreator = createParserCreator(BigInt64LEArrayParser),
-    BigUint64LEArrayCreator = createParserCreator(BigUint64LEArrayParser);
+    Int16LEArrayParserCreator = createParserCreator(compose(PrimitiveType.Int16LE, TypedArray.Int16Array)),
+    Uint16LEArrayParserCreator = createParserCreator(compose(PrimitiveType.Uint16LE, TypedArray.Uint16Array)),
+    Int32LEArrayParserCreator = createParserCreator(compose(PrimitiveType.Int32LE, TypedArray.Int32Array)),
+    Uint32LEArrayParserCreator = createParserCreator(compose(PrimitiveType.Uint32LE, TypedArray.Uint32Array)),
+    Float32LEArrayParserCreator = createParserCreator(compose(PrimitiveType.Float32LE, TypedArray.Float32Array)),
+    Float64LEArrayParserCreator = createParserCreator(compose(PrimitiveType.Float64LE, TypedArray.Float64Array)),
+    BigInt64LEArrayParserCreator = createParserCreator(compose(PrimitiveType.BigInt64LE, TypedArray.BigInt64Array)),
+    BigUint64LEArrayParserCreator = createParserCreator(compose(PrimitiveType.BigUint64LE, TypedArray.BigUint64Array));
 
 export {
-    Int8ArrayCreator, Int8ArrayCreator as Int8Array, Int8ArrayCreator as int8Array,
-    Uint8ArrayCreator, Uint8ArrayCreator as Uint8Array, Uint8ArrayCreator as uint8Array,
-    Int16ArrayCreator, Int16ArrayCreator as Int16Array, Int16ArrayCreator as int16Array,
-    Uint16ArrayCreator, Uint16ArrayCreator as Uint16Array, Uint16ArrayCreator as uint16Array,
-    Int32ArrayCreator, Int32ArrayCreator as Int32Array, Int32ArrayCreator as int32Array,
-    Uint32ArrayCreator, Uint32ArrayCreator as Uint32Array, Uint32ArrayCreator as uint32Array,
-    Float32ArrayCreator, Float32ArrayCreator as Float32Array, Float32ArrayCreator as float32Array,
-    Float64ArrayCreator, Float64ArrayCreator as Float64Array, Float64ArrayCreator as float64Array,
-    BigInt64ArrayCreator, BigInt64ArrayCreator as BigInt64Array, BigInt64ArrayCreator as bigInt64Array,
-    BigUint64ArrayCreator, BigUint64ArrayCreator as BigUint64Array, BigUint64ArrayCreator as bigUint64Array,
-    Int16BEArrayCreator, Int16BEArrayCreator as Int16BEArray, Int16BEArrayCreator as int16BEArray,
-    Uint16BEArrayCreator, Uint16BEArrayCreator as Uint16BEArray, Uint16BEArrayCreator as uint16BEArray,
-    Int32BEArrayCreator, Int32BEArrayCreator as Int32BEArray, Int32BEArrayCreator as int32BEArray,
-    Uint32BEArrayCreator, Uint32BEArrayCreator as Uint32BEArray, Uint32BEArrayCreator as uint32BEArray,
-    Float32BEArrayCreator, Float32BEArrayCreator as Float32BEArray, Float32BEArrayCreator as float32BEArray,
-    Float64BEArrayCreator, Float64BEArrayCreator as Float64BEArray, Float64BEArrayCreator as float64BEArray,
-    BigInt64BEArrayCreator, BigInt64BEArrayCreator as BigInt64BEArray, BigInt64BEArrayCreator as bigInt64BEArray,
-    BigUint64BEArrayCreator, BigUint64BEArrayCreator as BigUint64BEArray, BigUint64BEArrayCreator as bigUint64BEArray,
-    Int16LEArrayCreator, Int16LEArrayCreator as Int16LEArray, Int16LEArrayCreator as int16LEArray,
-    Uint16LEArrayCreator, Uint16LEArrayCreator as Uint16LEArray, Uint16LEArrayCreator as uint16LEArray,
-    Int32LEArrayCreator, Int32LEArrayCreator as Int32LEArray, Int32LEArrayCreator as int32LEArray,
-    Uint32LEArrayCreator, Uint32LEArrayCreator as Uint32LEArray, Uint32LEArrayCreator as uint32LEArray,
-    Float32LEArrayCreator, Float32LEArrayCreator as Float32LEArray, Float32LEArrayCreator as float32LEArray,
-    Float64LEArrayCreator, Float64LEArrayCreator as Float64LEArray, Float64LEArrayCreator as float64LEArray,
-    BigInt64LEArrayCreator, BigInt64LEArrayCreator as BigInt64LEArray, BigInt64LEArrayCreator as bigInt64LEArray,
-    BigUint64LEArrayCreator, BigUint64LEArrayCreator as BigUint64LEArray, BigUint64LEArrayCreator as bigUint64LEArray,
-
-    Int8ArrayCreator as i8s, Uint8ArrayCreator as u8s,
-    Int16ArrayCreator as i16s, Uint16ArrayCreator as u16s,
-    Int16BEArrayCreator as i16bes, Uint16BEArrayCreator as u16bes,
-    Int16LEArrayCreator as i16les, Uint16LEArrayCreator as u16les,
-
-    Int32ArrayCreator as i32s, Uint32ArrayCreator as u32s,
-    Int32BEArrayCreator as i32bes, Uint32BEArrayCreator as u32bes,
-    Int32LEArrayCreator as i32les, Uint32LEArrayCreator as u32les,
-
-    BigInt64ArrayCreator as bi64s, BigUint64ArrayCreator as bu64s,
-    BigInt64BEArrayCreator as bi64bes, BigUint64BEArrayCreator as bu64bes,
-    BigInt64LEArrayCreator as bi64les, BigUint64LEArrayCreator as bu64les,
-
-    Float32ArrayCreator as f32s,
-    Float32BEArrayCreator as f32bes,
-    Float32LEArrayCreator as f32les,
-
-    Float64ArrayCreator as f64s,
-    Float64LEArrayCreator as f64les,
-    Float64BEArrayCreator as f64bes,
+    Int8ArrayParserCreator as Int8Array, Int8ArrayParserCreator as int8Array, Int8ArrayParserCreator as i8s,
+    Uint8ArrayParserCreator as Uint8Array, Uint8ArrayParserCreator as uint8Array, Uint8ArrayParserCreator as u8s,
+    Int16ArrayParserCreator as Int16Array, Int16ArrayParserCreator as int16Array, Int16ArrayParserCreator as i16s,
+    Uint16ArrayParserCreator as Uint16Array, Uint16ArrayParserCreator as uint16Array, Uint16ArrayParserCreator as u16s,
+    Int32ArrayParserCreator as Int32Array, Int32ArrayParserCreator as int32Array, Int32ArrayParserCreator as i32s,
+    Uint32ArrayParserCreator as Uint32Array, Uint32ArrayParserCreator as uint32Array, Uint32ArrayParserCreator as u32s,
+    Float32ArrayParserCreator as Float32Array, Float32ArrayParserCreator as float32Array, Float32ArrayParserCreator as f32s,
+    Float64ArrayParserCreator as Float64Array, Float64ArrayParserCreator as float64Array, Float64ArrayParserCreator as f64s,
+    BigInt64ArrayParserCreator as BigInt64Array, BigInt64ArrayParserCreator as bigInt64Array, BigInt64ArrayParserCreator as bi64s,
+    BigUint64ArrayParserCreator as BigUint64Array, BigUint64ArrayParserCreator as bigUint64Array, BigUint64ArrayParserCreator as bu64s,
+    Int16BEArrayParserCreator as Int16BEArray, Int16BEArrayParserCreator as int16BEArray, Int16BEArrayParserCreator as i16bes,
+    Uint16BEArrayParserCreator as Uint16BEArray, Uint16BEArrayParserCreator as uint16BEArray, Uint16BEArrayParserCreator as u16bes,
+    Int32BEArrayParserCreator as Int32BEArray, Int32BEArrayParserCreator as int32BEArray, Int32BEArrayParserCreator as i32bes,
+    Uint32BEArrayParserCreator as Uint32BEArray, Uint32BEArrayParserCreator as uint32BEArray, Uint32BEArrayParserCreator as u32bes,
+    Float32BEArrayParserCreator as Float32BEArray, Float32BEArrayParserCreator as float32BEArray, Float32BEArrayParserCreator as f32bes,
+    Float64BEArrayParserCreator as Float64BEArray, Float64BEArrayParserCreator as float64BEArray, Float64BEArrayParserCreator as f64bes,
+    BigInt64BEArrayParserCreator as BigInt64BEArray, BigInt64BEArrayParserCreator as bigInt64BEArray, BigInt64BEArrayParserCreator as bi64bes,
+    BigUint64BEArrayParserCreator as BigUint64BEArray, BigUint64BEArrayParserCreator as bigUint64BEArray, BigUint64BEArrayParserCreator as bu64bes,
+    Int16LEArrayParserCreator as Int16LEArray, Int16LEArrayParserCreator as int16LEArray, Int16LEArrayParserCreator as i16les,
+    Uint16LEArrayParserCreator as Uint16LEArray, Uint16LEArrayParserCreator as uint16LEArray, Uint16LEArrayParserCreator as u16les,
+    Int32LEArrayParserCreator as Int32LEArray, Int32LEArrayParserCreator as int32LEArray, Int32LEArrayParserCreator as i32les,
+    Uint32LEArrayParserCreator as Uint32LEArray, Uint32LEArrayParserCreator as uint32LEArray, Uint32LEArrayParserCreator as u32les,
+    Float32LEArrayParserCreator as Float32LEArray, Float32LEArrayParserCreator as float32LEArray, Float32LEArrayParserCreator as f32les,
+    Float64LEArrayParserCreator as Float64LEArray, Float64LEArrayParserCreator as float64LEArray, Float64LEArrayParserCreator as f64les,
+    BigInt64LEArrayParserCreator as BigInt64LEArray, BigInt64LEArrayParserCreator as bigInt64LEArray, BigInt64LEArrayParserCreator as bi64les,
+    BigUint64LEArrayParserCreator as BigUint64LEArray, BigUint64LEArrayParserCreator as bigUint64LEArray, BigUint64LEArrayParserCreator as bu64les,
 };

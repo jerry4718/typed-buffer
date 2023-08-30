@@ -2,24 +2,23 @@
 import { type Coding, Utf8 } from '../coding/codings.ts';
 import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { slice } from '../utils/proto-fn.ts';
-import { ArrayParser, ArrayParserConfigComputed, ArrayConfigLoopCount } from './array-parser.ts';
-import { Uint8 } from './primitive-parser.ts';
+import { BaseTypedArrayParser, TypedArrayConfigLoopCount, TypedArrayParserConfigComputed, Uint8ArrayParserCreator } from './typed-array-parser.ts';
+import { calcGetter } from '../context/getters.ts';
 
 type StringParserConfig =
     & AdvancedParserConfig
-    & Exclude<ArrayParserConfigComputed<number>, ArrayConfigLoopCount>
+    & Exclude<TypedArrayParserConfigComputed<number>, TypedArrayConfigLoopCount>
     & { coding?: Coding }
 
 export class StringParser extends AdvancedParser<string> {
     coding: Coding;
-    dataParser: ArrayParser<number>;
+    dataParser: BaseTypedArrayParser<number, Uint8Array>;
 
     constructor(config: StringParserConfig) {
         super(config);
         const { coding = Utf8, ...computed } = config;
         this.coding = coding;
-        this.dataParser = new ArrayParser({ item: Uint8, ...computed });
+        this.dataParser = Uint8ArrayParserCreator(computed);
     }
 
     sizeof(context?: ParserContext): number {
@@ -28,13 +27,12 @@ export class StringParser extends AdvancedParser<string> {
 
     read(ctx: ParserContext): string {
         const [ readArray ] = ctx.read(this.dataParser);
-        const byteArray = readArray instanceof Uint8Array ? readArray : Uint8Array.from(readArray);
-        return this.coding.decode(byteArray);
+        return this.coding.decode(calcGetter(readArray));
     }
 
     write(ctx: ParserContext, value: string): string {
         const byteArray = this.coding.encode(value);
-        ctx.write(this.dataParser, slice.call(byteArray));
+        ctx.write(this.dataParser, byteArray);
         return value;
     }
 }

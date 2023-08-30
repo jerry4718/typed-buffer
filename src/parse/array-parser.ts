@@ -1,5 +1,5 @@
 import { AdvancedParser, BaseParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
-import { SnapTuple } from '../context/parser-context.ts';
+import { SnapTuple } from '../context/snap-tuple.ts';
 import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
 import { getTypedParser } from '../decorate/decorator.ts';
 import { Constructor, SafeAny } from '../utils/prototype-util.ts';

@@ -37,8 +37,9 @@ export type ParserContext = {
     /* 作用域，提供一些上下文产生的数据的访问功能 */
     scope: ScopeAccessor,
     /* context中保留着一切需要的数据，所以read，write操作最终交付给context执行 */
-    read<T>(parser: Parser<T>, option?: Partial<ContextOption>): SnapTuple<T>,
-    write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T>,
+    read<T>(parser: Parser<T>, option?: Partial<ContextOption>): SnapTuple<T extends (number | bigint) ? T : (T | (() => T))>,
+    write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T extends (number | bigint) ? T : (T | (() => T))>,
+    skip(size: number): void,
     /* 向scope中暴露变量 */
     expose(name: string | number | symbol, value: unknown): void,
     /* 将计算函数交给context进行计算 */

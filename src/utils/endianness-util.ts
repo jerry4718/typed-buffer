@@ -1,4 +1,4 @@
-import { isUndefined } from '../utils/type-util.ts';
+import { isUndefined } from './type-util.ts';
 import { TypedArrayConstructor, TypedArrayInstance } from '../describe/typed-array.ts';
 import { AbstractTypedArray } from './prototype-util.ts';
 
