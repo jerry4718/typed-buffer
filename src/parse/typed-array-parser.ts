@@ -154,8 +154,9 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
                 if (next === endsJudge) break;
                 pointOffset += this.BYTES_PER_ELEMENT;
             }
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + pointOffset);
+            const buffer = ctx.buffer.slice(pointBefore, pointBefore + pointOffset);
             ctx.skip(pointOffset);
+            ctx.read(PrimitiveType.Uint8, { consume: true });
             return Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
         }
 
