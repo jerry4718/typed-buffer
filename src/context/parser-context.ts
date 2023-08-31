@@ -157,8 +157,8 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             this.size += size;
         }
 
-        result<T>(value: T, size?: number): SnapTuple<T> {
-            return createResult(value, this.start, this.size);
+        result<T>(value: T, size: number = this.size): SnapTuple<T> {
+            return createResult(value, this.start, size);
         }
 
         compute<Result>(getter: ContextCompute<Result>): Result {
