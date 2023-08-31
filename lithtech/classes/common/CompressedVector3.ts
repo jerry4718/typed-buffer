@@ -15,11 +15,11 @@ export class CompressedVector3 {
     @FieldType(t.Int16)
     z!: number;
 
-    toVector3() {
+    toVector3(decompressValue = DecompressValue) {
         const vec3 = new Vector3();
-        vec3.x = this.x / DecompressValue;
-        vec3.y = this.y / DecompressValue;
-        vec3.z = this.z / DecompressValue;
+        vec3.x = this.x / decompressValue;
+        vec3.y = this.y / decompressValue;
+        vec3.z = this.z / decompressValue;
         return vec3;
     }
 }

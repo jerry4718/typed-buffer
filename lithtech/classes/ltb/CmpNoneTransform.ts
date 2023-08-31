@@ -4,7 +4,7 @@ import { Quaternion } from '../common/Quaternion.ts';
 import { Vector3 } from '../common/Vector3.ts';
 
 @ParserTarget()
-export class UncompressedTransform {
+export class CmpNoneTransform {
     @FieldType(t.Int8)
     isVertexAnimation!: number;
 
