@@ -13,27 +13,27 @@ export function is(variable: unknown, sign: string): boolean {
 }
 
 export function isNumber(variable: unknown): variable is number {
-    return typeof (variable) === 'number';
+    return typeof variable === 'number';
 }
 
 export function isString(variable: unknown): variable is string {
-    return typeof (variable) === 'string';
+    return typeof variable === 'string';
 }
 
 export function isBoolean(variable: unknown): variable is boolean {
-    return typeof (variable) === 'boolean';
+    return typeof variable === 'boolean';
 }
 
 export function isFunction(variable: unknown): variable is Function {
-    return typeof (variable) === 'function';
+    return typeof variable === 'function';
 }
 
 export function isSymbol(variable: unknown): variable is Symbol {
-    return typeof (variable) === 'symbol';
+    return typeof variable === 'symbol';
 }
 
 export function isUndefined(variable: unknown): variable is undefined {
-    return typeof (variable) === 'undefined';
+    return typeof variable === 'undefined';
 }
 
 const
