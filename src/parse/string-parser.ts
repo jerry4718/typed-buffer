@@ -2,7 +2,7 @@
 import { type Coding, Utf8 } from '../coding/codings.ts';
 import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { BaseTypedArrayParser, TypedArrayConfigLoopCount, TypedArrayParserConfigComputed, Uint8ArrayParserCreator } from './typed-array-parser.ts';
+import { TypedArrayParser, TypedArrayConfigLoopCount, TypedArrayParserConfigComputed, Uint8ArrayParserCreator } from './typed-array-parser.ts';
 import { calcGetter } from '../context/getters.ts';
 
 type StringParserConfig =
@@ -12,7 +12,7 @@ type StringParserConfig =
 
 export class StringParser extends AdvancedParser<string> {
     coding: Coding;
-    dataParser: BaseTypedArrayParser<number, Uint8Array>;
+    dataParser: TypedArrayParser<number, Uint8Array>;
 
     constructor(config: StringParserConfig) {
         super(config);

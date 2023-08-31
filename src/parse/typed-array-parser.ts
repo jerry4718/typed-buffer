@@ -10,7 +10,7 @@ import { changeTypedArrayEndianness, NATIVE_ENDIANNESS } from '../utils/endianne
 
 export type TypedArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
 export type TypedArrayParserOptionEos = ContextCompute<number> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
-export type TypedArrayParserOptionUntil<T> = (prev: T, ctx: ParserContext, scope: ScopeAccessor, option: ContextOption) => boolean;
+export type TypedArrayParserOptionUntil<T> = (prev: T, ctx: ParserContext, scope: ScopeAccessor) => boolean;
 
 export type TypedArrayConfigLoopCount = { count: TypedArrayParserOptionNumber };
 export type TypedArrayConfigLoopSize = { size: TypedArrayParserOptionNumber };
@@ -36,7 +36,7 @@ export type TypedArrayParserConfig<T> =
 const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
 
-export class BaseTypedArrayParser<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<Instance> {
+export class TypedArrayParser<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<Instance> {
     private readonly itemParser: PrimitiveParser<Item>;
     private readonly typedConstructor: TypedArrayConstructor<Item, Instance>;
     private readonly BYTES_PER_ELEMENT: number;
@@ -115,16 +115,16 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
         return changeTypedArrayEndianness(from);
     }
 
-    read(ctx: ParserContext): Instance {
-        return this.resolveEndianness(ctx, this.innerRead(ctx));
+    read(ctx: ParserContext, byteOffset: number): Instance {
+        return this.resolveEndianness(ctx, this.innerRead(ctx, byteOffset));
     }
 
-    write(ctx: ParserContext, typedArray: Instance): Instance {
-        this.innerWrite(ctx, this.resolveEndianness(ctx, typedArray));
+    write(ctx: ParserContext, typedArray: Instance, byteOffset: number): Instance {
+        this.innerWrite(ctx, this.resolveEndianness(ctx, typedArray), byteOffset);
         return typedArray;
     }
 
-    private innerRead(ctx: ParserContext): Instance {
+    private innerRead(ctx: ParserContext, byteOffset: number): Instance {
         const { countOption, sizeOption, endsOption, untilOption } = this;
 
         if (!isUndefined(countOption)) {
@@ -177,7 +177,7 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
         throw Error('unknown TypedArray option');
     }
 
-    private innerWrite(ctx: ParserContext, typedArray: Instance) {
+    private innerWrite(ctx: ParserContext, typedArray: Instance, byteOffset: number) {
         const { countOption, sizeOption, endsOption, untilOption } = this;
 
         const countValue = typedArray.length;
@@ -186,7 +186,8 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
         if (!isUndefined(countOption)) {
             // 使用传入的 count 选项写入数组长度
             this.writeConfigNumber(ctx, countOption, countValue);
-            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
+            const writeView = Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
             writeView.set(typedArray);
             ctx.skip(sizeValue);
             return;
@@ -195,7 +196,8 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项写入数组长度（暂时未知具体长度，先写0，以获取offset）
             this.writeConfigNumber(ctx, sizeOption, sizeValue);
-            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
+            const writeView = Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
             writeView.set(typedArray);
             ctx.skip(sizeValue);
             return;
@@ -203,7 +205,8 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
 
         if (!isUndefined(endsOption)) {
             const endsMark = this.endsCompute(ctx);
-            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
+            const writeView = Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
             writeView.set(typedArray);
             ctx.skip(sizeValue);
             ctx.write(PrimitiveType.Uint8, endsMark);
@@ -212,7 +215,8 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
 
         if (!isUndefined(untilOption)) {
             const lastIndex = typedArray.length - 1;
-            const writeView = Reflect.construct(this.typedConstructor, [ ctx.buffer, ctx.end, countValue ]) as Instance;
+            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
+            const writeView = Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
             for (const [ idx, item ] of typedArray.entries()) {
                 const matchedUntil = ctx.compute(untilOption.bind(void 0, item));
                 if (matchedUntil && idx !== lastIndex) throw Error('Matching the \'until\' logic too early');
@@ -230,8 +234,8 @@ export class BaseTypedArrayParser<Item extends (number | bigint), Instance exten
 function compose<Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>>(
     item: PrimitiveParser<Item>,
     constructor: TypedArrayFactory<Item, Instance>,
-): (new(option: TypedArrayParserConfig<Item>) => BaseTypedArrayParser<Item, Instance>) {
-    return class TypedArrayParser extends BaseTypedArrayParser<Item, Instance> {
+): (new(option: TypedArrayParserConfig<Item>) => TypedArrayParser<Item, Instance>) {
+    return class SubTypedArrayParser extends TypedArrayParser<Item, Instance> {
         constructor(option: TypedArrayParserConfig<Item>) {
             super(item, constructor, option);
         }

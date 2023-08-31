@@ -8,7 +8,7 @@ import { PrimitiveParser, Uint8 } from './primitive-parser.ts';
 
 export type ArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
 export type ArrayParserOptionEos = ContextCompute<number> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
-export type ArrayParserOptionUntil<T> = (prev: T, ctx: ParserContext, scope: ScopeAccessor, option: ContextOption) => boolean;
+export type ArrayParserOptionUntil<T> = (prev: T, ctx: ParserContext, scope: ScopeAccessor) => boolean;
 
 export type ArrayParserConfigRequired<T> = { item: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<SafeAny> | (new() => SafeAny)> };
 export type ArrayConfigLoopCount = { count: ArrayParserOptionNumber };

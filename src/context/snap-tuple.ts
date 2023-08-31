@@ -156,9 +156,9 @@ class SnapBigIntResult<T> {
 
 export function createResult<T>(value: T, start: number, size: number): SnapTuple<T> {
     // return new SnapBigIntResult(value, start, size) as unknown as SnapTuple<T>; // 117
-    // return new SnapResult(value, start, size) as unknown as SnapTuple<T>; // 119
+    return new SnapResult(value, start, size) as unknown as SnapTuple<T>; // 41s
     // return new SnapUint32(value, start, size) as unknown as SnapTuple<T>; // 103
-    return new SnapUint32Array(value, start, size) as unknown as SnapTuple<T>; // 119
+    // return new SnapUint32Array(value, start, size) as unknown as SnapTuple<T>; // 42.5s
 }
 
 export interface WithValue<T> {

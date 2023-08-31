@@ -1,10 +1,8 @@
 import { AdvancedParser, AdvancedParserConfig, BaseParser, createParserCreator } from '../context/base-parser.ts';
-import { calcGetter, lazyGetter } from '../context/getters.ts';
 import { SnapTuple } from '../context/snap-tuple.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 import { assertType, isBoolean, isFunction, isNumber, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
-import { ArrayParser } from './array-parser.ts';
 import { PrimitiveParser } from './primitive-parser.ts';
 
 export type StructFieldBasic<T, K extends keyof T> = {
@@ -79,14 +77,14 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
     }
 
     judgeFieldConfig(fieldConfig: StructField<T, keyof T>) {
-        const isStructFieldVirtual = Object.hasOwn(fieldConfig, 'resolve');
         const isStructFieldActual = Object.hasOwn(fieldConfig, 'type');
+        const isStructFieldVirtual = Object.hasOwn(fieldConfig, 'resolve');
 
-        if (!(isStructFieldVirtual || isStructFieldActual)) {
+        if (!(isStructFieldActual || isStructFieldVirtual)) {
             throw Error('StructField has neither ’resolve’ nor ‘type’');
         }
 
-        return { isStructFieldVirtual, isStructFieldActual };
+        return { isStructFieldActual, isStructFieldVirtual };
     }
 
     resolveParser<K extends keyof T>(ctx: ParserContext, fieldConfig: StructFieldActual<T, K>): BaseParser<T[K]> {
@@ -188,18 +186,32 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         return countSize;
     }
 
+    wrapRead(ctx: ParserContext) {
+        const wrapStart = ctx.end;
+        // ctx.xxx
+        const wrapEnd = ctx.end;
+        const wrapSize = wrapEnd - wrapStart;
+    }
+
+    wrap<V>(ctx: ParserContext, debug: boolean, func: (ctx: ParserContext) => V) {
+        const wrapStart = ctx.end;
+
+        const wrapEnd = ctx.end;
+        const wrapSize = wrapEnd - wrapStart;
+    }
+
     read(ctx: ParserContext): T {
         const debug = ctx.constant.DebugStruct.includes(this.creator);
         const section = Reflect.construct(this.creator, []);
-
-        const fieldNames: (keyof T)[] = [];
-        Reflect.defineMetadata(kStructReadKeys, fieldNames, section);
 
         const parentPath = ctx.scope[ctx.constant.$path];
         const parentStart = `${parentPath} {`;
         const parentEnd = `${parentPath} }`;
 
+        let fieldNames: (keyof T)[];
         if (debug) {
+            fieldNames = [];
+            Reflect.defineMetadata(kStructReadKeys, fieldNames, section);
             console.log(parentStart);
             console.time(parentEnd);
         }
@@ -209,43 +221,40 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
             const fieldPath = `${parentPath}.${String(fieldName)}`;
             ctx.expose(ctx.constant.$path, fieldPath);
 
-            const { isStructFieldVirtual, isStructFieldActual } = this.judgeFieldConfig(fieldConfig);
-
             this.applySetup(ctx, fieldConfig);
 
             if (debug) {
                 console.time(fieldPath);
             }
 
-            if (isStructFieldVirtual && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
-                const fieldResolve = fieldConfig.resolve;
-                const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;
-                Reflect.set(section, fieldName, resolvedValue);
-                this.applyExpose(ctx, fieldConfig, resolvedValue);
-            }
-
+            const isStructFieldActual = Object.hasOwn(fieldConfig, 'type');
             if (isStructFieldActual && assertType<StructFieldActual<T, keyof T>>(fieldConfig)) {
                 const fieldParser = this.resolveParser(ctx, fieldConfig);
                 const fieldOption = this.resolveOption(ctx, fieldConfig);
                 const fieldIf = this.resolveIf(ctx, fieldConfig);
 
-                const [ readRes, readSnap ] = fieldIf
-                    ? ctx.read(fieldParser, fieldOption) as SnapTuple<T[keyof T]>
-                    : ctx.result(fieldConfig.default, 0) as SnapTuple<T[keyof T]>;
-
-                if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
-                Reflect.defineMetadata(kStructReadSnap, readSnap, section, fieldName as string);
-
-                if (isFunction(readRes)) {
-                    Reflect.defineProperty(section, fieldName, { get: readRes });
-                }
-                else if (fieldParser instanceof ArrayParser) {
-                    Reflect.defineProperty(section, fieldName, { get: lazyGetter(() => readRes.map(calcGetter)) });
+                if (debug) {
+                    const [ readRes, readSnap ] = fieldIf
+                        ? ctx.read(fieldParser, fieldOption) as SnapTuple<T[keyof T]>
+                        : ctx.result(fieldConfig.default, 0) as SnapTuple<T[keyof T]>;
+                    if (!fieldNames!.includes(fieldName)) fieldNames!.push(fieldName);
+                    Reflect.defineMetadata(kStructReadSnap, readSnap, section, fieldName as string);
+                    Reflect.defineProperty(section, fieldName, { writable: false, value: readRes });
+                    this.applyExpose(ctx, fieldConfig, readRes);
                 }
                 else {
+                    const readRes = (fieldIf ? ctx.$read(fieldParser, fieldOption) : fieldConfig.default) as T[keyof T];
                     Reflect.defineProperty(section, fieldName, { writable: false, value: readRes });
+                    this.applyExpose(ctx, fieldConfig, readRes);
                 }
-                this.applyExpose(ctx, fieldConfig, readRes);
+            }
+
+            const isStructFieldVirtual = Object.hasOwn(fieldConfig, 'resolve');
+            if (isStructFieldVirtual && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
+                const fieldResolve = fieldConfig.resolve;
+                const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;
+                Reflect.set(section, fieldName, resolvedValue);
+                this.applyExpose(ctx, fieldConfig, resolvedValue);
             }
 
             if (debug) {
@@ -265,18 +274,11 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         Reflect.defineMetadata(kStructWriteKeys, fieldNames, value);
 
         for (const fieldConfig of this.fields) {
-            const { isStructFieldVirtual, isStructFieldActual } = this.judgeFieldConfig(fieldConfig);
+            const { isStructFieldActual, isStructFieldVirtual } = this.judgeFieldConfig(fieldConfig);
 
             this.applySetup(ctx, fieldConfig);
             const fieldName = fieldConfig.name;
             const fieldValue = Reflect.get(value, fieldName);
-
-            if (isStructFieldVirtual && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
-                const fieldResolve = fieldConfig.resolve;
-                const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;
-                if (fieldValue !== resolvedValue) console.warn(`field [${String(fieldName)}] cannot compare with resolved`);
-                this.applyExpose(ctx, fieldConfig, resolvedValue);
-            }
 
             if (isStructFieldActual && assertType<StructFieldActual<T, keyof T>>(fieldConfig)) {
                 const fieldParser = this.resolveParser(ctx, fieldConfig);
@@ -298,6 +300,13 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
                 if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
                 Reflect.defineMetadata(kStructWriteSnap, fieldSnap, value, fieldName as string);
                 this.applyExpose(ctx, fieldConfig, fieldValue);
+            }
+
+            if (isStructFieldVirtual && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
+                const fieldResolve = fieldConfig.resolve;
+                const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;
+                if (fieldValue !== resolvedValue) console.warn(`field [${String(fieldName)}] cannot compare with resolved`);
+                this.applyExpose(ctx, fieldConfig, resolvedValue);
             }
         }
 
