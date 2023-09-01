@@ -1,5 +1,6 @@
 import omit from 'lodash-es/omit';
 import pick from 'lodash-es/pick';
+import { SafeAny } from '../utils/prototype-util.ts';
 import { Ascii } from '../coding/codings.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
@@ -28,11 +29,11 @@ const defaultContextOption: ContextOption = Object.freeze({
 export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextConstant & ContextOption> = {}) {
     const view = new DataView(buffer);
 
-    const rootConstant: ContextConstant = { ...defaultContextConstant, ...omit(inputOption, [ 'point', 'consume' ]) };
+    const rootConstant: ContextConstant = { ...defaultContextConstant, ...inputOption };
     const { $path, path: rootPath, endian: rootEndian } = rootConstant;
 
     const rootScope: ScopeAccessor = { [$path]: rootPath };
-    const rootOption: ContextOption = { ...defaultContextOption, ...pick(inputOption, [ 'point', 'consume' ]) };
+    const rootOption: ContextOption = { ...defaultContextOption, ...inputOption };
 
     class ParserContext implements IParserContext {
         get buffer() {

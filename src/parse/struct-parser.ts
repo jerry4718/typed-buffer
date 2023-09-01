@@ -115,6 +115,15 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         return true;
     }
 
+    resolveDefault(ctx: ParserContext, fieldConfig: StructFieldActual<T, keyof T>): T[keyof T] | undefined {
+        const fieldDefault = fieldConfig.default;
+
+        if (!isUndefined(fieldDefault)) {
+            if (isFunction(fieldDefault)) return ctx.compute(fieldDefault);
+            return fieldDefault;
+        }
+    }
+
     resolveExpose(fieldConfig: StructField<T, keyof T>) {
         const fieldExpose = fieldConfig.expose;
         if (!isUndefined(fieldExpose)) {
@@ -208,10 +217,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         const parentStart = `${parentPath} {`;
         const parentEnd = `${parentPath} }`;
 
-        let fieldNames: (keyof T)[];
         if (debug) {
-            fieldNames = [];
-            Reflect.defineMetadata(kStructReadKeys, fieldNames, section);
             console.log(parentStart);
             console.time(parentEnd);
         }
@@ -229,24 +235,29 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
 
             const isStructFieldActual = Object.hasOwn(fieldConfig, 'type');
             if (isStructFieldActual && assertType<StructFieldActual<T, keyof T>>(fieldConfig)) {
+                const startPoint = ctx.end;
                 const fieldParser = this.resolveParser(ctx, fieldConfig);
                 const fieldOption = this.resolveOption(ctx, fieldConfig);
                 const fieldIf = this.resolveIf(ctx, fieldConfig);
 
+                const readRes = fieldIf
+                    ? ctx.$read(fieldParser, fieldOption)
+                    : this.resolveDefault(ctx, fieldConfig)!;
+
                 if (debug) {
-                    const [ readRes, readSnap ] = fieldIf
-                        ? ctx.read(fieldParser, fieldOption) as SnapTuple<T[keyof T]>
-                        : ctx.result(fieldConfig.default, 0) as SnapTuple<T[keyof T]>;
-                    if (!fieldNames!.includes(fieldName)) fieldNames!.push(fieldName);
+                    const endPoint = ctx.end;
+                    if (!Reflect.hasOwnMetadata(kStructReadKeys, section)) {
+                        Reflect.defineMetadata(kStructReadKeys, [], section);
+                    }
+                    const fieldNames: (keyof T)[] = Reflect.getOwnMetadata(kStructReadKeys, section);
+                    if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
+                    const readSnap = { start: startPoint, size: endPoint - startPoint, end: endPoint };
                     Reflect.defineMetadata(kStructReadSnap, readSnap, section, fieldName as string);
-                    Reflect.defineProperty(section, fieldName, { writable: false, value: readRes });
                     this.applyExpose(ctx, fieldConfig, readRes);
                 }
-                else {
-                    const readRes = (fieldIf ? ctx.$read(fieldParser, fieldOption) : fieldConfig.default) as T[keyof T];
-                    Reflect.defineProperty(section, fieldName, { writable: false, value: readRes });
-                    this.applyExpose(ctx, fieldConfig, readRes);
-                }
+
+                Reflect.defineProperty(section, fieldName, { writable: false, value: readRes });
+                this.applyExpose(ctx, fieldConfig, readRes);
             }
 
             const isStructFieldVirtual = Object.hasOwn(fieldConfig, 'resolve');
