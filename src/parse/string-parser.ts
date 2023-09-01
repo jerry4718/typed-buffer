@@ -2,8 +2,7 @@
 import { type Coding, Utf8 } from '../coding/codings.ts';
 import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { TypedArrayParser, TypedArrayConfigLoopCount, TypedArrayParserConfigComputed, Uint8ArrayParserCreator } from './typed-array-parser.ts';
-import { calcGetter } from '../context/getters.ts';
+import { TypedArrayConfigLoopCount, TypedArrayParser, TypedArrayParserConfigComputed, Uint8ArrayParserCreator } from './typed-array-parser.ts';
 
 type StringParserConfig =
     & AdvancedParserConfig
@@ -27,7 +26,7 @@ export class StringParser extends AdvancedParser<string> {
 
     read(ctx: ParserContext): string {
         const [ readArray ] = ctx.read(this.dataParser);
-        return this.coding.decode(calcGetter(readArray));
+        return this.coding.decode(readArray);
     }
 
     write(ctx: ParserContext, value: string): string {

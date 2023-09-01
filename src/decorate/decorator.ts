@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { TypedArrayConstructor, TypedArrayInstance } from '../describe/typed-array.ts';
 import { AdvancedParser, BaseParser, isParserClass, isParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextConstant, ContextOption } from '../context/types.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
@@ -14,7 +15,7 @@ export const definePropertyDecorator = (decorator: PropertyDecorator): PropertyD
 export const defineMethodDecorator = (decorator: MethodDecorator): MethodDecorator => decorator;
 export const defineParameterDecorator = (decorator: ParameterDecorator): ParameterDecorator => decorator;
 
-export function ParserTarget<T extends object>(config: Partial<ContextConstant & ContextOption> = {}) {
+export function StructTarget<T extends object>(config: Partial<ContextConstant & ContextOption> = {}) {
     function decorator<Class extends Constructor<T>>(klass: Class) {
         Reflect.defineMetadata(kParserTarget, config, klass);
 
@@ -127,6 +128,26 @@ export function FieldType<T, O>(input: SafeAny, config?: O): PropertyDecorator {
         return parser;
     });
 }
+
+export function FieldCollection<K extends (string | symbol), Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>>(
+    factory: TypedArrayConstructor<Item, Instance>,
+    collect: K[],
+) {
+    return definePropertyDecorator(<PropertyDecorator>(<M extends (string | symbol), U extends { [k in K]: Item } & { [k in M]: Instance }>(proto: U, propKey: M) => {
+        function ensure(this: U) {
+            if (!this[propKey]) this[propKey] = Reflect.construct(factory, [ collect.length ]);
+        }
+
+        for (const [ kdx, key ] of collect.entries()) {
+            Reflect.defineProperty(proto, key, {
+                enumerable: true,
+                get() { return this[propKey][kdx]; },
+                set(value: number) { ensure.call(this); this[propKey][kdx] = value; },
+            });
+        }
+    }));
+}
+
 
 export function FieldPoint<T>(point: number | ContextCompute<number>) {
     return definePropertyDecorator(function <K extends string | symbol>(proto: object, propertyKey: K) {

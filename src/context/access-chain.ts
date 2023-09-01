@@ -1,4 +1,3 @@
-import { calcGetter } from './getters.ts';
 import { push } from '../utils/proto-fn.ts';
 import { ObjectPrototypeKeys, PublicSymbolAccessors, SafeAny } from '../utils/prototype-util.ts';
 import { isUndefined } from '../utils/type-util.ts';
@@ -51,10 +50,10 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
         if (useTarget) {
             if (ObjectPrototypeKeys.includes(propKey)) return Reflect.get(target, propKey, receiver);
             if (PublicSymbolAccessors.includes(propKey)) return Reflect.get(target, propKey, receiver);
-            if (propKey in target) return calcGetter(Reflect.get(target, propKey, receiver));
+            if (propKey in target) return Reflect.get(target, propKey, receiver);
         }
         for (const scope of chain) {
-            if (propKey in scope) return calcGetter(Reflect.get(scope, propKey, receiver));
+            if (propKey in scope) return Reflect.get(scope, propKey, receiver);
         }
         if (useTarget) throw Error(`cannot access ${String(propKey)} on chainAccessor`);
         return undefined;
