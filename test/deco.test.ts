@@ -1,7 +1,7 @@
-import { FieldExpose, FieldIf, FieldType, getStructReadSnap, getStructWriteSnap, ParserTarget } from '../mod.ts';
+import { FieldExpose, FieldIf, FieldType, getStructReadSnap, getStructWriteSnap, StructTarget } from '../mod.ts';
 import * as t from '../mod.ts';
 
-@ParserTarget({ endian: 'be' })
+@StructTarget({ endian: 'be' })
 class Person {
     @FieldType(t.String, { size: t.Uint8, coding: t.Utf8 })
     name!: string;
