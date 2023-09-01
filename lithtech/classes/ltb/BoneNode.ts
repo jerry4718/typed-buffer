@@ -5,17 +5,17 @@ import { Matrix } from '../common/Matrix.ts';
 @StructTarget()
 export class BoneNode {
     @FieldType(t.String, { size: t.Uint16 })
-    name!: string;
+    declare name: string;
 
     @FieldType(t.Uint16)
-    index!: number;
+    declare index: number;
 
     @FieldType(t.Int8)
-    flags!: number;
+    declare flags: number;
 
     @FieldType(Matrix)
-    bindMatrix!: Matrix;
+    declare bindMatrix: Matrix;
 
     @FieldType(t.Array, { item: BoneNode, count: t.Uint32 })
-    children!: BoneNode[];
+    declare children: BoneNode[];
 }

@@ -4,20 +4,20 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class LightMapSection {
     @FieldType(t.Uint32)
-    left!: number;
+    declare left: number;
 
     @FieldType(t.Uint32)
-    top!: number;
+    declare top: number;
 
     @FieldType(t.Uint32)
-    width!: number;
+    declare width: number;
 
     @FieldType(t.Uint32)
-    height!: number;
+    declare height: number;
 
     @FieldType(t.Uint32)
-    lenData!: number;
+    declare lenData: number;
 
     @FieldType(t.Uint8Array, { count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.lenData })
-    data!: Uint8Array;
+    declare data: Uint8Array;
 }

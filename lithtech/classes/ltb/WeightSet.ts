@@ -4,8 +4,8 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class WeightSet {
     @FieldType(t.String, { size: t.Uint16 })
-    name!: string;
+    declare name: string;
 
     @FieldType(t.Float32Array, { count: t.Uint32 })
-    nodeWeights!: Float32Array;
+    declare nodeWeights: Float32Array;
 }

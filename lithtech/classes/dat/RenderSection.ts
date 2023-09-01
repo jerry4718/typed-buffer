@@ -4,23 +4,23 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class RenderSection {
     @FieldType(t.Array, { item: t.String({ size: t.Uint16 }), count: 2 })
-    textures!: string[];
+    declare textures: string[];
 
     @FieldType(t.Uint8)
-    shaderCode!: number;
+    declare shaderCode: number;
 
     @FieldType(t.Uint32)
-    numTriangles!: number;
+    declare numTriangles: number;
 
     @FieldType(t.String, { size: t.Uint16 })
-    textureEffect!: string[];
+    declare textureEffect: string[];
 
     @FieldType(t.Uint32)
-    lightMapWidth!: number;
+    declare lightMapWidth: number;
 
     @FieldType(t.Uint32)
-    lightMapHeight!: number;
+    declare lightMapHeight: number;
 
     @FieldType(t.Uint8Array, { count: t.Uint32 })
-    lightMapData!: Uint8Array;
+    declare lightMapData: Uint8Array;
 }

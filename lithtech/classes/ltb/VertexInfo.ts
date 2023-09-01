@@ -10,44 +10,44 @@ import { Vector2 } from '../common/Vector2.ts';
 export class VertexInfo {
     @FieldType(Vector3)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition)
-    position!: Vector3;
+    declare position: Vector3;
 
     @FieldType(t.Array, {
         item: VertexWeightBlend,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.maxBonesPerFace,
     })
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition && scope.renderObjectType === MeshType.SkeletalMesh)
-    weightBlend!: VertexWeightBlend[];
+    declare weightBlend: VertexWeightBlend[];
 
     @FieldType(Vector3)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasNormal)
-    normal!: Vector3;
+    declare normal: Vector3;
 
     @FieldType(ColorRgba)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasColor)
-    color!: ColorRgba;
+    declare color: ColorRgba;
 
     @FieldType(Vector2)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv1)
-    uv1!: Vector2;
+    declare uv1: Vector2;
 
     @FieldType(Vector2)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv2)
-    uv2!: Vector2;
+    declare uv2: Vector2;
 
     @FieldType(Vector2)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv3)
-    uv3!: Vector2;
+    declare uv3: Vector2;
 
     @FieldType(Vector2)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv4)
-    uv4!: Vector2;
+    declare uv4: Vector2;
 
     @FieldType(Vector3)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasBasisVector)
-    s!: Vector3;
+    declare s: Vector3;
 
     @FieldType(Vector3)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasBasisVector)
-    t!: Vector3;
+    declare t: Vector3;
 }

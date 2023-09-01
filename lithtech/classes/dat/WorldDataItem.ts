@@ -5,11 +5,11 @@ import { DataProperty } from './DataProperty.ts';
 @StructTarget()
 export class WorldDataItem {
     @FieldType(t.Uint16)
-    objectLength!: number;
+    declare objectLength: number;
 
     @FieldType(t.String, { size: t.Uint16 })
-    type!: string;
+    declare type: string;
 
     @FieldType(t.Array, { item: DataProperty, count: t.Uint32 })
-    dataProperties!: DataProperty[];
+    declare dataProperties: DataProperty[];
 }

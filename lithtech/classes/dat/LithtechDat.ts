@@ -13,35 +13,35 @@ import { WorldTree } from './WorldTree.ts';
 export class LithtechDat {
     @FieldType(DatHeader)
     @FieldExpose()
-    header!: DatHeader;
+    declare header: DatHeader;
 
     @FieldType(World)
-    world!: World;
+    declare world: World;
 
     @FieldType(WorldTree)
-    worldTree!: WorldTree;
+    declare worldTree: WorldTree;
 
     @FieldType(WorldData)
     @FieldPoint((_: t.ParserContext, scope: t.ScopeAccessor) => scope.header.worldDataPos)
-    worldData!: WorldData;
+    declare worldData: WorldData;
 
     @FieldType(t.Uint32)
     @FieldPoint((_: t.ParserContext, scope: t.ScopeAccessor) => scope.header.blindDataPos)
-    blindDataLen!: number;
+    declare blindDataLen: number;
 
     @FieldType(LightData)
     @FieldPoint((_: t.ParserContext, scope: t.ScopeAccessor) => scope.header.lightDataPos)
-    lightData!: LightData;
+    declare lightData: LightData;
 
     @FieldType(PhysicsData)
     @FieldPoint((_: t.ParserContext, scope: t.ScopeAccessor) => scope.header.physicsDataPos)
-    physicsData!: PhysicsData;
+    declare physicsData: PhysicsData;
 
     @FieldType(ParticleData)
     @FieldPoint((_: t.ParserContext, scope: t.ScopeAccessor) => scope.header.particleDataPos)
-    particleData!: ParticleData;
+    declare particleData: ParticleData;
 
     @FieldType(RenderData)
     @FieldPoint((_: t.ParserContext, scope: t.ScopeAccessor) => scope.header.renderDataPos)
-    renderData!: RenderData;
+    declare renderData: RenderData;
 }

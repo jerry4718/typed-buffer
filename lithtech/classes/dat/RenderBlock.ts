@@ -11,32 +11,32 @@ import { Vertex } from './Vertex.ts';
 @StructTarget()
 export class RenderBlock {
     @FieldType(Vector3)
-    center!: Vector3;
+    declare center: Vector3;
 
     @FieldType(Vector3)
-    halfDims!: Vector3;
+    declare halfDims: Vector3;
 
     @FieldType(t.Array, { item: RenderSection, count: t.Uint32 })
-    sections!: RenderSection[];
+    declare sections: RenderSection[];
 
     @FieldType(t.Array, { item: Vertex, count: t.Uint32 })
-    vertexes!: Vertex[];
+    declare vertexes: Vertex[];
 
     @FieldType(t.Array, { item: Triangle, count: t.Uint32 })
-    triangles!: Triangle[];
+    declare triangles: Triangle[];
 
     @FieldType(t.Array, { item: SkyPortal, count: t.Uint32 })
-    skyPortals!: SkyPortal[];
+    declare skyPortals: SkyPortal[];
 
     @FieldType(t.Array, { item: ShaderPoly, count: t.Uint32 })
-    shaders!: ShaderPoly[];
+    declare shaders: ShaderPoly[];
 
     @FieldType(t.Array, { item: LightGroup, count: t.Uint32 })
-    lightGroups!: LightGroup[];
+    declare lightGroups: LightGroup[];
 
     @FieldType(t.Uint8)
-    childFlags!: number;
+    declare childFlags: number;
 
     @FieldType(t.Uint32Array, { count: 2 })
-    childNodeIndices!: Uint32Array;
+    declare childNodeIndices: Uint32Array;
 }

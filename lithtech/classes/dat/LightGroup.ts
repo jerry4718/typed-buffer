@@ -6,17 +6,17 @@ import { LightMapSectionArray } from './LightMapSectionArray.ts';
 @StructTarget()
 export class LightGroup {
     @FieldType(t.String, { size: t.Uint16 })
-    name!: string;
+    declare name: string;
 
     @FieldType(Vector3)
-    color!: Vector3;
+    declare color: Vector3;
 
     @FieldType(t.Uint32)
-    lenNIntensityData!: number;
+    declare lenNIntensityData: number;
 
     @FieldType(t.Uint8Array, { count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.lenNIntensityData })
-    nIntensityData!: Uint8Array;
+    declare nIntensityData: Uint8Array;
 
     @FieldType(t.Array, { item: LightMapSectionArray, count: t.Uint32 })
-    lightMapSectionsMatrix!: LightMapSectionArray[];
+    declare lightMapSectionsMatrix: LightMapSectionArray[];
 }

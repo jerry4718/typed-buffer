@@ -7,17 +7,17 @@ import { Vector3 } from '../common/Vector3.ts';
 @StructTarget()
 export class DataProperty {
     @FieldType(t.String, { size: t.Uint16 })
-    name!: string;
+    declare name: string;
 
     @FieldType(t.Uint8)
     @FieldExpose()
-    typeCode!: number;
+    declare typeCode: number;
 
     @FieldType(t.Uint32)
-    flags!: number;
+    declare flags: number;
 
     @FieldType(t.Uint16)
-    dataLength!: number;
+    declare dataLength: number;
 
     @FieldType((_: t.ParserContext, scope: t.ScopeAccessor) => {
         if (scope.typeCode === 0) return t.String({ size: t.Uint16 });
@@ -30,7 +30,7 @@ export class DataProperty {
         if (scope.typeCode === 7) return Quaternion;
         throw Error(`cannot match [data] type from [typeCode:${scope.typeCode}]`);
     })
-    data!: string | Vector3 | ColorRgb | number | Quaternion;
+    declare data: string | Vector3 | ColorRgb | number | Quaternion;
 
     get type() {
         if (this.typeCode === 0x00) return 'string';

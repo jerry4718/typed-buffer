@@ -10,20 +10,20 @@ import { MeshType } from './enums/MeshType.ts';
 @StructTarget()
 export class RenderObject {
     @FieldType(t.Uint32)
-    numTextures!: number;
+    declare numTextures: number;
 
     @FieldType(t.Uint32Array, { count: 4 })
-    textures!: Uint32Array;
+    declare textures: Uint32Array;
 
     @FieldType(t.Uint32)
-    renderStyle!: number;
+    declare renderStyle: number;
 
     @FieldType(t.Uint8)
-    renderPriority!: number;
+    declare renderPriority: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    renderObjectType!: number;
+    declare renderObjectType: number;
 
     @FieldType((_: t.ParserContext, scope: t.ScopeAccessor) => {
         if (scope.renderObjectType === MeshType.RigidMesh) return RigidMesh;
@@ -32,8 +32,8 @@ export class RenderObject {
         if (scope.renderObjectType === MeshType.NullMesh) return NullMesh;
         return UnknownMesh;
     })
-    lodMesh!: RigidMesh | SkeletalMesh | VertexAnimatedMesh | NullMesh | UnknownMesh;
+    declare lodMesh: RigidMesh | SkeletalMesh | VertexAnimatedMesh | NullMesh | UnknownMesh;
 
     @FieldType(t.Uint8Array, { count: t.Uint8 })
-    usedNodes!: Uint8Array;
+    declare usedNodes: Uint8Array;
 }

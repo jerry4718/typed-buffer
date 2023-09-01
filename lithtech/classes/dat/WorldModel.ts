@@ -10,110 +10,110 @@ import { WorldModelPolygon } from './WorldModelPolygon.ts';
 export class WorldModel {
     // always zero
     @FieldType(t.Uint32)
-    reserved!: number;
+    declare reserved: number;
 
     @FieldType(t.Uint32)
-    worldInfoFlag!: number;
+    declare worldInfoFlag: number;
 
     @FieldType(t.String, { size: t.Uint16 })
-    worldName!: string;
+    declare worldName: string;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numPoints!: number;
+    declare numPoints: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numPlanes!: number;
+    declare numPlanes: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numSurfaces!: number;
+    declare numSurfaces: number;
 
     @FieldType(t.Uint32)
-    reserved1!: number;
-
-    @FieldType(t.Uint32)
-    @FieldExpose()
-    numPolygons!: number;
-
-    @FieldType(t.Uint32)
-    reserved2!: number;
-
-    @FieldType(t.Uint32)
-    numPolygonVertexIndexes!: number;
-
-    @FieldType(t.Uint32)
-    reserved3!: number;
-
-    @FieldType(t.Uint32)
-    reserved4!: number;
+    declare reserved1: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numNodes!: number;
+    declare numPolygons: number;
+
+    @FieldType(t.Uint32)
+    declare reserved2: number;
+
+    @FieldType(t.Uint32)
+    declare numPolygonVertexIndexes: number;
+
+    @FieldType(t.Uint32)
+    declare reserved3: number;
+
+    @FieldType(t.Uint32)
+    declare reserved4: number;
+
+    @FieldType(t.Uint32)
+    @FieldExpose()
+    declare numNodes: number;
 
     @FieldType(Vector3)
-    boxMin!: Vector3;
+    declare boxMin: Vector3;
 
     @FieldType(Vector3)
-    boxMax!: Vector3;
+    declare boxMax: Vector3;
 
     @FieldType(Vector3)
-    worldTranslation!: Vector3;
+    declare worldTranslation: Vector3;
 
     @FieldType(t.Uint32)
-    textureNameSize!: number;
+    declare textureNameSize: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numTextureNames!: number;
+    declare numTextureNames: number;
 
     @FieldType(t.Array, {
         item: t.String({ ends: 0x00 }),
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numTextureNames,
     })
-    textureNames!: string[];
+    declare textureNames: string[];
 
     @FieldType(t.Uint8Array, {
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPolygons,
     })
     @FieldExpose()
-    vertexCountList!: Uint8Array;
+    declare vertexCountList: Uint8Array;
 
     @FieldType(t.Array, {
         item: Plane,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPlanes,
     })
-    planes!: Plane[];
+    declare planes: Plane[];
 
     @FieldType(t.Array, {
         item: Surface,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numSurfaces,
     })
-    surfaces!: Surface[];
+    declare surfaces: Surface[];
 
     @FieldType(t.Array, {
         item: WorldModelPolygon,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPolygons,
     })
-    polygons!: WorldModelPolygon[];
+    declare polygons: WorldModelPolygon[];
 
     @FieldType(t.Array, {
         item: WorldModelNode,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numNodes,
     })
-    nodes!: WorldModelNode[];
+    declare nodes: WorldModelNode[];
 
     @FieldType(t.Array, {
         item: Vector3,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numPoints,
     })
-    points!: Vector3[];
+    declare points: Vector3[];
 
     @FieldType(t.Int32)
-    rootNodeIndex!: number;
+    declare rootNodeIndex: number;
 
     @FieldType(t.Uint32)
-    sections!: number;
+    declare sections: number;
 }

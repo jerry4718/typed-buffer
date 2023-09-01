@@ -4,65 +4,65 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class LtbHeader {
     @FieldType(t.Uint16)
-    fileType!: number;
+    declare fileType: number;
 
     @FieldType(t.Uint16)
-    fileVersion!: number;
+    declare fileVersion: number;
 
     @FieldType(t.Uint32Array, { count: 4 })
-    spaceUnknown!: Uint32Array;
+    declare spaceUnknown: Uint32Array;
 
     @FieldType(t.Int32)
-    version!: number;
+    declare version: number;
 
     @FieldType(t.Int32)
-    numKeyframe!: number;
+    declare numKeyframe: number;
 
     @FieldType(t.Int32)
-    numAnimations!: number;
+    declare numAnimations: number;
 
     @FieldType(t.Int32)
-    numNodes!: number;
+    declare numNodes: number;
 
     @FieldType(t.Int32)
-    numPiecesNoUse!: number;
+    declare numPiecesNoUse: number;
 
     @FieldType(t.Int32)
-    numChildModels!: number;
+    declare numChildModels: number;
 
     @FieldType(t.Int32)
-    numFaces!: number;
+    declare numFaces: number;
 
     @FieldType(t.Int32)
-    numVertexes!: number;
+    declare numVertexes: number;
 
     @FieldType(t.Int32)
-    numVertexWeights!: number;
+    declare numVertexWeights: number;
 
     @FieldType(t.Int32)
-    numLod!: number;
+    declare numLod: number;
 
     @FieldType(t.Int32)
-    numSockets!: number;
+    declare numSockets: number;
 
     @FieldType(t.Int32)
-    numWeightSets!: number;
+    declare numWeightSets: number;
 
     @FieldType(t.Int32)
-    numStrings!: number;
+    declare numStrings: number;
 
     @FieldType(t.Int32)
-    stringLength!: number;
+    declare stringLength: number;
 
     @FieldType(t.Int32)
-    vertexAnimationDataSize!: number;
+    declare vertexAnimationDataSize: number;
 
     @FieldType(t.Int32)
-    animationDataSize!: number;
+    declare animationDataSize: number;
 
     @FieldType(t.String, { size: t.Uint16 })
-    commandString!: string;
+    declare commandString: string;
 
     @FieldType(t.Float32)
-    internalRadius!: number;
+    declare internalRadius: number;
 }

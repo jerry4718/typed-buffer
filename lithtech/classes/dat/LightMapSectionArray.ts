@@ -5,5 +5,5 @@ import { LightMapSection } from './LightMapSection.ts';
 @StructTarget()
 export class LightMapSectionArray {
     @FieldType(t.Array, { item: LightMapSection, count: t.Uint32 })
-    lightMapSections!: LightMapSection[];
+    declare lightMapSections: LightMapSection[];
 }

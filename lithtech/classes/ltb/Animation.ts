@@ -11,25 +11,25 @@ import { Keyframe } from './Keyframe.ts';
 @StructTarget()
 export class Animation {
     @FieldType(Vector3)
-    extents!: Vector3;
+    declare extents: Vector3;
 
     @FieldType(t.String, { size: t.Uint16 })
-    name!: string;
+    declare name: string;
 
     @FieldType(t.Int32)
     @FieldExpose()
-    compressionType!: number;
+    declare compressionType: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    interpolationTime!: number;
+    declare interpolationTime: number;
 
     // @FieldType(t.Uint32)
     // @FieldExpose()
-    // numKeyframes!: number;
+    // declare numKeyframes: number;
 
     @FieldType(t.Array, { item: Keyframe, count: t.Uint32 })
-    keyframes!: Keyframe[];
+    declare keyframes: Keyframe[];
 
     @FieldType(t.Array, {
         item: (_: t.ParserContext, scope: t.ScopeAccessor) => {
@@ -45,5 +45,5 @@ export class Animation {
             return scope.header.numNodes;
         },
     })
-    transforms!: CmpNoneTransform[] | CmpRelevantTransform[] | CmpRelevant16Transform[] | CmpRelevantRot16Transform[];
+    declare transforms: CmpNoneTransform[] | CmpRelevantTransform[] | CmpRelevant16Transform[] | CmpRelevantRot16Transform[];
 }

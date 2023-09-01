@@ -13,16 +13,16 @@ export class RigidMesh extends LodMeshInfo {
 
     @FieldType(t.Uint32Array, { count: 4 })
     @FieldExpose()
-    vertexTypeMap!: Uint32Array;
+    declare vertexTypeMap: Uint32Array;
 
     @FieldType(t.Uint32)
-    bone!: number;
+    declare bone: number;
 
     @FieldType(t.Array, { item: VertexContainer, count: 4 })
-    vertexContainer!: VertexContainer[];
+    declare vertexContainer: VertexContainer[];
 
     @FieldType(t.Uint16Array, {
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numFaces * 3,
     })
-    vertexIndex!: Uint16Array;
+    declare vertexIndex: Uint16Array;
 }

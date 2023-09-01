@@ -5,21 +5,21 @@ import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 export class LodMeshInfo {
     @FieldType(t.Uint32)
     @FieldExpose()
-    objSize!: number;
+    declare objSize: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numVertexes!: number;
+    declare numVertexes: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numFaces!: number;
+    declare numFaces: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    maxBonesPerFace!: number;
+    declare maxBonesPerFace: number;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    maxBonesPerVert!: number;
+    declare maxBonesPerVert: number;
 }

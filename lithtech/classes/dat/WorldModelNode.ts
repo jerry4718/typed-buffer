@@ -4,11 +4,11 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class WorldModelNode {
     @FieldType(t.Uint32)
-    polyIndex!: number;
+    declare polyIndex: number;
 
     @FieldType(t.Uint16)
-    reserved!: number;
+    declare reserved: number;
 
     @FieldType(t.Int32Array, { count: 2, })
-    nodeSidesIndices!: Int32Array;
+    declare nodeSidesIndices: Int32Array;
 }

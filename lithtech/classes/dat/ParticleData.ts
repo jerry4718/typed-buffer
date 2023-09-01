@@ -5,5 +5,5 @@ import { Polygon } from './Polygon.ts';
 @StructTarget()
 export class ParticleData {
     @FieldType(t.Array, { item: Polygon, count: t.Uint32 })
-    polygons!: Polygon[];
+    declare polygons: Polygon[];
 }

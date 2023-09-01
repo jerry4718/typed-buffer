@@ -6,17 +6,17 @@ import { Vector3 } from '../common/Vector3.ts';
 @StructTarget()
 export class Vertex {
     @FieldType(Vector3)
-    pos!: Vector3;
+    declare pos: Vector3;
 
     @FieldType(Vector2)
-    uv1!: Vector2;
+    declare uv1: Vector2;
 
     @FieldType(Vector2)
-    uv2!: Vector2;
+    declare uv2: Vector2;
 
     @FieldType(ColorRgba)
-    color!: ColorRgba;
+    declare color: ColorRgba;
 
     @FieldType(Vector3)
-    normal!: Vector3;
+    declare normal: Vector3;
 }

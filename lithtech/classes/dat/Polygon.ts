@@ -6,8 +6,8 @@ import { Plane } from './Plane.ts';
 @StructTarget()
 export class Polygon {
     @FieldType(Plane)
-    plane!: Plane;
+    declare plane: Plane;
 
     @FieldType(t.Array, { item: Vector3, count: t.Uint32 })
-    vertexesPos!: Vector3[];
+    declare vertexesPos: Vector3[];
 }

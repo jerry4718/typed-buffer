@@ -5,5 +5,5 @@ import { LodMeshInfo } from './LodMeshInfo.ts';
 export class BaseMesh {
     @FieldType(LodMeshInfo)
     @FieldExpose()
-    meshInfo!: LodMeshInfo;
+    declare meshInfo: LodMeshInfo;
 }

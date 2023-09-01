@@ -14,36 +14,36 @@ import { WeightSet } from './WeightSet.ts';
 export class LithtechLtb {
     @FieldType(LtbHeader)
     @FieldExpose()
-    header!: LtbHeader;
+    declare header: LtbHeader;
 
     @FieldType(t.Array, { item: ModelOBB, count: t.Int32 })
-    modelOBBs!: ModelOBB[];
+    declare modelOBBs: ModelOBB[];
 
     @FieldType(t.Array, { item: Piece, count: t.Int32 })
-    pieces!: Piece[];
+    declare pieces: Piece[];
 
     @FieldType(BoneNode)
-    boneTree!: BoneNode;
+    declare boneTree: BoneNode;
 
     @FieldType(t.Array, { item: WeightSet, count: t.Uint32 })
-    weightSets!: WeightSet[];
+    declare weightSets: WeightSet[];
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    numChildModels!: number;
+    declare numChildModels: number;
 
     @FieldType(t.Array, {
         item: ChildModel,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numChildModels - 1,
     })
-    childModels!: ChildModel[];
+    declare childModels: ChildModel[];
 
     @FieldType(t.Array, { item: Animation, count: t.Uint32 })
-    animations!: Animation[];
+    declare animations: Animation[];
 
     @FieldType(t.Array, { item: Socket, count: t.Uint32 })
-    sockets!: Socket[];
+    declare sockets: Socket[];
 
     @FieldType(t.Array, { item: AnimBinding, count: t.Uint32 })
-    animBindings!: AnimBinding[];
+    declare animBindings: AnimBinding[];
 }

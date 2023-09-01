@@ -6,11 +6,11 @@ import { Plane } from './Plane.ts';
 @StructTarget()
 export class ShaderPoly {
     @FieldType(t.Array, { item: Vector3, count: t.Uint8 })
-    vertexesPos!: Vector3[];
+    declare vertexesPos: Vector3[];
 
     @FieldType(Plane)
-    plane!: Plane;
+    declare plane: Plane;
 
     @FieldType(t.Uint32)
-    name!: number;
+    declare name: number;
 }

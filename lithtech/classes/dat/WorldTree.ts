@@ -6,22 +6,22 @@ import { WorldModel } from './WorldModel.ts';
 @StructTarget()
 export class WorldTree {
     @FieldType(Vector3)
-    boxMin!: Vector3;
+    declare boxMin: Vector3;
 
     @FieldType(Vector3)
-    boxMax!: Vector3;
+    declare boxMax: Vector3;
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    childNumNodes!: number;
+    declare childNumNodes: number;
 
     @FieldType(t.Uint32)
-    dummyTerrainDepth!: number;
+    declare dummyTerrainDepth: number;
 
     // Oct-tree stored bitwise
     @FieldType(t.Uint8Array, { count: (_: t.ParserContext, scope: t.ScopeAccessor) => Math.floor(scope.childNumNodes / 8 + 1) })
-    worldLayout!: Uint8Array;
+    declare worldLayout: Uint8Array;
 
     @FieldType(t.Array, { item: WorldModel, count: t.Uint32 })
-    worldModels!: WorldModel[];
+    declare worldModels: WorldModel[];
 }

@@ -4,26 +4,26 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class DatHeader {
     @FieldType(t.Uint8Array, { count: 4 })
-    datVersion!: Uint8Array;
+    declare datVersion: Uint8Array;
 
     @FieldType(t.Uint32)
-    worldDataPos!: number;
+    declare worldDataPos: number;
 
     @FieldType(t.Uint32)
-    blindDataPos!: number;
+    declare blindDataPos: number;
 
     @FieldType(t.Uint32)
-    lightDataPos!: number;
+    declare lightDataPos: number;
 
     @FieldType(t.Uint32)
-    physicsDataPos!: number;
+    declare physicsDataPos: number;
 
     @FieldType(t.Uint32)
-    particleDataPos!: number;
+    declare particleDataPos: number;
 
     @FieldType(t.Uint32)
-    renderDataPos!: number;
+    declare renderDataPos: number;
 
     @FieldType(t.Uint32Array, { count: 8 })
-    future!: Uint32Array;
+    declare future: Uint32Array;
 }

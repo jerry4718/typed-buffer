@@ -6,17 +6,17 @@ import { Vector3 } from '../common/Vector3.ts';
 @StructTarget()
 export class Socket {
     @FieldType(t.Uint32)
-    nodeIndex!: number;
+    declare nodeIndex: number;
 
     @FieldType(t.String, { size: t.Uint16 })
-    name!: string;
+    declare name: string;
 
     @FieldType(Quaternion)
-    rotation!: Quaternion;
+    declare rotation: Quaternion;
 
     @FieldType(Vector3)
-    position!: Vector3;
+    declare position: Vector3;
 
     @FieldType(Vector3)
-    scale!: Vector3;
+    declare scale: Vector3;
 }

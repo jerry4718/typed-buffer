@@ -4,7 +4,7 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class Matrix {
     @FieldType(t.Float32Array, { count: 4 * 4 })
-    data!: Float32Array;
+    declare data: Float32Array;
 
     get rows() {
         return [

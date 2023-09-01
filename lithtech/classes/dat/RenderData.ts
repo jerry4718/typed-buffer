@@ -6,8 +6,8 @@ import { WorldModelRenderBlock } from './WorldModelRenderBlock.ts';
 @StructTarget()
 export class RenderData {
     @FieldType(t.Array, { item: RenderBlock, count: t.Uint32 })
-    renderBlocks!: RenderBlock[];
+    declare renderBlocks: RenderBlock[];
 
     @FieldType(t.Array, { item: WorldModelRenderBlock, count: t.Uint32 })
-    worldModelRenderBlocks!: WorldModelRenderBlock[];
+    declare worldModelRenderBlocks: WorldModelRenderBlock[];
 }

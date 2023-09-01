@@ -4,8 +4,8 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class Keyframe {
     @FieldType(t.Uint32)
-    time!: number;
+    declare time: number;
 
     @FieldType(t.String, { size: t.Uint16 })
-    string!: string;
+    declare string: string;
 }

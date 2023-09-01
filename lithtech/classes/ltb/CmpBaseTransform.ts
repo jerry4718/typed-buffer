@@ -17,7 +17,7 @@ export class CmpBaseTransform {
         },
         count: t.Uint32,
     })
-    positions!: Vector3[] | CompressedVector3[];
+    declare positions: Vector3[] | CompressedVector3[];
 
     @FieldType(t.Array, {
         item: (_: t.ParserContext, scope: t.ScopeAccessor) => {
@@ -28,5 +28,5 @@ export class CmpBaseTransform {
         },
         count: t.Uint32,
     })
-    rotations!: Quaternion[] | CompressedQuaternion[];
+    declare rotations: Quaternion[] | CompressedQuaternion[];
 }

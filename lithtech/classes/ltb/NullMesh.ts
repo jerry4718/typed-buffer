@@ -4,5 +4,5 @@ import { FieldType, StructTarget } from '../../../mod.ts';
 @StructTarget()
 export class NullMesh {
     @FieldType(t.Uint8)
-    offset!: number;
+    declare offset: number;
 }

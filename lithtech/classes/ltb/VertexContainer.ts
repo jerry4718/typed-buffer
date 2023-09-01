@@ -7,52 +7,52 @@ import { VertexInfo } from './VertexInfo.ts';
 export class VertexContainer {
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexTypeMap[ scope.$index ])
     @FieldExpose()
-    mask!: number;
+    declare mask: number;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.Position) > 0)
     @FieldExpose()
-    hasPosition!: boolean;
+    declare hasPosition: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.Normal) > 0)
     @FieldExpose()
-    hasNormal!: boolean;
+    declare hasNormal: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.Color) > 0)
     @FieldExpose()
-    hasColor!: boolean;
+    declare hasColor: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.Uv1) > 0)
     @FieldExpose()
-    hasUv1!: boolean;
+    declare hasUv1: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.Uv2) > 0)
     @FieldExpose()
-    hasUv2!: boolean;
+    declare hasUv2: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.Uv3) > 0)
     @FieldExpose()
-    hasUv3!: boolean;
+    declare hasUv3: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.Uv4) > 0)
     @FieldExpose()
-    hasUv4!: boolean;
+    declare hasUv4: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => (scope.mask & DataMask.BasisVector) > 0)
     @FieldExpose()
-    hasBasisVector!: boolean;
+    declare hasBasisVector: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition || scope.hasNormal || scope.hasColor || scope.hasBasisVector)
     @FieldExpose()
-    isVertexUsed!: boolean;
+    declare isVertexUsed: boolean;
 
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasUv1 || scope.hasUv2 || scope.hasUv3 || scope.hasUv4)
     @FieldExpose()
-    isFaceVertexUsed!: boolean;
+    declare isFaceVertexUsed: boolean;
 
     @FieldType(t.Array, {
         item: VertexInfo,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numVertexes,
     })
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.mask > 0)
-    vertexInfos!: VertexInfo[];
+    declare vertexInfos: VertexInfo[];
 }
