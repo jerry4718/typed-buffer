@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 import { NullMesh } from './NullMesh.ts';
 import { RigidMesh } from './RigidMesh.ts';
 import { SkeletalMesh } from './SkeletalMesh.ts';
@@ -7,7 +7,7 @@ import { UnknownMesh } from './UnknownMesh.ts';
 import { VertexAnimatedMesh } from './VertexAnimatedMesh.ts';
 import { MeshType } from './enums/MeshType.ts';
 
-@ParserTarget()
+@StructTarget()
 export class RenderObject {
     @FieldType(t.Uint32)
     numTextures!: number;

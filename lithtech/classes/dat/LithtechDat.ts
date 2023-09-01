@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldPoint, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldPoint, FieldType, StructTarget } from '../../../mod.ts';
 import { DatHeader } from './DatHeader.ts';
 import { LightData } from './LightData.ts';
 import { ParticleData } from './ParticleData.ts';
@@ -9,7 +9,7 @@ import { World } from './World.ts';
 import { WorldData } from './WorldData.ts';
 import { WorldTree } from './WorldTree.ts';
 
-@ParserTarget({ endian: 'le' })
+@StructTarget({ endian: 'le' })
 export class LithtechDat {
     @FieldType(DatHeader)
     @FieldExpose()

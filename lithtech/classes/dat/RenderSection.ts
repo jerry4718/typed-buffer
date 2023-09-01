@@ -1,7 +1,7 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 
-@ParserTarget()
+@StructTarget()
 export class RenderSection {
     @FieldType(t.Array, { item: t.String({ size: t.Uint16 }), count: 2 })
     textures!: string[];

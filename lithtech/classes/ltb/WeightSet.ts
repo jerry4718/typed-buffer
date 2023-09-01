@@ -1,7 +1,7 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 
-@ParserTarget()
+@StructTarget()
 export class WeightSet {
     @FieldType(t.String, { size: t.Uint16 })
     name!: string;

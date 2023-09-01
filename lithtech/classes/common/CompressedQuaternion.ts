@@ -1,29 +1,43 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, FieldCollection, StructTarget } from '../../../mod.ts';
 import { Quaternion } from './Quaternion.ts';
 
 const DecompressValue = 0x7fff;
 
-@ParserTarget()
+@StructTarget()
 export class CompressedQuaternion {
-    @FieldType(t.Int16)
-    x!: number;
+    @FieldType(t.Int16Array, { count: 4 })
+    @FieldCollection(Int16Array, [ 'x', 'y', 'z', 'w' ])
+    declare meta: Int16Array;
 
-    @FieldType(t.Int16)
-    y!: number;
+    declare x: number;
+    declare y: number;
+    declare z: number;
+    declare w: number;
 
-    @FieldType(t.Int16)
-    z!: number;
+    asArray() {
+        return Array.from(this.toQuaternion().meta);
+    }
 
-    @FieldType(t.Int16)
-    w!: number;
+    toQuaternion() {
+        return CompressedQuaternion.toQuaternion(this);
+    }
 
-    toQuaternion(decompressValue = DecompressValue) {
+    static toQuaternion(from: CompressedQuaternion, decompressValue = DecompressValue) {
         const quat = new Quaternion();
-        quat.x = this.x / decompressValue;
-        quat.y = this.y / decompressValue;
-        quat.z = this.z / decompressValue;
-        quat.w = this.w / decompressValue;
+        quat.x = from.x / decompressValue;
+        quat.y = from.y / decompressValue;
+        quat.z = from.z / decompressValue;
+        quat.w = from.w / decompressValue;
+        return quat;
+    }
+
+    static fromQuaternion(from: Quaternion, decompressValue = DecompressValue) {
+        const quat = new CompressedQuaternion();
+        quat.x = from.x * decompressValue;
+        quat.y = from.y * decompressValue;
+        quat.z = from.z * decompressValue;
+        quat.w = from.w * decompressValue;
         return quat;
     }
 }

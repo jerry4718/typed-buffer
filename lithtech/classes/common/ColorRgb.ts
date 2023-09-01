@@ -1,14 +1,17 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldCollection, FieldType, StructTarget } from '../../../mod.ts';
 
-@ParserTarget()
+@StructTarget()
 export class ColorRgb {
-    @FieldType(t.Float32)
-    r!: number;
+    @FieldType(t.Float32Array, { count: 3 })
+    @FieldCollection(Float32Array, [ 'r', 'g', 'b' ])
+    declare meta: Float32Array;
 
-    @FieldType(t.Float32)
-    g!: number;
+    declare r: number;
+    declare g: number;
+    declare b: number;
 
-    @FieldType(t.Float32)
-    b!: number;
+    asArray() {
+        return Array.from(this.meta);
+    }
 }

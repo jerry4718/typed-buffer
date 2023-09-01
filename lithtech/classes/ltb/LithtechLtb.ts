@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { Ascii, FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { Ascii, FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 import { Animation } from './Animation.ts';
 import { AnimBinding } from './AnimBinding.ts';
 import { BoneNode } from './BoneNode.ts';
@@ -10,7 +10,7 @@ import { Piece } from './Piece.ts';
 import { Socket } from './Socket.ts';
 import { WeightSet } from './WeightSet.ts';
 
-@ParserTarget({ endian: 'le', coding: Ascii })
+@StructTarget({ endian: 'le', coding: Ascii })
 export class LithtechLtb {
     @FieldType(LtbHeader)
     @FieldExpose()

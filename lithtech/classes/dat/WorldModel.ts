@@ -1,12 +1,12 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { Plane } from './Plane.ts';
 import { Surface } from './Surface.ts';
 import { WorldModelNode } from './WorldModelNode.ts';
 import { WorldModelPolygon } from './WorldModelPolygon.ts';
 
-@ParserTarget()
+@StructTarget()
 export class WorldModel {
     // always zero
     @FieldType(t.Uint32)

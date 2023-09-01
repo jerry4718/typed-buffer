@@ -1,9 +1,9 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { Plane } from './Plane.ts';
 
-@ParserTarget()
+@StructTarget()
 export class Polygon {
     @FieldType(Plane)
     plane!: Plane;

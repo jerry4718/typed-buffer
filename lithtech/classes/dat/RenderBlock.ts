@@ -1,5 +1,5 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { LightGroup } from './LightGroup.ts';
 import { RenderSection } from './RenderSection.ts';
@@ -8,7 +8,7 @@ import { SkyPortal } from './SkyPortal.ts';
 import { Triangle } from './Triangle.ts';
 import { Vertex } from './Vertex.ts';
 
-@ParserTarget()
+@StructTarget()
 export class RenderBlock {
     @FieldType(Vector3)
     center!: Vector3;

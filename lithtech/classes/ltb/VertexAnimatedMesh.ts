@@ -1,7 +1,7 @@
-import { ParserTarget } from '../../../mod.ts';
+import { StructTarget } from '../../../mod.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 
-@ParserTarget()
+@StructTarget()
 export class VertexAnimatedMesh extends LodMeshInfo {
     declare objSize: number;
     declare numVertexes: number;

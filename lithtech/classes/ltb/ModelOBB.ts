@@ -1,9 +1,9 @@
 import * as t from '../../../mod.ts';
-import { FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldIf, FieldType, StructTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { ObbVersion } from './enums/ObbVersion.ts';
 
-@ParserTarget()
+@StructTarget()
 export class ModelOBB {
     @FieldType(Vector3)
     pos!: Vector3;

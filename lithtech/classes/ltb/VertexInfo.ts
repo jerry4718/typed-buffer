@@ -1,12 +1,12 @@
 import * as t from '../../../mod.ts';
-import { FieldIf, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldIf, FieldType, StructTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { VertexWeightBlend } from './VertexWeightBlend.ts';
 import { ColorRgba } from '../common/ColorRgba.ts';
 import { MeshType } from './enums/MeshType.ts';
 import { Vector2 } from '../common/Vector2.ts';
 
-@ParserTarget()
+@StructTarget()
 export class VertexInfo {
     @FieldType(Vector3)
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.hasPosition)

@@ -1,7 +1,7 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 
-@ParserTarget()
+@StructTarget()
 export class Triangle {
     @FieldType(t.Uint32Array, { count: 3, })
     vertexIndexes!: Uint32Array;

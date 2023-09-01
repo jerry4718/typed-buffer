@@ -1,9 +1,9 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { WorldModel } from './WorldModel.ts';
 
-@ParserTarget()
+@StructTarget()
 export class WorldTree {
     @FieldType(Vector3)
     boxMin!: Vector3;

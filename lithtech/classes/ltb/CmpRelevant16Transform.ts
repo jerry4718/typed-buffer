@@ -1,10 +1,10 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 import { CompressedQuaternion } from '../common/CompressedQuaternion.ts';
 import { CompressedVector3 } from '../common/CompressedVector3.ts';
 import { CmpBaseTransform } from './CmpBaseTransform.ts';
 
-@ParserTarget()
+@StructTarget()
 export class CmpRelevant16Transform extends CmpBaseTransform {
     @FieldType(t.Array, { item: CompressedVector3, count: t.Uint32 })
     declare positions: CompressedVector3[];

@@ -1,8 +1,8 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 import { RenderObject } from './RenderObject.ts';
 
-@ParserTarget()
+@StructTarget()
 export class Piece {
     @FieldType(t.String, { size: t.Uint16 })
     name!: string;

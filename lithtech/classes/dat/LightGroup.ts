@@ -1,9 +1,9 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 import { Vector3 } from '../common/Vector3.ts';
 import { LightMapSectionArray } from './LightMapSectionArray.ts';
 
-@ParserTarget()
+@StructTarget()
 export class LightGroup {
     @FieldType(t.String, { size: t.Uint16 })
     name!: string;

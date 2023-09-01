@@ -1,7 +1,7 @@
-import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 
-@ParserTarget()
+@StructTarget()
 export class BaseMesh {
     @FieldType(LodMeshInfo)
     @FieldExpose()

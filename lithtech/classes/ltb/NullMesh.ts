@@ -1,7 +1,7 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 
-@ParserTarget()
+@StructTarget()
 export class NullMesh {
     @FieldType(t.Uint8)
     offset!: number;

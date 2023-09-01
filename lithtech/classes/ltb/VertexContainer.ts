@@ -1,9 +1,9 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldIf, FieldResolve, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldIf, FieldResolve, FieldType, StructTarget } from '../../../mod.ts';
 import { DataMask } from './enums/DataMask.ts';
 import { VertexInfo } from './VertexInfo.ts';
 
-@ParserTarget()
+@StructTarget()
 export class VertexContainer {
     @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexTypeMap[ scope.$index ])
     @FieldExpose()

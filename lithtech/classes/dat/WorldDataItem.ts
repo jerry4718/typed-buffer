@@ -1,8 +1,8 @@
 import * as t from '../../../mod.ts';
-import { FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldType, StructTarget } from '../../../mod.ts';
 import { DataProperty } from './DataProperty.ts';
 
-@ParserTarget()
+@StructTarget()
 export class WorldDataItem {
     @FieldType(t.Uint16)
     objectLength!: number;

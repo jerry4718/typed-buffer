@@ -1,9 +1,9 @@
 import * as t from '../../../mod.ts';
-import { FieldExpose, FieldType, ParserTarget } from '../../../mod.ts';
+import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
 import { LodMeshInfo } from './LodMeshInfo.ts';
 import { VertexContainer } from './VertexContainer.ts';
 
-@ParserTarget()
+@StructTarget()
 export class RigidMesh extends LodMeshInfo {
     declare objSize: number;
     declare numVertexes: number;
