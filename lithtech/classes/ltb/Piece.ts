@@ -1,6 +1,6 @@
 import * as t from '../../../mod.ts';
 import { FieldExpose, FieldType, StructTarget } from '../../../mod.ts';
-import { RenderObject } from './RenderObject.ts';
+import { LodContainer } from './LodContainer.ts';
 
 @StructTarget()
 export class Piece {
@@ -23,8 +23,8 @@ export class Piece {
     declare lodMax: number;
 
     @FieldType(t.Array, {
-        item: RenderObject,
+        item: LodContainer,
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numLod,
     })
-    declare renderObjects: RenderObject[];
+    declare lodContainers: LodContainer[];
 }

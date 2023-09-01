@@ -8,7 +8,7 @@ import { VertexAnimatedMesh } from './VertexAnimatedMesh.ts';
 import { MeshType } from './enums/MeshType.ts';
 
 @StructTarget()
-export class RenderObject {
+export class LodContainer {
     @FieldType(t.Uint32)
     declare numTextures: number;
 
@@ -23,13 +23,13 @@ export class RenderObject {
 
     @FieldType(t.Uint32)
     @FieldExpose()
-    declare renderObjectType: number;
+    declare lodMeshType: number;
 
     @FieldType((_: t.ParserContext, scope: t.ScopeAccessor) => {
-        if (scope.renderObjectType === MeshType.RigidMesh) return RigidMesh;
-        if (scope.renderObjectType === MeshType.SkeletalMesh) return SkeletalMesh;
-        if (scope.renderObjectType === MeshType.VertexAnimatedMesh) return VertexAnimatedMesh;
-        if (scope.renderObjectType === MeshType.NullMesh) return NullMesh;
+        if (scope.lodMeshType === MeshType.RigidMesh) return RigidMesh;
+        if (scope.lodMeshType === MeshType.SkeletalMesh) return SkeletalMesh;
+        if (scope.lodMeshType === MeshType.VertexAnimatedMesh) return VertexAnimatedMesh;
+        if (scope.lodMeshType === MeshType.NullMesh) return NullMesh;
         return UnknownMesh;
     })
     declare lodMesh: RigidMesh | SkeletalMesh | VertexAnimatedMesh | NullMesh | UnknownMesh;

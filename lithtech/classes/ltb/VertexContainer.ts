@@ -1,11 +1,11 @@
 import * as t from '../../../mod.ts';
 import { FieldExpose, FieldIf, FieldResolve, FieldType, StructTarget } from '../../../mod.ts';
 import { DataMask } from './enums/DataMask.ts';
-import { VertexInfo } from './VertexInfo.ts';
+import { dynamicVertexInfo, VertexInfo } from './VertexInfo.ts';
 
 @StructTarget()
 export class VertexContainer {
-    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexTypeMap[ scope.$index ])
+    @FieldResolve((_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexTypeMap[scope.$index])
     @FieldExpose()
     declare mask: number;
 
@@ -50,7 +50,7 @@ export class VertexContainer {
     declare isFaceVertexUsed: boolean;
 
     @FieldType(t.Array, {
-        item: VertexInfo,
+        item: (_: t.ParserContext, scope: t.ScopeAccessor) => dynamicVertexInfo(scope.mask, scope.lodMeshType, scope.maxBonesPerFace),
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.numVertexes,
     })
     @FieldIf((_: t.ParserContext, scope: t.ScopeAccessor) => scope.mask > 0)

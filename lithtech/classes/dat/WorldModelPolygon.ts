@@ -10,6 +10,7 @@ export class WorldModelPolygon {
     declare planeIndex: number;
 
     @FieldType(t.Uint32Array, {
+        // todo: 这里的调用也很频繁，酌情优化
         count: (_: t.ParserContext, scope: t.ScopeAccessor) => scope.vertexCountList[scope.$index],
     })
     declare vertexIndexes: Uint32Array;
