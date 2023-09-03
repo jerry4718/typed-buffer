@@ -22,11 +22,16 @@ class SnapResult<T> {
 }
 
 export function createResult<T>(value: T, start: number, size: number): SnapTuple<T> {
+    createResult.ct.time ++;
     // return new SnapBigIntResult(value, start, size) as unknown as SnapTuple<T>; // 117
     // return new SnapResult(value, start, size) as unknown as SnapTuple<T>; // 41s
     // return new SnapUint32(value, start, size) as unknown as SnapTuple<T>; // 103
     // return new SnapUint32Array(value, start, size) as unknown as SnapTuple<T>; // 42.5s
     return [ value, { start, size, end: start + size } ];
+}
+
+createResult.ct = {
+    time: 0
 }
 
 export interface WithValue<T> {

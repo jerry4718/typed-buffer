@@ -25,7 +25,7 @@ export class StringParser extends AdvancedParser<string> {
     }
 
     read(ctx: ParserContext): string {
-        const [ readArray ] = ctx.read(this.dataParser);
+        const readArray = ctx.read(this.dataParser);
         return this.coding.decode(readArray);
     }
 

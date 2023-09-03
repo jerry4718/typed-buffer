@@ -86,7 +86,7 @@ const TestStructListParser = new ArrayParser<PersonStruct>({ item: TestStructPar
 
 const writeContext = createContext(new ArrayBuffer(100));
 
-const [ writeRes, writeSpec ] = writeContext.write(TestStructListParser, [
+const writeRes = writeContext.write(TestStructListParser, [
     { ...testStruct, ...testStructItems1 },
     { ...testStruct, ...testStructItems2 },
 ]);
@@ -97,6 +97,6 @@ console.log(writeRes);
 console.log(writeContext.buffer);
 
 const readContext = createContext(writeContext.buffer);
-const [ readRes ] = readContext.read(TestStructListParser);
+const readRes = readContext.read(TestStructListParser);
 
 console.log(readRes);

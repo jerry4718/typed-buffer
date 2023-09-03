@@ -61,16 +61,16 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         this.untilOption = until;
     }
 
-    readConfigNumber(ctx: ParserContext, config: TypedArrayParserOptionNumber, option?: Partial<ContextOption>): SnapTuple<number> {
+    readConfigNumber(ctx: ParserContext, config: TypedArrayParserOptionNumber, option?: Partial<ContextOption>): number {
         if (config instanceof PrimitiveParser) return ctx.read(config, option);
-        if (isFunction(config)) return ctx.result(ctx.compute(config), 0);
-        if (isNumber(config)) return ctx.result(config, 0);
+        if (isFunction(config)) return ctx.compute(config);
+        if (isNumber(config)) return config;
         throw Error('one of NumberOption is not valid');
     }
 
-    writeConfigNumber(ctx: ParserContext, config: TypedArrayParserOptionNumber, value: number, option?: Partial<ContextOption>): SnapTuple<number> {
+    writeConfigNumber(ctx: ParserContext, config: TypedArrayParserOptionNumber, value: number, option?: Partial<ContextOption>): number {
         if (config instanceof PrimitiveParser) return ctx.write(config, value, option);
-        if (isFunction(value) || isNumber(value)) return ctx.result(value, 0);
+        if (isFunction(value) || isNumber(value)) return value;
         throw Error('one of NumberOption is not valid');
     }
 
@@ -100,9 +100,10 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         }
 
         if (!isUndefined(sizeOption)) {
+            const beforeSize = ctx.size
             // 使用传入的 size 选项获取数组长度
-            const [ sizeValue, sizeSnap ] = this.readConfigNumber(ctx, sizeOption, { consume: false });
-            return sizeSnap.size + sizeValue;
+            const sizeValue = this.readConfigNumber(ctx, sizeOption, { consume: false });
+            return (ctx.size - beforeSize) + sizeValue;
         }
 
         return NaN;
@@ -129,7 +130,7 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
 
         if (!isUndefined(countOption)) {
             // 使用传入的 count 选项获取数组长度
-            const [ countValue ] = this.readConfigNumber(ctx, countOption);
+            const countValue = this.readConfigNumber(ctx, countOption);
             const buffer = ctx.buffer.slice(ctx.end, ctx.end + countValue * this.BYTES_PER_ELEMENT);
             ctx.skip(countValue * this.BYTES_PER_ELEMENT);
             return Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
@@ -137,7 +138,7 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
 
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项获取数组长度
-            const [ sizeValue ] = this.readConfigNumber(ctx, sizeOption);
+            const sizeValue = this.readConfigNumber(ctx, sizeOption);
             const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
             ctx.skip(sizeValue);
             return Reflect.construct(this.typedConstructor, [ buffer ]) as Instance;
@@ -150,7 +151,7 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
             const pointBefore = ctx.end;
             let pointOffset = 0;
             while (true) {
-                const [ next ] = ctx.read(PrimitiveType.Uint8, { consume: false, point: pointBefore + pointOffset });
+                const next = ctx.read(PrimitiveType.Uint8, { consume: false, point: pointBefore + pointOffset });
                 if (next === endsJudge) break;
                 pointOffset += this.BYTES_PER_ELEMENT;
             }
@@ -165,7 +166,7 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
             let pointOffset = 0;
 
             while (true) {
-                const [ itemValue ] = ctx.read(this.itemParser, { consume: false, point: pointBefore + pointOffset });
+                const itemValue = ctx.read(this.itemParser, { consume: false, point: pointBefore + pointOffset });
                 pointOffset += this.BYTES_PER_ELEMENT;
                 if (ctx.compute(untilOption.bind(void 0, itemValue as Item))) break;
             }

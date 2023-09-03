@@ -213,7 +213,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         const debug = ctx.constant.DebugStruct.includes(this.creator);
         const section = Reflect.construct(this.creator, []);
 
-        const parentPath = ctx.scope[ctx.constant.$path];
+        const parentPath = ctx.scope[ ctx.constant.$path ];
         const parentStart = `${parentPath} {`;
         const parentEnd = `${parentPath} }`;
 
@@ -241,7 +241,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
                 const fieldIf = this.resolveIf(ctx, fieldConfig);
 
                 const readRes = fieldIf
-                    ? ctx.$read(fieldParser, fieldOption)
+                    ? ctx.read(fieldParser, fieldOption)
                     : this.resolveDefault(ctx, fieldConfig)!;
 
                 if (debug) {
@@ -281,38 +281,54 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
     }
 
     write(ctx: ParserContext, value: T): T {
-        const fieldNames: (keyof T)[] = [];
-        Reflect.defineMetadata(kStructWriteKeys, fieldNames, value);
+        const debug = ctx.constant.DebugStruct.includes(this.creator);
+
+        const parentPath = ctx.scope[ ctx.constant.$path ];
+        const parentStart = `${parentPath} {`;
+        const parentEnd = `${parentPath} }`;
+
+        if (debug) {
+            console.log(parentStart);
+            console.time(parentEnd);
+        }
 
         for (const fieldConfig of this.fields) {
-            const { isStructFieldActual, isStructFieldVirtual } = this.judgeFieldConfig(fieldConfig);
+            const fieldName = fieldConfig.name;
+            const fieldPath = `${parentPath}.${String(fieldName)}`;
 
             this.applySetup(ctx, fieldConfig);
-            const fieldName = fieldConfig.name;
+            if (debug) {
+                console.time(fieldPath);
+            }
+
             const fieldValue = Reflect.get(value, fieldName);
 
+            const isStructFieldActual = Object.hasOwn(fieldConfig, 'type');
             if (isStructFieldActual && assertType<StructFieldActual<T, keyof T>>(fieldConfig)) {
+                const startPoint = ctx.end;
                 const fieldParser = this.resolveParser(ctx, fieldConfig);
                 const fieldOption = this.resolveOption(ctx, fieldConfig);
                 const fieldIf = this.resolveIf(ctx, fieldConfig);
 
                 const fieldValue = Reflect.get(value, fieldName);
 
-                if (fieldName === 'itemType') {
-                    console.log('itemType');
+                fieldIf && ctx.write(fieldParser, fieldValue, fieldOption);
+
+                if (debug) {
+                    const endPoint = ctx.end;
+                    if (!Reflect.hasOwnMetadata(kStructReadKeys, value)) {
+                        Reflect.defineMetadata(kStructReadKeys, [], value);
+                    }
+                    const fieldNames: (keyof T)[] = Reflect.getOwnMetadata(kStructReadKeys, value);
+                    if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
+                    const writeSnap = { start: startPoint, size: endPoint - startPoint, end: endPoint };
+                    Reflect.defineMetadata(kStructReadSnap, writeSnap, value, fieldName as string);
+                    this.applyExpose(ctx, fieldConfig, fieldValue);
                 }
-
-                // todo: why judge condition on write?
-                const [ _, fieldSnap ] = fieldIf
-                    ? ctx.write(fieldParser, fieldValue, fieldOption)
-                    // todo: why use default on write?
-                    : ctx.result(fieldConfig.default, 0);
-
-                if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
-                Reflect.defineMetadata(kStructWriteSnap, fieldSnap, value, fieldName as string);
                 this.applyExpose(ctx, fieldConfig, fieldValue);
             }
 
+            const isStructFieldVirtual = Object.hasOwn(fieldConfig, 'resolve');
             if (isStructFieldVirtual && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
                 const fieldResolve = fieldConfig.resolve;
                 const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;

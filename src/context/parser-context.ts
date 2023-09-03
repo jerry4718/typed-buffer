@@ -32,7 +32,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
     const rootConstant: ContextConstant = { ...defaultContextConstant, ...inputOption };
     const { $path, path: rootPath, endian: rootEndian } = rootConstant;
 
-    const rootScope: ScopeAccessor = { [$path]: rootPath };
+    const rootScope: ScopeAccessor = { [ $path ]: rootPath };
     const rootOption: ContextOption = { ...defaultContextOption, ...inputOption };
 
     class ParserContext implements IParserContext {
@@ -69,35 +69,14 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             return [ this.start, this.end ] as [ number, number ];
         }
 
-        read<T>(parser: Parser<T>, patchOption?: Partial<ContextOption>): SnapTuple<T> {
-            const readOption = createAccessChain(false, patchOption, { point: this.start + this.size });
-
-            // 判断parser是否为Primitive，Primitive直接在ctx中读取，避免创建多余的subContext
-            if (parser instanceof PrimitiveParser) {
-                const { point, consume } = createAccessChain(false, readOption, this.option);
-                const primitiveContext = { buffer, view } as IParserContext;
-
-                const value = parser.read(primitiveContext, point, rootEndian);
-
-                const readSize = parser.byteSize;
-                if (consume) this.size += readSize;
-
-                return createResult(value, point, readSize);
-            }
-
-            if (parser instanceof AdvancedParser) {
-                const ctx = this.derive(readOption, parser.option);
-                const readPoint = ctx.option.point;
-                const value = parser.read(ctx, readPoint);
-                const readSize = ctx.size;
-                if (ctx.option.consume) this.size += readSize;
-                return ctx.result(value, readSize);
-            }
-
-            throw Error('unknown Parser type');
+        $$read<T>(parser: Parser<T>, patchOption?: Partial<ContextOption>): SnapTuple<T> {
+            const start = this.start;
+            const prevSize = this.size;
+            const value = this.read(parser, patchOption);
+            return createResult(value, start + prevSize, this.size - prevSize);
         }
 
-        $read<T>(parser: Parser<T>, patchOption?: Partial<ContextOption>): T {
+        read<T>(parser: Parser<T>, patchOption?: Partial<ContextOption>): T {
             const readOption = createAccessChain(false, patchOption, { point: this.start + this.size });
 
             // 判断parser是否为Primitive，Primitive直接在ctx中读取，避免创建多余的subContext
@@ -125,7 +104,14 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             throw Error('unknown Parser type');
         }
 
-        write<T>(parser: Parser<T>, value: T, patchOption?: Partial<ContextOption>): SnapTuple<T> {
+        $$write<T>(parser: Parser<T>, value: T, patchOption?: Partial<ContextOption>): SnapTuple<T> {
+            const start = this.start;
+            const prevSize = this.size;
+            this.write(parser, value, patchOption);
+            return createResult(value, start + prevSize, this.size - prevSize);
+        }
+
+        write<T>(parser: Parser<T>, value: T, patchOption?: Partial<ContextOption>): T {
             const writeOption = createAccessChain(false, patchOption, { point: this.start + this.size });
             if (parser instanceof PrimitiveParser) {
                 const { point, consume } = createAccessChain(false, writeOption, this.option);
@@ -136,7 +122,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
                 const writeSize = parser.byteSize;
                 if (consume) this.size += writeSize;
 
-                return createResult(value, point, writeSize);
+                return value;
             }
 
             if (parser instanceof AdvancedParser) {
@@ -144,36 +130,37 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
                 parser.write(ctx, value, ctx.option.point);
                 const writeSize = ctx.size;
                 if (ctx.option.consume) this.size += writeSize;
-                return ctx.result(value, writeSize);
+                return value;
             }
 
             throw Error('unknown Parser type');
-        }
-
-        $write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): T {
-            throw Error('Unimplemented !!!');
         }
 
         skip(size: number): void {
             this.size += size;
         }
 
-        result<T>(value: T, size: number = this.size): SnapTuple<T> {
-            return createResult(value, this.start, size);
-        }
-
         compute<Result>(getter: ContextCompute<Result>): Result {
+            createContext.ct.compute++;
             return getter(this, this.scope);
         }
 
         expose(name: string | number | symbol, value: unknown): void {
+            createContext.ct.expose++;
             Reflect.set(this.scope, name, value);
         }
 
         derive(...options: (Partial<ContextOption> | undefined)[]): ParserContext {
+            createContext.ct.derive++;
             return new ParserContext(this, ...(options as ContextOption[]));
         }
     }
 
     return new ParserContext(void 0);
 }
+
+createContext.ct = {
+    compute: 0,
+    expose: 0,
+    derive: 0,
+};

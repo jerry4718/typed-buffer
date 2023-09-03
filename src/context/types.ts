@@ -39,14 +39,14 @@ export interface ParserContext {
     scope: ScopeAccessor,
 
     /* context中保留着一切需要的数据，所以read，write操作最终交付给context执行 */
-    read<T>(parser: Parser<T>, option?: Partial<ContextOption>): SnapTuple<T>,
+    $$read<T>(parser: Parser<T>, option?: Partial<ContextOption>): SnapTuple<T>,
 
-    write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T>,
+    $$write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T>,
 
     /* context中保留着一切需要的数据，所以read，write操作最终交付给context执行 */
-    $read<T>(parser: Parser<T>, option?: Partial<ContextOption>): T,
+    read<T>(parser: Parser<T>, option?: Partial<ContextOption>): T,
 
-    $write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): T,
+    write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): T,
 
     skip(size: number): void,
 
@@ -55,9 +55,6 @@ export interface ParserContext {
 
     /* 将计算函数交给context进行计算 */
     compute<Result>(getter: ContextCompute<Result>): Result,
-
-    /* 包裹一个读取结果，todo: 这里可能占用了做多的内存 */
-    result<T>(value: T, size?: number): SnapTuple<T>,
 
     /* 派生一个自context */
     derive(...options: (Partial<ContextOption> | undefined)[]): ParserContext,

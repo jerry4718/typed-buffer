@@ -55,13 +55,13 @@ const PersonArrayParser = new t.ArrayParser<Person>({ item: PersonParser, count:
 
 const writeContext = t.createContext(new ArrayBuffer(100));
 
-const [ writeRes, writeSpec ] = writeContext.write(PersonArrayParser, data);
+const writeRes = writeContext.write(PersonArrayParser, data);
 
 console.log(writeRes);
-console.log(writeContext.buffer.slice(writeSpec.start, writeSpec.end));
+console.log(writeContext.buffer.slice(writeContext.start, writeContext.end));
 
 const readContext = t.createContext(writeContext.buffer);
-const [ readData ] = readContext.read(PersonArrayParser);
+const readData = readContext.read(PersonArrayParser);
 
 console.log(getStructWriteSnap(data[0]));
 console.log(getStructWriteSnap(data[1]));

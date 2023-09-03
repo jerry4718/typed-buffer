@@ -1,1 +1,1 @@
-export { BigEndian, LittleEndian, Endian, NATIVE_ENDIANNESS } from './utils/endianness-util.ts';
+export { BigEndian, LittleEndian, type Endian, NATIVE_ENDIANNESS } from './utils/endianness-util.ts';
