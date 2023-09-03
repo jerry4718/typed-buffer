@@ -335,6 +335,14 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
                 if (fieldValue !== resolvedValue) console.warn(`field [${String(fieldName)}] cannot compare with resolved`);
                 this.applyExpose(ctx, fieldConfig, resolvedValue);
             }
+
+            if (debug) {
+                console.timeEnd(fieldPath);
+            }
+        }
+
+        if (debug) {
+            console.timeEnd(parentEnd);
         }
 
         return value;
