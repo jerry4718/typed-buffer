@@ -1,10 +1,13 @@
 import { type Coding } from './face.ts';
 
+const decoder = new TextDecoder('utf-8');
+const encoder = new TextEncoder();
+
 export const CodingUtf8: Coding = {
     decode(bytes) {
-        return new TextDecoder('utf-8').decode(bytes.buffer);
+        return decoder.decode(bytes.buffer);
     },
     encode(str) {
-        return new TextEncoder().encode(str);
+        return encoder.encode(str);
     },
 };

@@ -1,7 +1,6 @@
-import { AdvancedParser, BaseParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
-import { SnapTuple } from '../context/snap-tuple.ts';
+import { AdvancedParser, AdvancedParserConfig, BaseParser, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
-import { getTypedParser } from '../decorate/decorator.ts';
+import { getTypedParser } from '../decorate/struct-decorator.ts';
 import { Constructor, SafeAny } from '../utils/prototype-util.ts';
 import { assertType, isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
 import { PrimitiveParser, Uint8 } from './primitive-parser.ts';
@@ -20,9 +19,9 @@ export type ArrayParserIndexExpose = { index?: ContextCompute<string> | string }
 
 export type ArrayParserReaderPartial<T> =
     & Partial<ArrayConfigLoopCount>
-    & Partial<ArrayConfigLoopSize>
-    & Partial<ArrayConfigLoopEnds>
-    & Partial<ArrayParserLoopUntil<T>>;
+      & Partial<ArrayConfigLoopSize>
+      & Partial<ArrayConfigLoopEnds>
+      & Partial<ArrayParserLoopUntil<T>>;
 
 export type ArrayParserConfigComputed<T> =
     | ArrayConfigLoopCount
@@ -32,9 +31,9 @@ export type ArrayParserConfigComputed<T> =
 
 export type ArrayParserConfig<T> =
     & AdvancedParserConfig
-    & ArrayParserIndexExpose
-    & ArrayParserConfigRequired<T>
-    & ArrayParserConfigComputed<T>;
+      & ArrayParserIndexExpose
+      & ArrayParserConfigRequired<T>
+      & ArrayParserConfigComputed<T>;
 
 const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
@@ -119,7 +118,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         }
 
         if (!isUndefined(sizeOption)) {
-            const beforeSize = ctx.size
+            const beforeSize = ctx.size;
             // 使用传入的 size 选项获取数组长度
             const sizeValue = this.readConfigNumber(ctx, sizeOption, { consume: false });
             return (ctx.size - beforeSize) + sizeValue;
@@ -129,10 +128,10 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
         // todo: 未完成的逻辑
         if (!isUndefined(countOption)) {
-            const beforeSize = ctx.size
+            const beforeSize = ctx.size;
             // 使用传入的 count 选项获取数组长度
             const countValue = this.readConfigNumber(ctx, countOption, { consume: false });
-            const countSize = (ctx.size - beforeSize)
+            const countSize = (ctx.size - beforeSize);
             if (itemParser instanceof PrimitiveParser) {
                 return countSize + countValue * itemParser.byteSize;
             }
@@ -262,6 +261,65 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         }
 
         return items;
+    }
+}
+
+interface ArrayParserOptionAdapter<T> {
+    read(ctx: ParserContext): T[];
+
+    write(ctx: ParserContext, items: T[]): T[];
+}
+
+class ArrayParserBaseAdapter<T> {
+    startRead(ctx: ParserContext) {}
+
+    startItem(ctx: ParserContext) {}
+
+    endItem(ctx: ParserContext) {}
+
+    endRead(ctx: ParserContext) {}
+
+    resolveItemParser(ctx: ParserContext, item: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<T> | (new() => T)>): BaseParser<T> {
+        if (item instanceof BaseParser) return item;
+        if (!isFunction(item)) throw Error('unknown array item parser type');
+        const parserCached = getTypedParser(item as Constructor<SafeAny>);
+        if (parserCached) return this.resolveItemParser(ctx, parserCached);
+        if (!assertType<ContextCompute<BaseParser<T> | (new() => T)>>(item)) throw Error('never');
+        return this.resolveItemParser(ctx, ctx.compute(item));
+    }
+
+    readConfigNumber(ctx: ParserContext, config: ArrayParserOptionNumber, option?: Partial<ContextOption>): number {
+        if (config instanceof PrimitiveParser) return ctx.read(config, option);
+        if (isFunction(config)) return ctx.compute(config);
+        if (isNumber(config)) return config;
+        throw Error('one of NumberOption is not valid');
+    }
+}
+
+class ArrayParserCountAdapter<T> extends ArrayParserBaseAdapter<T> implements ArrayParserOptionAdapter<T> {
+    constructor(
+        private item: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<T> | (new() => T)>,
+        private count: ArrayParserOptionNumber,
+    ) {
+        super();
+    }
+
+    read(ctx: ParserContext): T[] {
+        this.startRead(ctx);
+        const itemParser = this.resolveItemParser(ctx, this.item);
+        const countValue = this.readConfigNumber(ctx, this.count);
+        const items: T[] = [];
+        for (let readIndex = 0; readIndex < countValue; readIndex++) {
+            this.startItem(ctx);
+            items.push(ctx.read(itemParser));
+            this.endItem(ctx);
+        }
+        this.endRead(ctx);
+        return items;
+    }
+
+    write(ctx: ParserContext, items: T[]): T[] {
+        return [];
     }
 }
 

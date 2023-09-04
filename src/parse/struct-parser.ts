@@ -195,20 +195,6 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         return countSize;
     }
 
-    wrapRead(ctx: ParserContext) {
-        const wrapStart = ctx.end;
-        // ctx.xxx
-        const wrapEnd = ctx.end;
-        const wrapSize = wrapEnd - wrapStart;
-    }
-
-    wrap<V>(ctx: ParserContext, debug: boolean, func: (ctx: ParserContext) => V) {
-        const wrapStart = ctx.end;
-
-        const wrapEnd = ctx.end;
-        const wrapSize = wrapEnd - wrapStart;
-    }
-
     read(ctx: ParserContext): T {
         const debug = ctx.constant.DebugStruct.includes(this.creator);
         const section = Reflect.construct(this.creator, []);

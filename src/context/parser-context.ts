@@ -1,7 +1,5 @@
-import omit from 'lodash-es/omit';
-import pick from 'lodash-es/pick';
-import { SafeAny } from '../utils/prototype-util.ts';
 import { Ascii } from '../coding/codings.ts';
+import { BufferParser } from '../parse/buffer-parser.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
 import { createAccessChain } from './access-chain.ts';
@@ -29,10 +27,10 @@ const defaultContextOption: ContextOption = Object.freeze({
 export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextConstant & ContextOption> = {}) {
     const view = new DataView(buffer);
 
-    const rootConstant: ContextConstant = { ...defaultContextConstant, ...inputOption };
-    const { $path, path: rootPath, endian: rootEndian } = rootConstant;
+    const constant: ContextConstant = { ...defaultContextConstant, ...inputOption };
+    const { $path, path: rootPath, endian: rootEndian } = constant;
 
-    const rootScope: ScopeAccessor = { [ $path ]: rootPath };
+    const rootScope: ScopeAccessor = { [$path]: rootPath };
     const rootOption: ContextOption = { ...defaultContextOption, ...inputOption };
 
     class ParserContext implements IParserContext {
@@ -45,7 +43,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
         }
 
         get constant() {
-            return rootConstant;
+            return constant;
         }
 
         option: Required<ContextOption>;
@@ -86,8 +84,18 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
 
                 const value = parser.read(primitiveContext, point, rootEndian);
 
-                const readSize = parser.byteSize;
-                if (consume) this.size += readSize;
+                if (consume) this.size += parser.byteSize;
+
+                return value;
+            }
+
+            if (parser instanceof BufferParser) {
+                const { point, consume } = createAccessChain(false, readOption, this.option);
+                const primitiveContext = { buffer, constant } as IParserContext;
+
+                const value = parser.read(primitiveContext, point);
+
+                if (consume) this.size += parser.structBufferSize;
 
                 return value;
             }

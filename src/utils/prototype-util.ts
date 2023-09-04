@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 // deno-lint-ignore ban-types
-export type Constructor<T> = Function & (new (...args: unknown[]) => T)
+export type Constructor<T> = T extends object ? Function & (new (...args: unknown[]) => T) : never;
 // deno-lint-ignore no-explicit-any
 export type SafeAny = any;
 
