@@ -1,6 +1,5 @@
 {
   "imports": {
-    "@/": "./src/",
     "@codec-bytes/ascii": "npm:@codec-bytes/ascii@^3.0.0",
     "reflect-metadata": "npm:reflect-metadata@^0.1.13"
   }

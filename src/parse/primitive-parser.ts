@@ -1,7 +1,6 @@
-import { BigEndian, Endian, LittleEndian } from '../common.ts';
-import { BaseParser, BaseParserConfig } from '../context/base-parser.ts';
+import { BaseParser } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { isUndefined } from '../utils/type-util.ts';
+import { Endian, isLittleEndian } from '../utils/endianness-util.ts';
 
 type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
 type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
@@ -17,38 +16,31 @@ interface PrimitiveParserOptionComposable {
 }
 
 type PrimitiveParserConfig<T> =
-    & BaseParserConfig
     & PrimitiveParserOptionComposable
     & PrimitiveParserOptionRequired<T>;
 
-function isLittleEndian(endian?: Endian): boolean {
-    if (isUndefined(endian)) throw Error('endian loosed');
-    if (endian === BigEndian) return false;
-    if (endian === LittleEndian) return true;
-    throw Error('endian only support "le" or "be"');
-}
-
 export class PrimitiveParser<T> extends BaseParser<T> {
-    readonly byteSize: number;
     private readonly getter: PrimitiveGetter<T>;
     private readonly setter: PrimitiveSetter<T>;
-    private readonly endian?: Endian;
+
+    readonly byteSize: number;
+    readonly endian?: Endian;
 
     constructor(config: PrimitiveParserConfig<T>) {
-        super(config);
+        super();
         this.byteSize = config.byteSize;
         this.getter = config.getter;
         this.setter = config.setter;
         this.endian = config.endian;
     }
 
-    read(ctx: ParserContext, byteOffset: number): T {
-        const littleEndian = isLittleEndian(this.endian || ctx.option.endian);
+    read(ctx: ParserContext, byteOffset: number, endian?: Endian): T {
+        const littleEndian = isLittleEndian(this.endian || endian);
         return this.getter.call(ctx.view, byteOffset, littleEndian);
     }
 
-    write(ctx: ParserContext, value: T, byteOffset: number): T {
-        const littleEndian = isLittleEndian(this.endian || ctx.option.endian);
+    write(ctx: ParserContext, value: T, byteOffset: number, endian?: Endian): T {
+        const littleEndian = isLittleEndian(this.endian || endian);
         this.setter.call(new DataView(ctx.buffer), byteOffset, value, littleEndian);
         return value;
     }

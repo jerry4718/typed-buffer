@@ -1,7 +1,7 @@
-import { FieldExpose, FieldIf, FieldType, getStructReadSnap, getStructWriteSnap, ParserTarget } from '../mod.ts';
+import { FieldExpose, FieldIf, FieldType, getStructReadSnap, getStructWriteSnap, StructTarget } from '../mod.ts';
 import * as t from '../mod.ts';
 
-@ParserTarget({ endian: 'be' })
+@StructTarget({ endian: 'be' })
 class Person {
     @FieldType(t.String, { size: t.Uint8, coding: t.Utf8 })
     name!: string;
@@ -12,7 +12,7 @@ class Person {
     @FieldType(t.Float32)
     height!: number;
 
-    @FieldType(t.Float64)
+    @FieldType(t.Float32)
     money!: number;
 
     @FieldType(t.Uint16)
@@ -50,22 +50,22 @@ const data = [
     Object.assign(new Person(), { ...testPerson, itemType: 2 }),
 ];
 
-const PersonParser = t.getTypedParser(Person);
+const PersonParser = t.getStructParser(Person);
 const PersonArrayParser = new t.ArrayParser<Person>({ item: PersonParser, count: t.Uint8 });
 
 const writeContext = t.createContext(new ArrayBuffer(100));
 
-const writeSpec = writeContext.write(PersonArrayParser, data);
+const writeRes = writeContext.write(PersonArrayParser, data);
 
-console.log(writeSpec.value);
-console.log(writeContext.buffer.slice(...writeSpec.pos));
+console.log(writeRes);
+console.log(writeContext.buffer.slice(writeContext.start, writeContext.end));
 
 const readContext = t.createContext(writeContext.buffer);
-const [ readData ] = readContext.read(PersonArrayParser);
+const readData = readContext.read(PersonArrayParser);
 
 console.log(getStructWriteSnap(data[0]));
 console.log(getStructWriteSnap(data[1]));
 console.log(getStructReadSnap(readData[0]));
 console.log(getStructReadSnap(readData[1]));
 
-Reflect.defineMetadata("name: 111", 111, [])
+Reflect.defineMetadata('name: 111', 111, []);

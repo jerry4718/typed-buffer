@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 // deno-lint-ignore ban-types
-export type Constructor<T> = Function & (new (...args: unknown[]) => T)
+export type Constructor<T> = T extends object ? Function & (new (...args: unknown[]) => T) : never;
 // deno-lint-ignore no-explicit-any
 export type SafeAny = any;
 
@@ -12,6 +12,8 @@ export const ObjectPrototypeKeys = Reflect.ownKeys(ObjectPrototype);
 export const PublicSymbolAccessors = Reflect.ownKeys(Symbol)
     .map(k => Reflect.get(Symbol, k))
     .filter(s => typeof s === 'symbol');
+
+export const AbstractTypedArray = Reflect.getPrototypeOf(Uint8Array);
 
 export function isExtendFrom<P>(childClass: unknown, parentClass: Constructor<P>): childClass is Constructor<P> {
     for (

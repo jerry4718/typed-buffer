@@ -1,36 +1,33 @@
 // 字符串解析器
 import { type Coding, Utf8 } from '../coding/codings.ts';
-import { AdvancedParser, BaseParserConfig, createParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { slice } from '../utils/proto-fn.ts';
-import { ArrayParser, ArrayParserConfigComputed, ArrayParserCountReader } from './array-parser.ts';
-import { Uint8 } from './primitive-parser.ts';
+import { TypedArrayConfigLoopCount, TypedArrayParser, TypedArrayParserConfigComputed, Uint8ArrayParserCreator } from './typed-array-parser.ts';
 
 type StringParserConfig =
-    & BaseParserConfig
-    & Exclude<ArrayParserConfigComputed, ArrayParserCountReader>
+    & AdvancedParserConfig
+    & Exclude<TypedArrayParserConfigComputed<number>, TypedArrayConfigLoopCount>
     & { coding?: Coding }
 
 export class StringParser extends AdvancedParser<string> {
     coding: Coding;
-    dataParser: ArrayParser<number>;
+    dataParser: TypedArrayParser<number, Uint8Array>;
 
     constructor(config: StringParserConfig) {
         super(config);
         const { coding = Utf8, ...computed } = config;
         this.coding = coding;
-        this.dataParser = new ArrayParser({ item: Uint8, ...computed });
+        this.dataParser = Uint8ArrayParserCreator(computed);
     }
 
     read(ctx: ParserContext): string {
-        const [ readArray ] = ctx.read(this.dataParser);
-        const byteArray = readArray instanceof Uint8Array ? readArray : Uint8Array.from(readArray);
-        return this.coding.decode(byteArray);
+        const readArray = ctx.read(this.dataParser);
+        return this.coding.decode(readArray);
     }
 
     write(ctx: ParserContext, value: string): string {
         const byteArray = this.coding.encode(value);
-        ctx.write(this.dataParser, slice.call(byteArray));
+        ctx.write(this.dataParser, byteArray);
         return value;
     }
 }

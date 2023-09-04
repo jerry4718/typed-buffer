@@ -71,8 +71,10 @@ const TestStructParser = new StructParser<PersonStruct>({
             type: (_, scope) => {
                 const option = { count: () => scope.itemCount as number };
                 switch (scope.itemType) {
-                    case 1: return u32les(option);
-                    case 2: return u32bes(option);
+                    case 1:
+                        return u32les(option);
+                    case 2:
+                        return u32bes(option);
                 }
                 throw Error(`unknown itemType case ${scope.itemType}`);
             },
@@ -84,17 +86,17 @@ const TestStructListParser = new ArrayParser<PersonStruct>({ item: TestStructPar
 
 const writeContext = createContext(new ArrayBuffer(100));
 
-const writeSpec = writeContext.write(TestStructListParser, [
+const writeRes = writeContext.write(TestStructListParser, [
     { ...testStruct, ...testStructItems1 },
     { ...testStruct, ...testStructItems2 },
 ]);
 
-console.log(writeSpec.value);
+console.log(writeRes);
 // console.log(getStructSpec(writeSpec.value)?.name?.offset);
 // console.log(getStructSpec(writeSpec.value)?.age?.offset);
 console.log(writeContext.buffer);
 
 const readContext = createContext(writeContext.buffer);
-const readSpec = readContext.read(TestStructListParser);
+const readRes = readContext.read(TestStructListParser);
 
-console.log(readSpec.value);
+console.log(readRes);

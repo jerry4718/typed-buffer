@@ -7,9 +7,31 @@ export interface SnapInfo {
 
 export type SnapTuple<T> = [ T, SnapInfo ];
 
+class SnapResult<T> {
+    constructor(
+        private readonly value: T,
+        private readonly start: number,
+        private readonly size: number,
+    ) {
+    }
+
+    * [Symbol.iterator]() {
+        yield this.value;
+        yield { start: this.start, size: this.size, end: this.start + this.size };
+    }
+}
+
 export function createResult<T>(value: T, start: number, size: number): SnapTuple<T> {
-    const end = start + size;
-    return [ value, Object.freeze({ start, size, end }) ] as SnapTuple<T>;
+    createResult.ct.time ++;
+    // return new SnapBigIntResult(value, start, size) as unknown as SnapTuple<T>; // 117
+    // return new SnapResult(value, start, size) as unknown as SnapTuple<T>; // 41s
+    // return new SnapUint32(value, start, size) as unknown as SnapTuple<T>; // 103
+    // return new SnapUint32Array(value, start, size) as unknown as SnapTuple<T>; // 42.5s
+    return [ value, { start, size, end: start + size } ];
+}
+
+createResult.ct = {
+    time: 0
 }
 
 export interface WithValue<T> {

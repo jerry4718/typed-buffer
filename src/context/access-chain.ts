@@ -5,6 +5,8 @@ import { isUndefined } from '../utils/type-util.ts';
 const kAccessChain = Symbol('@@AccessChain');
 const kAccessTarget = Symbol('@@AccessTarget');
 
+const EmptyObject = Object.freeze({});
+
 export function createAccessChain<T extends object, R = T extends Partial<infer P> ? P : T>(useTarget: boolean, ...accesses: (T | undefined)[]): R {
     const chain: T[] = [];
     for (const arg of accesses) {
@@ -26,9 +28,7 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
         push.call(chain, arg);
     }
 
-    const target = {} as T;
-
-    const hasKeys = new Set<string | symbol>();
+    const target = (useTarget ? {} : EmptyObject) as T;
 
     // if (chain.length > 20) {
     //     debugger
@@ -38,12 +38,8 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
         if (propKey === kAccessTarget) return true;
         if (propKey === kAccessChain) return true;
         if (useTarget && propKey in target) return true;
-        if (hasKeys.has(propKey)) return true;
         for (const scope of chain) {
-            if (propKey in scope) {
-                hasKeys.add(propKey);
-                return true;
-            }
+            if (propKey in scope) return true;
         }
         return false;
     }
@@ -51,9 +47,11 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
     function get<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, receiver: SafeAny): T[K] | undefined {
         if (propKey === kAccessTarget) return target as T[K];
         if (propKey === kAccessChain) return chain as T[K];
-        if (ObjectPrototypeKeys.includes(propKey)) return Reflect.get(target, propKey, receiver);
-        if (PublicSymbolAccessors.includes(propKey)) return Reflect.get(target, propKey, receiver);
-        if (useTarget && propKey in target) return Reflect.get(target, propKey, receiver);
+        if (useTarget) {
+            if (ObjectPrototypeKeys.includes(propKey)) return Reflect.get(target, propKey, receiver);
+            if (PublicSymbolAccessors.includes(propKey)) return Reflect.get(target, propKey, receiver);
+            if (propKey in target) return Reflect.get(target, propKey, receiver);
+        }
         for (const scope of chain) {
             if (propKey in scope) return Reflect.get(scope, propKey, receiver);
         }
@@ -65,7 +63,6 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
         if (propKey === kAccessTarget) return false;
         if (propKey === kAccessChain) return false;
         if (!useTarget) return false;
-        hasKeys.add(propKey);
         return Reflect.set(target, propKey, value, receiver);
     }
 
