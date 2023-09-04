@@ -3,7 +3,6 @@ import { SnapTuple } from '../context/snap-tuple.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 import { assertType, isBoolean, isFunction, isNumber, isString, isSymbol, isUndefined } from '../utils/type-util.ts';
-import { PrimitiveParser } from './primitive-parser.ts';
 
 export type StructFieldBasic<T, K extends keyof T> = {
     name: K,
@@ -74,17 +73,6 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         super(config);
         this.fields = config.fields;
         this.creator = config.type || Object as unknown as new () => T;
-    }
-
-    judgeFieldConfig(fieldConfig: StructField<T, keyof T>) {
-        const isStructFieldActual = Object.hasOwn(fieldConfig, 'type');
-        const isStructFieldVirtual = Object.hasOwn(fieldConfig, 'resolve');
-
-        if (!(isStructFieldActual || isStructFieldVirtual)) {
-            throw Error('StructField has neither ’resolve’ nor ‘type’');
-        }
-
-        return { isStructFieldActual, isStructFieldVirtual };
     }
 
     resolveParser<K extends keyof T>(ctx: ParserContext, fieldConfig: StructFieldActual<T, K>): BaseParser<T[K]> {

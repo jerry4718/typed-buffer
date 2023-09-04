@@ -4,7 +4,7 @@ import { TypedArrayConstructor, TypedArrayInstance } from '../describe/typed-arr
 import { BufferParser, BufferParserConfig } from '../parse/buffer-parser.ts';
 import { Endian } from '../utils/endianness-util.ts';
 import { Constructor, getInheritedMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
-import { defineClassDecorator, definePropertyDecorator, getParserFields, kParserCached, kParserTarget } from './util.ts';
+import { defineClassDecorator, definePropertyDecorator, ensureFieldConfig, getParserFields, kParserCached, kParserTarget } from './util.ts';
 
 const kParserFields = Symbol('@@BufferParserFields') as MetadataKey<FieldConfig<SafeAny, SafeAny>[]>;
 
@@ -46,26 +46,8 @@ function convertBufferParser<T extends object, Item extends (bigint | number), I
     return new BufferParser<T, Item, Instance>(finalConfig);
 }
 
-function ensureFieldConfig<T, K extends keyof T>(proto: object, propertyKey: K): FieldConfig<T, keyof T> {
-    if (!Reflect.hasOwnMetadata(kParserFields, proto)) {
-        Reflect.defineMetadata(kParserFields, [], proto);
-    }
-
-    const fields: FieldConfig<T, keyof T>[] = Reflect.getOwnMetadata(kParserFields, proto);
-
-    const fieldIndex = fields.findIndex(field => field.name === propertyKey);
-
-    const ensureConfig = fieldIndex > -1
-        ? fields[fieldIndex]
-        : { name: propertyKey } as FieldConfig<T, keyof T>;
-
-    if (fieldIndex === -1) fields.push(ensureConfig);
-
-    return ensureConfig;
-}
-
 export function BufferField() {
     return definePropertyDecorator(<PropertyDecorator>(function <T extends object, K extends keyof T>(proto: T, propertyKey: K) {
-        ensureFieldConfig<T, K>(proto, propertyKey);
+        ensureFieldConfig<FieldConfig<T, keyof T>>(kParserFields, proto, propertyKey);
     }));
 }

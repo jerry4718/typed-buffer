@@ -1,6 +1,6 @@
 import { AdvancedParser, AdvancedParserConfig, BaseParser, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
-import { getTypedParser } from '../decorate/struct-decorator.ts';
+import { getTargetParser } from '../decorate/util.ts';
 import { Constructor, SafeAny } from '../utils/prototype-util.ts';
 import { assertType, isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
 import { PrimitiveParser, Uint8 } from './primitive-parser.ts';
@@ -67,7 +67,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
     resolveItemParser(ctx: ParserContext, item: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<T> | (new() => T)>): BaseParser<T> {
         if (item instanceof BaseParser) return item;
         if (!isFunction(item)) throw Error('unknown array item parser type');
-        const parserCached = getTypedParser(item as Constructor<SafeAny>);
+        const parserCached = getTargetParser(item as Constructor<SafeAny>);
         if (parserCached) return this.resolveItemParser(ctx, parserCached);
         if (!assertType<ContextCompute<BaseParser<T> | (new() => T)>>(item)) throw Error('never');
         return this.resolveItemParser(ctx, ctx.compute(item));
@@ -230,7 +230,7 @@ class ArrayParserBaseAdapter<T> {
     resolveItemParser(ctx: ParserContext, item: BaseParser<T> | (new() => T) | ContextCompute<BaseParser<T> | (new() => T)>): BaseParser<T> {
         if (item instanceof BaseParser) return item;
         if (!isFunction(item)) throw Error('unknown array item parser type');
-        const parserCached = getTypedParser(item as Constructor<SafeAny>);
+        const parserCached = getTargetParser(item as Constructor<SafeAny>);
         if (parserCached) return this.resolveItemParser(ctx, parserCached);
         if (!assertType<ContextCompute<BaseParser<T> | (new() => T)>>(item)) throw Error('never');
         return this.resolveItemParser(ctx, ctx.compute(item));
