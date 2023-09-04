@@ -1,17 +1,11 @@
-import * as t from '../../../mod.ts';
-import { FieldCollection, FieldType, StructTarget } from '../../../mod.ts';
+import { BufferField, BufferTarget } from '../../../mod.ts';
 
-@StructTarget()
+@BufferTarget(Float32Array)
 export class Vector3 {
-    @FieldType(t.Float32Array, { count: 3 })
-    @FieldCollection(Float32Array, [ 'x', 'y', 'z' ])
-    declare meta: Float32Array;
-
+    @BufferField()
     declare x: number;
+    @BufferField()
     declare y: number;
+    @BufferField()
     declare z: number;
-
-    asArray() {
-        return Array.from(this.meta);
-    }
 }

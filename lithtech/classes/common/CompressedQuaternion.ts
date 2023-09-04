@@ -1,23 +1,18 @@
-import * as t from '../../../mod.ts';
-import { FieldType, FieldCollection, StructTarget } from '../../../mod.ts';
+import { BufferField, BufferTarget } from '../../../mod.ts';
 import { Quaternion } from './Quaternion.ts';
 
 const DecompressValue = 0x7fff;
 
-@StructTarget()
+@BufferTarget(Int16Array)
 export class CompressedQuaternion {
-    @FieldType(t.Int16Array, { count: 4 })
-    @FieldCollection(Int16Array, [ 'x', 'y', 'z', 'w' ])
-    declare meta: Int16Array;
-
+    @BufferField()
     declare x: number;
+    @BufferField()
     declare y: number;
+    @BufferField()
     declare z: number;
+    @BufferField()
     declare w: number;
-
-    asArray() {
-        return Array.from(this.toQuaternion().meta);
-    }
 
     toQuaternion() {
         return CompressedQuaternion.toQuaternion(this);

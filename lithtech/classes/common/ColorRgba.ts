@@ -1,18 +1,13 @@
-import * as t from '../../../mod.ts';
-import { FieldCollection, FieldType, StructTarget } from '../../../mod.ts';
+import { BufferField, BufferTarget } from '../../../mod.ts';
 
-@StructTarget()
+@BufferTarget(Uint8Array)
 export class ColorRgba {
-    @FieldType(t.Uint8Array, { count: 4 })
-    @FieldCollection(Uint8Array, [ 'r', 'g', 'b', 'a' ])
-    declare meta: Uint8Array;
-
+    @BufferField()
     declare r: number;
+    @BufferField()
     declare g: number;
+    @BufferField()
     declare b: number;
+    @BufferField()
     declare a: number;
-
-    asArray() {
-        return Array.from(this.meta);
-    }
 }

@@ -1,17 +1,11 @@
-import * as t from '../../../mod.ts';
-import { FieldCollection, FieldType, StructTarget } from '../../../mod.ts';
+import { BufferField, BufferTarget } from '../../../mod.ts';
 
-@StructTarget()
+@BufferTarget(Float32Array)
 export class ColorRgb {
-    @FieldType(t.Float32Array, { count: 3 })
-    @FieldCollection(Float32Array, [ 'r', 'g', 'b' ])
-    declare meta: Float32Array;
-
+    @BufferField()
     declare r: number;
+    @BufferField()
     declare g: number;
+    @BufferField()
     declare b: number;
-
-    asArray() {
-        return Array.from(this.meta);
-    }
 }

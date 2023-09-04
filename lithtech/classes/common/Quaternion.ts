@@ -1,18 +1,13 @@
-import * as t from '../../../mod.ts';
-import { FieldCollection, FieldType, StructTarget } from '../../../mod.ts';
+import { BufferField, BufferTarget } from '../../../mod.ts';
 
-@StructTarget()
+@BufferTarget(Float32Array)
 export class Quaternion {
-    @FieldType(t.Float32Array, { count: 4 })
-    @FieldCollection(Float32Array, [ 'x', 'y', 'z', 'w' ])
-    declare meta: Float32Array;
-
+    @BufferField()
     declare x: number;
+    @BufferField()
     declare y: number;
+    @BufferField()
     declare z: number;
+    @BufferField()
     declare w: number;
-
-    asArray() {
-        return Array.from(this.meta);
-    }
 }

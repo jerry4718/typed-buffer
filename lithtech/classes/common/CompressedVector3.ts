@@ -1,22 +1,16 @@
+import { BufferField, BufferTarget } from '../../../mod.ts';
 import { Vector3 } from './Vector3.ts';
-import * as t from '../../../mod.ts';
-import { FieldCollection, FieldType, StructTarget } from '../../../mod.ts';
 
 const DecompressValue = 16.0;
 
-@StructTarget()
+@BufferTarget(Int16Array)
 export class CompressedVector3 {
-    @FieldType(t.Int16Array, { count: 3 })
-    @FieldCollection(Int16Array, [ 'x', 'y', 'z' ])
-    declare meta: Int16Array;
-
+    @BufferField()
     declare x: number;
+    @BufferField()
     declare y: number;
+    @BufferField()
     declare z: number;
-
-    asArray() {
-        return Array.from(this.toVector3().meta);
-    }
 
     toVector3() {
         return CompressedVector3.toVector3(this);
