@@ -9,4 +9,6 @@ export * from './src/parse/struct-parser.ts';
 
 export * from './src/context/types.ts';
 export * from './src/context/parser-context.ts';
-export * from './src/decorate/decorator.ts';
+export * from './src/decorate/struct-decorator.ts';
+export * from './src/decorate/buffer-decorator.ts';
+// export * as TypedArray from './src/describe/typed-array.ts';

@@ -7,15 +7,15 @@
     "test:deco": "npx ts-node --esm --swc ./test/deco.test.ts",
     "test:parse-dat": "npx ts-node --esm --swc ./lithtech/parse-dat.node.ts",
     "test:parse-ltb": "npx ts-node --esm --swc ./lithtech/parse-ltb.node.ts",
-    "bun:parse-ltb": "bun run ./lithtech/parse-ltb.node.ts"
+    "bun:parse-ltb": "bun run ./lithtech/parse-ltb.node.ts",
+    "bun:parse-dat": "bun run ./lithtech/parse-dat.node.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@codec-bytes/ascii": "^3.0.0",
-    "reflect-metadata": "^0.1.13",
-    "lodash-es": "^4.17.21"
+    "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.8",
