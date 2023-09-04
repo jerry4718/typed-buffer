@@ -1,9 +1,6 @@
 {
   "imports": {
-    "@/": "./src/",
     "@codec-bytes/ascii": "npm:@codec-bytes/ascii@^3.0.0",
-    "lodash-es/pick": "npm:lodash-es@^4.17.21/pick.js",
-    "lodash-es/omit": "npm:lodash-es@^4.17.21/omit.js",
     "reflect-metadata": "npm:reflect-metadata@^0.1.13"
   }
 }
