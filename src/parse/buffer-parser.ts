@@ -6,12 +6,12 @@ import { Constructor } from '../utils/prototype-util.ts';
 
 export type BufferParserConfig<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> =
     & AdvancedParserConfig
-      & {
-          typedArrayClass: TypedArrayConstructor<Item, Instance>,
-          endian?: Endian,
-          structClass: Constructor<T>,
-          structFields: { name: keyof T }[],
-      }
+    & {
+        typedArrayClass: TypedArrayConstructor<Item, Instance>,
+        endian?: Endian,
+        structClass: Constructor<T>,
+        structFields: { name: keyof T }[],
+    }
 
 export class BufferParser<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<T> {
     private readonly bufferStructClass: Constructor<T>;
@@ -78,10 +78,6 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
         this.structFieldsCount = structFieldsCount;
         this.bytesPerField = typedArrayClass.BYTES_PER_ELEMENT;
         this.structBufferSize = structFieldsCount * typedArrayClass.BYTES_PER_ELEMENT;
-    }
-
-    sizeof(): number {
-        return this.structBufferSize;
     }
 
     resolveEndianness(ctx: ParserContext, from: TypedArrayInstance<Item, Instance>): TypedArrayInstance<Item, Instance> {

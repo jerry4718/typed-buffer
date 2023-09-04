@@ -34,10 +34,6 @@ export class PrimitiveParser<T> extends BaseParser<T> {
         this.endian = config.endian;
     }
 
-    sizeof(): number {
-        return this.byteSize;
-    }
-
     read(ctx: ParserContext, byteOffset: number, endian?: Endian): T {
         const littleEndian = isLittleEndian(this.endian || endian);
         return this.getter.call(ctx.view, byteOffset, littleEndian);

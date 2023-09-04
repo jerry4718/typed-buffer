@@ -80,34 +80,6 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         return ctx.compute(ends);
     }
 
-    sizeof(ctx?: ParserContext): number {
-        const { countOption, sizeOption, endsOption, untilOption } = this;
-        if (!isUndefined(endsOption)) return NaN;
-        if (!isUndefined(untilOption)) return NaN;
-
-        if (isNumber(sizeOption)) return sizeOption;
-        if (!ctx) {
-            if (!isUndefined(endsOption)) return NaN;
-            if (!isUndefined(untilOption)) return NaN;
-            if (!isUndefined(sizeOption)) return NaN;
-
-            if (isNumber(countOption)) {
-                return countOption * this.bytesPerElement;
-            }
-
-            return NaN;
-        }
-
-        if (!isUndefined(sizeOption)) {
-            const beforeSize = ctx.size
-            // 使用传入的 size 选项获取数组长度
-            const sizeValue = this.readConfigNumber(ctx, sizeOption, { consume: false });
-            return (ctx.size - beforeSize) + sizeValue;
-        }
-
-        return NaN;
-    }
-
     resolveEndianness(ctx: ParserContext, from: Instance): Instance {
         const endian = this.itemParser.endian || ctx.constant.endian;
         if (!endian) return from;

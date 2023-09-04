@@ -147,54 +147,6 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         if (!isUndefined(exposeKey)) return ctx.expose(exposeKey, value);
     }
 
-    sizeof(ctx?: ParserContext): number {
-        const actualFields = this.fields.filter(field => 'type' in field) as StructFieldActual<T, keyof T>[];
-        if (actualFields.length === 0) return 0;
-
-        if (!ctx) {
-            let countSize = 0;
-            for (const { type: fieldType, if: fieldIf } of actualFields) {
-                if (fieldIf) return NaN;
-
-                if (fieldType instanceof PrimitiveParser) {
-                    countSize += fieldType.byteSize;
-                    continue;
-                }
-
-                if (fieldType instanceof AdvancedParser) {
-                    countSize += fieldType.sizeof();
-                    continue;
-                }
-                return NaN;
-            }
-            return countSize;
-        }
-
-        let countSize = 0;
-        for (const field of actualFields) {
-            if (isNaN(countSize)) return countSize;
-            const fieldIf = this.resolveIf(ctx, field);
-            if (!fieldIf) continue;
-
-            const fieldParser = this.resolveParser(ctx, field);
-            const fieldOption = this.resolveOption(ctx, field);
-
-            if (!(fieldOption?.consume || ctx.option.consume)) continue;
-
-            if (fieldParser instanceof PrimitiveParser) {
-                countSize += fieldParser.byteSize;
-                continue;
-            }
-
-            if (fieldParser instanceof AdvancedParser) {
-                countSize += fieldParser.sizeof(ctx);
-                continue;
-            }
-            return NaN;
-        }
-        return countSize;
-    }
-
     read(ctx: ParserContext): T {
         const debug = ctx.constant.DebugStruct.includes(this.creator);
         const section = Reflect.construct(this.creator, []);

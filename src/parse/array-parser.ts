@@ -19,9 +19,9 @@ export type ArrayParserIndexExpose = { index?: ContextCompute<string> | string }
 
 export type ArrayParserReaderPartial<T> =
     & Partial<ArrayConfigLoopCount>
-      & Partial<ArrayConfigLoopSize>
-      & Partial<ArrayConfigLoopEnds>
-      & Partial<ArrayParserLoopUntil<T>>;
+    & Partial<ArrayConfigLoopSize>
+    & Partial<ArrayConfigLoopEnds>
+    & Partial<ArrayParserLoopUntil<T>>;
 
 export type ArrayParserConfigComputed<T> =
     | ArrayConfigLoopCount
@@ -31,9 +31,9 @@ export type ArrayParserConfigComputed<T> =
 
 export type ArrayParserConfig<T> =
     & AdvancedParserConfig
-      & ArrayParserIndexExpose
-      & ArrayParserConfigRequired<T>
-      & ArrayParserConfigComputed<T>;
+    & ArrayParserIndexExpose
+    & ArrayParserConfigRequired<T>
+    & ArrayParserConfigComputed<T>;
 
 const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
@@ -91,58 +91,6 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         if (isBoolean(ends)) return endsFlag(ctx.constant.ends);
         if (isNumber(ends)) return ends;
         return ctx.compute(ends);
-    }
-
-    sizeof(ctx?: ParserContext): number {
-        const { itemOption, countOption, sizeOption, endsOption, untilOption } = this;
-        if (!isUndefined(endsOption)) return NaN;
-        if (!isUndefined(untilOption)) return NaN;
-
-        if (isNumber(sizeOption)) return sizeOption;
-        if (!ctx) {
-            if (!isUndefined(endsOption)) return NaN;
-            if (!isUndefined(untilOption)) return NaN;
-            if (!isUndefined(sizeOption)) return NaN;
-
-            if (isNumber(countOption)) {
-                if (itemOption instanceof PrimitiveParser) {
-                    return countOption * itemOption.byteSize;
-                }
-
-                if (itemOption instanceof AdvancedParser) {
-                    return countOption * itemOption.sizeof();
-                }
-            }
-
-            return NaN;
-        }
-
-        if (!isUndefined(sizeOption)) {
-            const beforeSize = ctx.size;
-            // 使用传入的 size 选项获取数组长度
-            const sizeValue = this.readConfigNumber(ctx, sizeOption, { consume: false });
-            return (ctx.size - beforeSize) + sizeValue;
-        }
-
-        const itemParser = this.resolveItemParser(ctx, itemOption);
-
-        // todo: 未完成的逻辑
-        if (!isUndefined(countOption)) {
-            const beforeSize = ctx.size;
-            // 使用传入的 count 选项获取数组长度
-            const countValue = this.readConfigNumber(ctx, countOption, { consume: false });
-            const countSize = (ctx.size - beforeSize);
-            if (itemParser instanceof PrimitiveParser) {
-                return countSize + countValue * itemParser.byteSize;
-            }
-
-            if (itemParser instanceof AdvancedParser) {
-                return countSize + countValue * itemParser.sizeof();
-            }
-            return NaN;
-        }
-
-        return NaN;
     }
 
     read(ctx: ParserContext): T[] {
