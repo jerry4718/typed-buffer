@@ -18,9 +18,9 @@ export type TypedArrayParserLoopUntil<T> = { until: TypedArrayParserOptionUntil<
 
 export type TypedArrayParserReaderPartial<T> =
     & Partial<TypedArrayConfigLoopCount>
-    & Partial<TypedArrayConfigLoopSize>
-    & Partial<TypedArrayConfigLoopEnds>
-    & Partial<TypedArrayParserLoopUntil<T>>;
+      & Partial<TypedArrayConfigLoopSize>
+      & Partial<TypedArrayConfigLoopEnds>
+      & Partial<TypedArrayParserLoopUntil<T>>;
 
 export type TypedArrayParserConfigComputed<T> =
     | TypedArrayConfigLoopCount
@@ -30,7 +30,7 @@ export type TypedArrayParserConfigComputed<T> =
 
 export type TypedArrayParserConfig<T> =
     & AdvancedParserConfig
-    & TypedArrayParserConfigComputed<T>;
+      & TypedArrayParserConfigComputed<T>;
 
 const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
@@ -158,9 +158,8 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         if (!isUndefined(countOption)) {
             // 使用传入的 count 选项写入数组长度
             this.writeConfigNumber(ctx, countOption, countValue);
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
-            const writeView = Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
-            writeView.set(typedArray);
+            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
+            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
             ctx.skip(sizeValue);
             return;
         }
@@ -168,18 +167,16 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项写入数组长度（暂时未知具体长度，先写0，以获取offset）
             this.writeConfigNumber(ctx, sizeOption, sizeValue);
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
-            const writeView = Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
-            writeView.set(typedArray);
+            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
+            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
             ctx.skip(sizeValue);
             return;
         }
 
         if (!isUndefined(endsOption)) {
             const endsMark = this.endsCompute(ctx);
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
-            const writeView = Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
-            writeView.set(typedArray);
+            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
+            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
             ctx.skip(sizeValue);
             ctx.write(PrimitiveType.Uint8, endsMark);
             return;
@@ -187,14 +184,13 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
 
         if (!isUndefined(untilOption)) {
             const lastIndex = typedArray.length - 1;
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
-            const writeView = Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
+            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
             for (const [ idx, item ] of typedArray.entries()) {
                 const matchedUntil = ctx.compute(untilOption.bind(void 0, item));
                 if (matchedUntil && idx !== lastIndex) throw Error('Matching the \'until\' logic too early');
                 if (!matchedUntil && idx === lastIndex) throw Error('Last item does not match the \'until\' logic');
             }
-            writeView.set(typedArray);
+            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
             ctx.skip(sizeValue);
             return;
         }

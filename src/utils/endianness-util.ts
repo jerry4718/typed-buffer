@@ -1,6 +1,6 @@
-import { isUndefined } from './type-util.ts';
-import { TypedArrayConstructor, TypedArrayInstance } from '../describe/typed-array.ts';
+import { TypedArrayFactory, TypedArrayInstance } from '../describe/typed-array.ts';
 import { AbstractTypedArray } from './prototype-util.ts';
+import { isUndefined } from './type-util.ts';
 
 export const BigEndian = 'be' as const;
 export const LittleEndian = 'le' as const;
@@ -27,9 +27,9 @@ export function isLittleEndian(endian?: Endian): boolean {
 
 export function changeTypedArrayEndianness<Item, Instance>(from: TypedArrayInstance<Item, Instance>): Instance {
     if (!(from instanceof AbstractTypedArray)) throw Error('Argument \'from\' is not TypedArray');
-    const Constructor: TypedArrayConstructor<Item, Instance> = from.constructor;
+    const Constructor = from.constructor as TypedArrayFactory<Item, Instance>;
 
-    if (from instanceof Uint8Array || from instanceof Int8Array) return Constructor.from(from);
+    if (from instanceof Uint8Array || from instanceof Int8Array) return new Constructor(from.buffer.slice(0));
 
     const fromUint8View = new Uint8Array(from.buffer, from.byteOffset, from.byteLength);
 

@@ -6,12 +6,12 @@ import { Constructor } from '../utils/prototype-util.ts';
 
 export type BufferParserConfig<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> =
     & AdvancedParserConfig
-    & {
-        typedArrayClass: TypedArrayConstructor<Item, Instance>,
-        endian?: Endian,
-        structClass: Constructor<T>,
-        structFields: { name: keyof T }[],
-    }
+      & {
+          typedArrayClass: TypedArrayConstructor<Item, Instance>,
+          endian?: Endian,
+          structClass: Constructor<T>,
+          structFields: { name: keyof T }[],
+      }
 
 export class BufferParser<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<T> {
     private readonly bufferStructClass: Constructor<T>;
@@ -94,16 +94,14 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
     }
 
     write(ctx: ParserContext, value: T, byteOffset: number): T {
-        const typedArray =
-            value instanceof this.bufferStructClass
-                ? Reflect.get(value, this.structBufferKey) as TypedArrayInstance<Item, Instance>
-                : this.typedArrayClass.from(this.structFields.map(f => Reflect.get(value, f.name)));
+        const typedArray = value instanceof this.bufferStructClass
+            ? Reflect.get(value, this.structBufferKey) as TypedArrayInstance<Item, Instance>
+            : this.typedArrayClass.from(this.structFields.map(f => Reflect.get(value, f.name)));
 
-        const valueTypedArray = this.resolveEndianness(ctx, typedArray);
+        const endianness = this.resolveEndianness(ctx, typedArray);
 
-        const buffer = ctx.buffer.slice(byteOffset, byteOffset + this.structBufferSize);
-        const writeTypedArray = Reflect.construct(this.typedArrayClass, [ buffer ]);
-        writeTypedArray.set(valueTypedArray);
+        const writeView = new Uint8Array(ctx.buffer, byteOffset, this.structBufferSize);
+        writeView.set(new Uint8Array(endianness.buffer, endianness.byteOffset, endianness.byteLength));
         return value;
     }
 }

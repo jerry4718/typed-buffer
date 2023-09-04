@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { TypedArrayConstructor } from '../describe/typed-array.ts';
 
 // deno-lint-ignore ban-types
 export type Constructor<T> = T extends object ? Function & (new (...args: unknown[]) => T) : never;
@@ -13,7 +14,7 @@ export const PublicSymbolAccessors = Reflect.ownKeys(Symbol)
     .map(k => Reflect.get(Symbol, k))
     .filter(s => typeof s === 'symbol');
 
-export const AbstractTypedArray = Reflect.getPrototypeOf(Uint8Array);
+export const AbstractTypedArray = Reflect.getPrototypeOf(Uint8Array) as TypedArrayConstructor<number | bigint, unknown>;
 
 export function isExtendFrom<P>(childClass: unknown, parentClass: Constructor<P>): childClass is Constructor<P> {
     for (
