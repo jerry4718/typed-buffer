@@ -50,7 +50,7 @@ const data = [
     Object.assign(new Person(), { ...testPerson, itemType: 2 }),
 ];
 
-const PersonParser = t.getTypedParser(Person);
+const PersonParser = t.getStructParser(Person);
 const PersonArrayParser = new t.ArrayParser<Person>({ item: PersonParser, count: t.Uint8 });
 
 const writeContext = t.createContext(new ArrayBuffer(100));

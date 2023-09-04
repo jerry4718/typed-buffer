@@ -17,15 +17,15 @@ import { VertexContainer } from './classes/ltb/VertexContainer.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@red@573.ltb'));
+const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@red@573.ltb'));
+// const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@blue@574.ltb'));
+// const ltbBuffer = await fs.readFile(path.join(__dirname, './files/835.ltb'));
 // const ltbBuffer = await fs.readFile(path.join(__dirname, './files/522.ltb'));
 // const ltbBuffer = await fs.readFile(path.join(__dirname, './files/cm901_is_3p_new.ltb'));
-const ltbBuffer = await fs.readFile(path.join(__dirname, './files/835.ltb'));
 
-// const ltbBuffer = await fs.readFile(path.join(__dirname, './files/sa_characters@models@blue@574.ltb'));
 console.log(ltbBuffer.buffer);
 
-const LithtechLtbParser = t.getTypedParser(LithtechLtb);
+const LithtechLtbParser = t.getTargetParser(LithtechLtb);
 
 const readContext = t.createContext(ltbBuffer.buffer, {
     DebugStruct: [
@@ -43,9 +43,11 @@ const readContext = t.createContext(ltbBuffer.buffer, {
     ],
 });
 
-const [ lithtechLtb, selfSnap ] = readContext.read(LithtechLtbParser);
+const [ lithtechLtb, selfSnap ] = readContext.$$read(LithtechLtbParser);
 
 const fieldSnap = getStructReadSnap(lithtechLtb);
 // console.log(lithtechLtb);
 console.log(selfSnap);
+console.log(t.createResult.ct)
+console.log(t.createContext.ct)
 console.log(fieldSnap);
