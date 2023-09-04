@@ -25,8 +25,8 @@ class Person {
 
     @FieldType(({ scope }: t.ParserContext) => {
         const option = { count: () => scope.itemCount as number };
-        if (scope.itemType === 1) return t.Uint32Array(option);
-        if (scope.itemType === 2) return t.Uint32Array(option);
+        if (scope.itemType === 1) return t.Uint32LEArray(option);
+        if (scope.itemType === 2) return t.Uint32BEArray(option);
         throw Error(`unknown itemType case ${scope.itemType}`);
     })
     @FieldIf(
@@ -50,7 +50,7 @@ const data = [
     Object.assign(new Person(), { ...testPerson, itemType: 2 }),
 ];
 
-const PersonParser = t.getStructParser(Person);
+const PersonParser = t.getTargetParser(Person);
 const PersonArrayParser = new t.ArrayParser<Person>({ item: PersonParser, count: t.Uint8 });
 
 const writeContext = t.createContext(new ArrayBuffer(100));
@@ -67,5 +67,3 @@ console.log(getStructWriteSnap(data[0]));
 console.log(getStructWriteSnap(data[1]));
 console.log(getStructReadSnap(readData[0]));
 console.log(getStructReadSnap(readData[1]));
-
-Reflect.defineMetadata('name: 111', 111, []);
