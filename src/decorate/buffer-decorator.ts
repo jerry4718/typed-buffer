@@ -9,13 +9,13 @@ import { defineClassDecorator, definePropertyDecorator, ensureFieldConfig, getPa
 const kParserFields = Symbol('@@BufferParserFields') as MetadataKey<FieldConfig<SafeAny, SafeAny>[]>;
 
 export function BufferTarget<T, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>>(
-    creator: TypedArrayConstructor<Item, Instance>,
+    typedArrayClass: TypedArrayConstructor<Item, Instance>,
     config: Partial<ContextConstant & ContextOption> = {},
 ) {
     function decorator<Class extends Constructor<T>>(klass: Class) {
         Reflect.defineMetadata(kParserTarget, config, klass);
 
-        const parser = convertBufferParser(klass, creator, config.endian);
+        const parser = convertBufferParser(klass, typedArrayClass, config.endian);
 
         Reflect.defineMetadata(kParserCached, parser, klass);
     }

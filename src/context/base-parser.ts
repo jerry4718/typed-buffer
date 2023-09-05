@@ -1,11 +1,11 @@
 import { Constructor, isExtendFrom } from '../utils/prototype-util.ts';
-import { ContextOption, Parser, ParserContext } from './types.ts';
+import { ContextOption, ParserContext } from './types.ts';
 
 export type AdvancedParserConfig = {
     option?: Partial<ContextOption>
 }
 
-export abstract class BaseParser<T> implements Parser<T> {
+export abstract class BaseParser<T> {
     abstract read(context: ParserContext, byteOffset: number): T;
 
     abstract write(context: ParserContext, value: T, byteOffset: number): T;

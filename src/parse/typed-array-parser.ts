@@ -1,11 +1,10 @@
 import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
 import * as TypedArray from '../describe/typed-array.ts';
-import { TypedArrayConstructor, TypedArrayFactory, TypedArrayInstance } from '../describe/typed-array.ts';
+import { TypedArrayFactory, TypedArrayInstance } from '../describe/typed-array.ts';
 import * as PrimitiveType from './primitive-parser.ts';
 import { PrimitiveParser } from './primitive-parser.ts';
 import { isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
-import { changeTypedArrayEndianness, NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
 
 export type TypedArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
 export type TypedArrayParserOptionEos = ContextCompute<number> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
@@ -18,9 +17,9 @@ export type TypedArrayParserLoopUntil<T> = { until: TypedArrayParserOptionUntil<
 
 export type TypedArrayParserReaderPartial<T> =
     & Partial<TypedArrayConfigLoopCount>
-      & Partial<TypedArrayConfigLoopSize>
-      & Partial<TypedArrayConfigLoopEnds>
-      & Partial<TypedArrayParserLoopUntil<T>>;
+    & Partial<TypedArrayConfigLoopSize>
+    & Partial<TypedArrayConfigLoopEnds>
+    & Partial<TypedArrayParserLoopUntil<T>>;
 
 export type TypedArrayParserConfigComputed<T> =
     | TypedArrayConfigLoopCount
@@ -30,21 +29,21 @@ export type TypedArrayParserConfigComputed<T> =
 
 export type TypedArrayParserConfig<T> =
     & AdvancedParserConfig
-      & TypedArrayParserConfigComputed<T>;
+    & TypedArrayParserConfigComputed<T>;
 
 const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
 
 export class TypedArrayParser<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<Instance> {
     readonly itemParser: PrimitiveParser<Item>;
-    readonly typedArrayConstructor: TypedArrayConstructor<Item, Instance>;
+    readonly typedArrayFactory: TypedArrayFactory<Item, Instance>;
     readonly bytesPerElement: number;
     private readonly countOption?: TypedArrayParserOptionNumber;
     private readonly sizeOption?: TypedArrayParserOptionNumber;
     private readonly endsOption?: TypedArrayParserOptionEos;
     private readonly untilOption?: TypedArrayParserOptionUntil<Item>;
 
-    constructor(itemParser: PrimitiveParser<Item>, typedConstructor: TypedArrayConstructor<Item, Instance>, option: TypedArrayParserConfig<Item>) {
+    constructor(itemParser: PrimitiveParser<Item>, typedArrayFactory: TypedArrayFactory<Item, Instance>, option: TypedArrayParserConfig<Item>) {
         super(option);
         const { ...optionPartial } = option;
         const { count, size, ends, until } = optionPartial as TypedArrayParserReaderPartial<Item>;
@@ -52,8 +51,8 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
             throw new Error('Invalid parser options. Only one of [size] or [end].');
         }
         this.itemParser = itemParser;
-        this.typedArrayConstructor = typedConstructor;
-        this.bytesPerElement = typedConstructor.BYTES_PER_ELEMENT;
+        this.typedArrayFactory = typedArrayFactory;
+        this.bytesPerElement = typedArrayFactory.BYTES_PER_ELEMENT;
         this.countOption = count;
         this.sizeOption = size;
         this.endsOption = ends;
@@ -80,39 +79,20 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         return ctx.compute(ends);
     }
 
-    resolveEndianness(ctx: ParserContext, from: Instance): Instance {
-        const endian = this.itemParser.endian || ctx.constant.endian;
-        if (!endian) return from;
-        if (endian === NATIVE_ENDIANNESS) return from;
-        return changeTypedArrayEndianness(from);
-    }
-
-    read(ctx: ParserContext, byteOffset: number): Instance {
-        return this.resolveEndianness(ctx, this.innerRead(ctx, byteOffset));
-    }
-
-    write(ctx: ParserContext, typedArray: Instance, byteOffset: number): Instance {
-        this.innerWrite(ctx, this.resolveEndianness(ctx, typedArray), byteOffset);
-        return typedArray;
-    }
-
-    private innerRead(ctx: ParserContext, byteOffset: number): Instance {
+    read(ctx: ParserContext): Instance {
         const { countOption, sizeOption, endsOption, untilOption } = this;
+        const itemEndian = this.itemParser.endian;
 
         if (!isUndefined(countOption)) {
             // 使用传入的 count 选项获取数组长度
             const countValue = this.readConfigNumber(ctx, countOption);
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + countValue * this.bytesPerElement);
-            ctx.skip(countValue * this.bytesPerElement);
-            return Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
+            return ctx.bufferRead(this.typedArrayFactory, { count: countValue, endian: itemEndian });
         }
 
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项获取数组长度
             const sizeValue = this.readConfigNumber(ctx, sizeOption);
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + sizeValue);
-            ctx.skip(sizeValue);
-            return Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
+            return ctx.bufferRead(this.typedArrayFactory, { size: sizeValue, endian: itemEndian });
         }
 
         if (!isUndefined(endsOption)) {
@@ -126,10 +106,10 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
                 if (next === endsJudge) break;
                 pointOffset += this.bytesPerElement;
             }
-            const buffer = ctx.buffer.slice(pointBefore, pointBefore + pointOffset);
-            ctx.skip(pointOffset);
+
+            const res = ctx.bufferRead(this.typedArrayFactory, { size: pointOffset, endian: itemEndian });
             ctx.read(PrimitiveType.Uint8, { consume: true });
-            return Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
+            return res;
         }
 
         if (!isUndefined(untilOption)) {
@@ -139,18 +119,17 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
             while (true) {
                 const itemValue = ctx.read(this.itemParser, { consume: false, point: pointBefore + pointOffset });
                 pointOffset += this.bytesPerElement;
-                if (ctx.compute(untilOption.bind(void 0, itemValue as Item))) break;
+                if (ctx.compute(untilOption.bind(void 0, itemValue))) break;
             }
-            const buffer = ctx.buffer.slice(ctx.end, ctx.end + pointOffset);
-            ctx.skip(pointOffset);
-            return Reflect.construct(this.typedArrayConstructor, [ buffer ]) as Instance;
+            return ctx.bufferRead(this.typedArrayFactory, { size: pointOffset, endian: itemEndian });
         }
 
         throw Error('unknown TypedArray option');
     }
 
-    private innerWrite(ctx: ParserContext, typedArray: Instance, byteOffset: number) {
+    write(ctx: ParserContext, typedArray: Instance): Instance {
         const { countOption, sizeOption, endsOption, untilOption } = this;
+        const itemEndian = this.itemParser.endian;
 
         const countValue = typedArray.length;
         const sizeValue = typedArray.byteLength;
@@ -158,44 +137,36 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         if (!isUndefined(countOption)) {
             // 使用传入的 count 选项写入数组长度
             this.writeConfigNumber(ctx, countOption, countValue);
-            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
-            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
-            ctx.skip(sizeValue);
-            return;
+            ctx.bufferWrite(typedArray, { endian: itemEndian })
+            return typedArray;
         }
 
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项写入数组长度（暂时未知具体长度，先写0，以获取offset）
             this.writeConfigNumber(ctx, sizeOption, sizeValue);
-            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
-            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
-            ctx.skip(sizeValue);
-            return;
+            ctx.bufferWrite(typedArray, { endian: itemEndian })
+            return typedArray;
         }
 
         if (!isUndefined(endsOption)) {
-            const endsMark = this.endsCompute(ctx);
-            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
-            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
-            ctx.skip(sizeValue);
-            ctx.write(PrimitiveType.Uint8, endsMark);
-            return;
+            ctx.bufferWrite(typedArray, { endian: itemEndian })
+            ctx.write(PrimitiveType.Uint8, this.endsCompute(ctx));
+            return typedArray;
         }
 
         if (!isUndefined(untilOption)) {
             const lastIndex = typedArray.length - 1;
-            const writeView = new Uint8Array(ctx.buffer, ctx.end, sizeValue);
             for (const [ idx, item ] of typedArray.entries()) {
                 const matchedUntil = ctx.compute(untilOption.bind(void 0, item));
                 if (matchedUntil && idx !== lastIndex) throw Error('Matching the \'until\' logic too early');
                 if (!matchedUntil && idx === lastIndex) throw Error('Last item does not match the \'until\' logic');
             }
-            writeView.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, sizeValue));
-            ctx.skip(sizeValue);
-            return;
+            ctx.bufferWrite(typedArray, { endian: itemEndian })
+            return typedArray;
         }
 
         throw Error('unknown TypedArray option');
+
     }
 }
 

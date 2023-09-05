@@ -21,13 +21,13 @@ export class StringParser extends AdvancedParser<string> {
     }
 
     read(ctx: ParserContext): string {
-        const readArray = ctx.read(this.dataParser);
+        const readArray = this.dataParser.read(ctx);
         return this.coding.decode(readArray);
     }
 
     write(ctx: ParserContext, value: string): string {
         const byteArray = this.coding.encode(value);
-        ctx.write(this.dataParser, byteArray);
+        this.dataParser.write(ctx, byteArray);
         return value;
     }
 }
