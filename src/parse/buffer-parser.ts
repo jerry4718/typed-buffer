@@ -6,12 +6,12 @@ import { Constructor } from '../utils/prototype-util.ts';
 
 export type BufferParserConfig<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> =
     & AdvancedParserConfig
-      & {
-          typedArrayClass: TypedArrayConstructor<Item, Instance>,
-          endian?: Endian,
-          structClass: Constructor<T>,
-          structFields: { name: keyof T }[],
-      }
+    & {
+    typedArrayClass: TypedArrayConstructor<Item, Instance>,
+    endian?: Endian,
+    structClass: Constructor<T>,
+    structFields: { name: keyof T }[],
+}
 
 export class BufferParser<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<T> {
     private readonly bufferStructClass: Constructor<T>;
@@ -33,10 +33,10 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
 
         const typedArrayCreator = () => Reflect.construct(typedArrayClass, [ structFieldsCount ]);
 
-        const kBuffer = Symbol(`@@${structClass.name}.buffer`);
-        const kGetter = Symbol(`@@${structClass.name}.getter`);
-        const kSetter = Symbol(`@@${structClass.name}.setter`);
-        const kEnsure = Symbol(`@@${structClass.name}.ensure`);
+        const kBuffer = Symbol(`@@${ structClass.name }.buffer`);
+        const kGetter = Symbol(`@@${ structClass.name }.getter`);
+        const kSetter = Symbol(`@@${ structClass.name }.setter`);
+        const kEnsure = Symbol(`@@${ structClass.name }.ensure`);
 
         class BufferStruct extends structClass {
             private [kBuffer]: TypedArrayInstance<Item, Instance>;

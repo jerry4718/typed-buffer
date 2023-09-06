@@ -10,7 +10,7 @@ export type Endian = typeof BigEndian | typeof LittleEndian;
 export function getNativeEndianness(): Endian {
     const testBuffer = new ArrayBuffer(2);
     new Uint16Array(testBuffer).fill(0x0102);
-    const [ left, right ] = new Uint8Array(testBuffer);
+    const [left, right] = new Uint8Array(testBuffer);
     if (left === 1 && right === 2) return BigEndian;
     if (left === 2 && right === 1) return LittleEndian;
     throw Error('never');
@@ -29,20 +29,17 @@ export function changeTypedArrayEndianness<Item, Instance>(from: TypedArrayInsta
     if (!(from instanceof AbstractTypedArray)) throw Error('Argument \'from\' is not TypedArray');
     const Constructor = from.constructor as TypedArrayFactory<Item, Instance>;
 
-    if (from instanceof Uint8Array || from instanceof Int8Array) return new Constructor(from.buffer.slice(0));
-
-    const fromUint8View = new Uint8Array(from.buffer, from.byteOffset, from.byteLength);
+    if (from instanceof Uint8Array || from instanceof Int8Array) return new Constructor(from.buffer.slice(from.byteOffset, from.byteLength));
 
     const changedBuffer = new ArrayBuffer(from.byteLength);
-    const changedTypedArray = new Constructor(changedBuffer);
     const changedUint8View = new Uint8Array(changedBuffer);
 
     const bytesPerElement = from.BYTES_PER_ELEMENT;
-    for (let i = 0; i < from.length; i++) {
-        const start = i * bytesPerElement;
-        const element = Uint8Array.from(fromUint8View.slice(start, start + bytesPerElement));
+    for (let edx = 0; edx < from.length; edx++) {
+        const start = from.byteOffset + edx * bytesPerElement;
+        const element = new Uint8Array(from.buffer.slice(start, start + bytesPerElement));
         changedUint8View.set(element.reverse(), start);
     }
 
-    return changedTypedArray;
+    return new Constructor(changedBuffer);
 }

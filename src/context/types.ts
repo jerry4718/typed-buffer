@@ -1,7 +1,9 @@
 import { Coding } from '../coding/face.ts';
 import { Endian } from '../common.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
-import { SnapTuple } from './snap-tuple.ts';
+import { SnapTuple } from "./snap-tuple.ts";
+import { BaseParser } from "./base-parser.ts";
+import { TypedArrayFactory, TypedArrayInstance } from "../describe/typed-array.ts";
 
 export type ScopeAccessor = Record<string | symbol | number, SafeAny>
 
@@ -29,6 +31,7 @@ export type ContextConstant = {
     DebugStruct: (new () => SafeAny)[],
 };
 
+
 export interface ParserContext {
     buffer: ArrayBuffer,
     view: DataView,
@@ -39,14 +42,28 @@ export interface ParserContext {
     scope: ScopeAccessor,
 
     /* context中保留着一切需要的数据，所以read，write操作最终交付给context执行 */
-    $$read<T>(parser: Parser<T>, option?: Partial<ContextOption>): SnapTuple<T>,
+    $$read<T>(parser: BaseParser<T>, option?: Partial<ContextOption>): SnapTuple<T>,
 
-    $$write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T>,
+    $$write<T>(parser: BaseParser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T>,
 
     /* context中保留着一切需要的数据，所以read，write操作最终交付给context执行 */
-    read<T>(parser: Parser<T>, option?: Partial<ContextOption>): T,
+    read<T>(parser: BaseParser<T>, option?: Partial<ContextOption>): T,
 
-    write<T>(parser: Parser<T>, value: T, option?: Partial<ContextOption>): T,
+    write<T>(parser: BaseParser<T>, value: T, option?: Partial<ContextOption>): T,
+
+    u8View(specify: ({ size: number } | { count: number }), patchOption?: Partial<ContextOption>): Uint8Array
+
+    bufferRead<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>>(
+        typedArrayFactory: TypedArrayFactory<Item, Instance>,
+        specify: { endian?: Endian } & { count: number } | { size: number },
+        patchOption?: Partial<ContextOption>
+    ): Instance,
+
+    bufferWrite<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>>(
+        value: Instance,
+        specify: { endian?: Endian },
+        patchOption?: Partial<ContextOption>,
+    ): Instance,
 
     skip(size: number): void,
 
@@ -63,10 +80,4 @@ export interface ParserContext {
     size: number, // context已经消费掉的size，不是固定的
     end: number, // end并不是固定的，取到的值是start+size
     take: [ number, number ], // [start, end]
-}
-
-export interface Parser<T> {
-    read(parentContext: ParserContext, byteOffset: number): T;
-
-    write(parentContext: ParserContext, value: T, byteOffset: number): T;
 }
