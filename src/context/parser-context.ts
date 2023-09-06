@@ -10,6 +10,7 @@ import { TypedArrayFactory, TypedArrayInstance } from "../describe/typed-array.t
 import { isNumber, isUndefined } from "../utils/type-util.ts";
 
 export * from './snap-tuple.ts';
+export * from './access-chain.ts';
 
 const defaultContextConstant: ContextConstant = Object.freeze({
     $path: '$path',

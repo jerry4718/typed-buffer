@@ -100,14 +100,14 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         const $index = isFunction(indexName) ? ctx.compute(indexName) : indexName;
         const items: T[] = [];
 
-        const parentPath = ctx.scope[ctx.constant.$path];
+        // const parentPath = ctx.scope[ctx.constant.$path];
 
         if (!isUndefined(countOption)) {
             // 使用传入的 count 选项获取数组长度
             const countValue = this.readConfigNumber(ctx, countOption);
             for (let readIndex = 0; readIndex < countValue; readIndex++) {
                 ctx.expose($index, items.length);
-                ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
+                // ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
                 items.push(ctx.read(itemParser));
             }
         }
@@ -119,7 +119,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
             while (true) {
                 ctx.expose($index, items.length);
-                ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
+                // ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
                 const collectSize = ctx.end - sizeEnd;
                 if (collectSize > sizeValue) throw Error('Invalid array data read');
                 if (collectSize === sizeValue) break;
@@ -133,7 +133,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
 
             while (true) {
                 ctx.expose($index, items.length);
-                ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
+                // ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
                 const next = ctx.read(Uint8, { consume: false });
                 if (next === endsJudge) break;
                 items.push(ctx.read(itemParser));
@@ -144,7 +144,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         if (!isUndefined(untilOption)) {
             while (true) {
                 ctx.expose($index, items.length);
-                ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
+                // ctx.expose(ctx.constant.$path, `${parentPath}[${items.length}]`);
                 const itemValue = ctx.read(itemParser);
                 items.push(itemValue);
                 if (ctx.compute(untilOption.bind(void 0, itemValue))) break;

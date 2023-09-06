@@ -6,8 +6,14 @@ const kAccessChain = Symbol('@@AccessChain');
 const kAccessTarget = Symbol('@@AccessTarget');
 
 const EmptyObject = Object.freeze({});
-
+createAccessChain.ct = {
+    create: 0 ,
+    has: 0,
+    get: 0,
+    set: 0,
+}
 export function createAccessChain<T extends object, R = T extends Partial<infer P> ? P : T>(useTarget: boolean, ...accesses: (T | undefined)[]): R {
+    createAccessChain.ct.create ++
     const chain: T[] = [];
     for (const arg of accesses) {
         if (isUndefined(arg)) continue;
@@ -35,6 +41,7 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
     // }
 
     function has<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K): boolean {
+        createAccessChain.ct.has ++
         if (propKey === kAccessTarget) return true;
         if (propKey === kAccessChain) return true;
         if (useTarget && propKey in target) return true;
@@ -45,6 +52,7 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
     }
 
     function get<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, receiver: SafeAny): T[K] | undefined {
+        createAccessChain.ct.get ++
         if (propKey === kAccessTarget) return target as T[K];
         if (propKey === kAccessChain) return chain as T[K];
         if (useTarget) {
@@ -60,6 +68,7 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
     }
 
     function set<K extends Extract<keyof T, string | symbol>>(target: T, propKey: K, value: T[K], receiver: SafeAny): boolean {
+        createAccessChain.ct.set ++
         if (propKey === kAccessTarget) return false;
         if (propKey === kAccessChain) return false;
         if (!useTarget) return false;
