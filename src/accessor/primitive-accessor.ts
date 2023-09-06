@@ -1,7 +1,8 @@
-import { call } from "../utils/proto-fn.ts";
-import * as TypedArray from "../primitive/typed-array.ts";
-import { TypedArrayFactory, TypedArrayInstance } from "../primitive/typed-array.ts";
-import { BigEndian, Endian, LittleEndian } from "../utils/endianness-util.ts";
+import { call } from '../utils/proto-fn.ts';
+import * as TypedArray from '../primitive/typed-array.ts';
+import { TypedArrayFactory, TypedArrayInstance } from '../primitive/typed-array.ts';
+import { BigEndian, Endian, LittleEndian } from '../utils/endianness-util.ts';
+import { isUndefined } from '../utils/type-util.ts';
 
 const dvp = DataView.prototype;
 
@@ -17,43 +18,45 @@ const
     getBigInt64 = call.bind(dvp.getBigInt64), setBigInt64 = call.bind(dvp.setBigInt64),
     getBigUint64 = call.bind(dvp.getBigUint64), setBigUint64 = call.bind(dvp.setBigUint64);
 
-export class PrimitiveAccessor<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>> {
-    public readonly BYTES_PER_DATA: number;
-
-    constructor(
-        public readonly get: (view: DataView, byteOffset: number, littleEndian?: boolean) => Item,
-        public readonly set: (view: DataView, byteOffset: number, value: Item, littleEndian?: boolean) => void,
-        public readonly container: TypedArrayFactory<Item, Container>,
-    ) {
-        this.BYTES_PER_DATA = container.BYTES_PER_ELEMENT;
-    }
-
-    read(view: DataView, byteOffset: number, endian: Endian) {
-        return this.get(view, byteOffset, endian === LittleEndian);
-    }
-
-    write(view: DataView, byteOffset: number, value: Item, endian: Endian) {
-        return this.set(view, byteOffset, value, endian === LittleEndian);
-    }
+function wrapGet<Item extends (number | bigint)>(get: (view: DataView, byteOffset: number, littleEndian?: boolean) => Item)
+    : (view: DataView, byteOffset: number, endian: Endian) => Item
+function wrapGet<Item extends (number | bigint)>(get: (view: DataView, byteOffset: number, littleEndian?: boolean) => Item, endian: Endian)
+    : (view: DataView, byteOffset: number) => Item
+function wrapGet<Item extends (number | bigint)>(get: (view: DataView, byteOffset: number, littleEndian?: boolean) => Item, endian?: Endian) {
+    if (isUndefined(endian)) return (view: DataView, byteOffset: number, endian: Endian) => get(view, byteOffset, endian === LittleEndian);
+    return (view: DataView, byteOffset: number) => get(view, byteOffset, endian === LittleEndian);
 }
 
-export class PrimitiveEndianAccessor<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>> {
+function wrapSet<Item extends (number | bigint)>(set: (view: DataView, byteOffset: number, value: Item, littleEndian?: boolean) => void)
+    : (view: DataView, byteOffset: number, value: Item, endian: Endian) => void
+function wrapSet<Item extends (number | bigint)>(set: (view: DataView, byteOffset: number, value: Item, littleEndian?: boolean) => void, endian: Endian)
+    : (view: DataView, byteOffset: number, value: Item) => void
+function wrapSet<Item extends (number | bigint)>(set: (view: DataView, byteOffset: number, value: Item, littleEndian?: boolean) => void, endian?: Endian) {
+    if (isUndefined(endian)) return (view: DataView, byteOffset: number, value: Item, endian: Endian) => set(view, byteOffset, value, endian === LittleEndian);
+    return (view: DataView, byteOffset: number, value: Item) => set(view, byteOffset, value, endian === LittleEndian);
+}
+
+export class PrimitiveAccessor<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>> {
+    public get: (view: DataView, byteOffset: number, endian: Endian) => Item;
+    public set: (view: DataView, byteOffset: number, value: Item, endian: Endian) => void;
+    public container: TypedArrayFactory<Item, Container>;
     public readonly BYTES_PER_DATA: number;
+
     constructor(
-        public readonly get: (view: DataView, byteOffset: number, littleEndian?: boolean) => Item,
-        public readonly set: (view: DataView, byteOffset: number, value: Item, littleEndian?: boolean) => void,
-        public readonly container: TypedArrayFactory<Item, Container>,
-        public readonly endian: Endian,
+        get: (view: DataView, byteOffset: number, littleEndian?: boolean) => Item,
+        set: (view: DataView, byteOffset: number, value: Item, littleEndian?: boolean) => void,
+        container: TypedArrayFactory<Item, Container>,
+        endian?: Endian,
     ) {
+        if (isUndefined(endian)) {
+            this.get = wrapGet(get);
+            this.set = wrapSet(set);
+        } else {
+            this.get = wrapGet(get, endian);
+            this.set = wrapSet(set, endian);
+        }
+        this.container = container;
         this.BYTES_PER_DATA = container.BYTES_PER_ELEMENT;
-    }
-
-    read(view: DataView, byteOffset: number) {
-        return this.get(view, byteOffset, this.endian === LittleEndian);
-    }
-
-    write(view: DataView, byteOffset: number, value: Item) {
-        return this.set(view, byteOffset, value, this.endian === LittleEndian);
     }
 }
 
@@ -61,8 +64,9 @@ function createAccessor<Item extends (number | bigint), Container extends TypedA
     get: (view: DataView, byteOffset: number, littleEndian?: boolean) => Item,
     set: (view: DataView, byteOffset: number, value: Item, littleEndian?: boolean) => void,
     container: TypedArrayFactory<Item, Container>,
+    endian?: Endian,
 ): PrimitiveAccessor<Item, Container> {
-    return new PrimitiveAccessor<Item, Container>(get, set, container);
+    return new PrimitiveAccessor<Item, Container>(get, set, container, endian);
 }
 
 function endianness<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>>(base: PrimitiveAccessor<Item, Container>, endian: Endian) {

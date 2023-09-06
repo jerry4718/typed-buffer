@@ -1,9 +1,8 @@
-import { PrimitiveEndianAccessor, PrimitiveAccessor } from "../accessor/primitive-accessor.ts";
-import { TypedArrayInstance } from "../primitive/typed-array.ts";
-import { Endian } from "../utils/endianness-util.ts";
-import { isNumber } from "../utils/type-util.ts";
-import { ScopeAccessor } from "./types.ts";
-import { SafeAny } from "../utils/prototype-util.ts";
+import { PrimitiveAccessor, PrimitiveEndianAccessor } from '../accessor/primitive-accessor.ts';
+import { TypedArrayInstance } from '../primitive/typed-array.ts';
+import { Endian } from '../utils/endianness-util.ts';
+import { isNumber } from '../utils/type-util.ts';
+import { SafeAny } from '../utils/prototype-util.ts';
 
 class BaseContext {
     declare public buffer: ArrayBuffer;
@@ -29,8 +28,13 @@ class BaseContext {
     }
 }
 
-function createContext() {
-
+function createContext(mode: 'r'): ReadContext;
+function createContext(mode: 'w'): WriteContext;
+function createContext(mode: 'r' | 'w'): ReadContext | WriteContext {
+    if (mode === 'r') {
+        return new ReadContext();
+    }
+    return new WriteContext();
 }
 
 export type ContextScope = Record<string | symbol, SafeAny>
@@ -59,12 +63,12 @@ export class ReadContext extends BaseContext {
             if (accessor instanceof PrimitiveEndianAccessor) {
                 readSize = accessor.BYTES_PER_DATA;
                 this.ensureBytesLeft(readSize);
-                return accessor.read(this.view, this.byteOffset + this.pos);
+                return accessor.get(this.view, this.byteOffset + this.pos);
             }
             if (accessor instanceof PrimitiveAccessor) {
                 readSize = accessor.BYTES_PER_DATA;
                 this.ensureBytesLeft(readSize);
-                return accessor.read(this.view, this.byteOffset + this.pos, this.constant.endian);
+                return accessor.get(this.view, this.byteOffset + this.pos, this.constant.endian);
             }
             /* ****  ↑↑↑静态读取写在上面↑↑↑  ****  ↓↓↓动态读取写在下面↓↓↓  **** */
             // 动态读取才需要创建作用于链不是？
@@ -86,11 +90,11 @@ export class WriteContext extends ReadContext {
         this.ensureBytesLeft(byteSize);
         this.pos += byteSize;
         if (accessor instanceof PrimitiveEndianAccessor) {
-            accessor.write(this.view, this.byteOffset + this.pos, value);
+            accessor.set(this.view, this.byteOffset + this.pos, value);
             return;
         }
         if (accessor instanceof PrimitiveAccessor) {
-            accessor.write(this.view, this.byteOffset + this.pos, value, this.constant.endian);
+            accessor.set(this.view, this.byteOffset + this.pos, value, this.constant.endian);
             return;
         }
         throw new UnsupportedAccessorError();
@@ -108,7 +112,7 @@ export class EOFError extends Error {
     constructor(requested: number, available: number) {
         super();
         this.name = 'EOFError';
-        this.message = `Requested ${ requested } bytes, but only ${ available } available`;
+        this.message = `Requested ${requested} bytes, but only ${available} available`;
         this.requested = requested;
         this.available = available;
         this.stack = (new Error()).stack;
