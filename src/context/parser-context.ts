@@ -6,7 +6,7 @@ import { createAccessChain } from './access-chain.ts';
 import { AdvancedParser, BaseParser } from './base-parser.ts';
 import { createResult, SnapTuple } from './snap-tuple.ts';
 import { ContextCompute, ContextConstant, ContextOption, ParserContext, ScopeAccessor } from './types.ts';
-import { TypedArrayFactory, TypedArrayInstance } from "../describe/typed-array.ts";
+import { TypedArrayFactory, TypedArrayInstance } from "../primitive/typed-array.ts";
 import { isNumber, isUndefined } from "../utils/type-util.ts";
 
 export * from './snap-tuple.ts';

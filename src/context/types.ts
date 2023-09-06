@@ -3,7 +3,7 @@ import { Endian } from '../common.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 import { SnapTuple } from "./snap-tuple.ts";
 import { BaseParser } from "./base-parser.ts";
-import { TypedArrayFactory, TypedArrayInstance } from "../describe/typed-array.ts";
+import { TypedArrayFactory, TypedArrayInstance } from "../primitive/typed-array.ts";
 
 export type ScopeAccessor = Record<string | symbol | number, SafeAny>
 

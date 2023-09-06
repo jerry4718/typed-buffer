@@ -1,7 +1,7 @@
 import { changeTypedArrayEndianness, Endian, NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
 import { AdvancedParser, AdvancedParserConfig } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { TypedArrayConstructor, TypedArrayInstance } from '../describe/typed-array.ts';
+import { TypedArrayConstructor, TypedArrayInstance } from '../primitive/typed-array.ts';
 import { Constructor } from '../utils/prototype-util.ts';
 
 export type BufferParserConfig<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> =

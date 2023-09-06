@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { TypedArrayConstructor } from '../describe/typed-array.ts';
+import { TypedArrayConstructor } from '../primitive/typed-array.ts';
 
 // deno-lint-ignore ban-types
 export type Constructor<T> = T extends object ? Function & (new (...args: unknown[]) => T) : never;

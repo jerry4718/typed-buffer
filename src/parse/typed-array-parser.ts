@@ -1,7 +1,7 @@
 import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
-import * as TypedArray from '../describe/typed-array.ts';
-import { TypedArrayFactory, TypedArrayInstance } from '../describe/typed-array.ts';
+import * as TypedArray from '../primitive/typed-array.ts';
+import { TypedArrayFactory, TypedArrayInstance } from '../primitive/typed-array.ts';
 import * as PrimitiveType from './primitive-parser.ts';
 import { PrimitiveParser } from './primitive-parser.ts';
 import { isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';

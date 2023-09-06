@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { ContextConstant, ContextOption } from '../context/types.ts';
-import { TypedArrayConstructor, TypedArrayInstance } from '../describe/typed-array.ts';
+import { TypedArrayConstructor, TypedArrayInstance } from '../primitive/typed-array.ts';
 import { BufferParser, BufferParserConfig } from '../parse/buffer-parser.ts';
 import { Endian } from '../utils/endianness-util.ts';
 import { Constructor, getInheritedMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
