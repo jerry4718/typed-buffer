@@ -1,13 +1,12 @@
 import { changeTypedArrayEndianness, Endian, NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
-import { AdvancedParser, AdvancedParserConfig } from '../context/base-parser.ts';
+import { AdvancedParser } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
-import { TypedArrayConstructor, TypedArrayInstance } from '../describe/typed-array.ts';
+import { TypedArrayConstructor, TypedArrayInstance } from '../utils/typed-array.ts';
 import { Constructor } from '../utils/prototype-util.ts';
+import { PrimitiveParser } from "./primitive-parser.ts";
 
-export type BufferParserConfig<T extends object, Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>> =
-    & AdvancedParserConfig
-    & {
-    typedArrayClass: TypedArrayConstructor<Item, Instance>,
+export type BufferParserConfig<T extends object, Item extends (bigint | number), Container extends TypedArrayInstance<Item, Container>> = {
+    field: PrimitiveParser<Item, Container>,
     endian?: Endian,
     structClass: Constructor<T>,
     structFields: { name: keyof T }[],
@@ -24,12 +23,12 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
     readonly structBufferSize: number;
 
     constructor(config: BufferParserConfig<T, Item, Instance>) {
-        super(config);
+        super();
         const structClass = config.structClass;
         const structFields = config.structFields;
         const structFieldsCount = structFields.length;
 
-        const typedArrayClass = config.typedArrayClass;
+        const typedArrayClass = config.field.container;
 
         const typedArrayCreator = () => Reflect.construct(typedArrayClass, [ structFieldsCount ]);
 
@@ -93,7 +92,7 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
         return Reflect.construct(this.bufferStructClass, [ this.resolveEndianness(ctx, typedArray) ]) as T;
     }
 
-    write(ctx: ParserContext, value: T, byteOffset: number): T {
+    write(ctx: ParserContext, value: T, byteOffset: number) {
         const typedArray = value instanceof this.bufferStructClass
             ? Reflect.get(value, this.structBufferKey) as TypedArrayInstance<Item, Instance>
             : this.typedArrayClass.from(this.structFields.map(f => Reflect.get(value, f.name)));
@@ -102,6 +101,5 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
 
         const writeView = new Uint8Array(ctx.buffer, byteOffset, this.structBufferSize);
         writeView.set(new Uint8Array(endianness.buffer, endianness.byteOffset, endianness.byteLength));
-        return value;
     }
 }

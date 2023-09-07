@@ -1,24 +1,12 @@
 import { Constructor, isExtendFrom } from '../utils/prototype-util.ts';
-import { ContextOption, ParserContext } from './types.ts';
-
-export type AdvancedParserConfig = {
-    option?: Partial<ContextOption>
-}
+import { ParserContext, ScopeAccessor } from './types.ts';
 
 export abstract class BaseParser<T> {
     abstract read(context: ParserContext, byteOffset: number): T;
-
-    abstract write(context: ParserContext, value: T, byteOffset: number): T;
+    abstract write(context: ParserContext, value: T, byteOffset: number): void;
 }
 
-export abstract class AdvancedParser<T> extends BaseParser<T> {
-    public readonly option?: Partial<ContextOption>;
-
-    protected constructor(config: AdvancedParserConfig) {
-        super();
-        this.option = config?.option;
-    }
-}
+export abstract class AdvancedParser<T> extends BaseParser<T> {}
 
 /* hack** decorator 中使用的判断标记 */
 const kParserCreator = Symbol('@@ParserCreator');

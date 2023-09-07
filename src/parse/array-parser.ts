@@ -1,11 +1,11 @@
-import { AdvancedParser, AdvancedParserConfig, BaseParser, createParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, BaseParser, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
-import { getTargetParser } from '../decorate/util.ts';
+import { getTargetParser } from '../decorate/basic-util.ts';
 import { Constructor, SafeAny } from '../utils/prototype-util.ts';
 import { assertType, isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
 import { PrimitiveParser, Uint8 } from './primitive-parser.ts';
 
-export type ArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
+export type ArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number, SafeAny> | number;
 export type ArrayParserOptionEos = ContextCompute<number> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
 export type ArrayParserOptionUntil<T> = (prev: T, ctx: ParserContext, scope: ScopeAccessor) => boolean;
 
@@ -30,7 +30,6 @@ export type ArrayParserConfigComputed<T> =
     | ArrayParserLoopUntil<T>;
 
 export type ArrayParserConfig<T> =
-    & AdvancedParserConfig
     & ArrayParserIndexExpose
     & ArrayParserConfigRequired<T>
     & ArrayParserConfigComputed<T>;
@@ -47,7 +46,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
     private readonly untilOption?: ArrayParserOptionUntil<T>;
 
     constructor(option: ArrayParserConfig<T>) {
-        super(option);
+        super();
         const { item, index, ...optionPartial } = option;
         const { count, size, ends, until } = optionPartial as ArrayParserReaderPartial<T>;
         if (isUndefined(item)) {
@@ -154,7 +153,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
         return items;
     }
 
-    write(ctx: ParserContext, items: T[]): T[] {
+    write(ctx: ParserContext, items: T[]) {
         const { itemOption, indexName, countOption, sizeOption, endsOption, untilOption } = this;
         const itemParser = this.resolveItemParser(ctx, itemOption);
         const $index = isFunction(indexName) ? ctx.compute(indexName) : indexName;
@@ -166,6 +165,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
                 ctx.expose($index, idx);
                 ctx.write(itemParser, item);
             }
+            return
         }
 
         if (!isUndefined(sizeOption)) {
@@ -181,6 +181,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             // 回到初始位置，写入正确的size
             const afterSize = ctx.size;
             this.writeConfigNumber(ctx, sizeOption, afterSize - beforeSize, { point: ctx.start, consume: false });
+            return
         }
 
         if (!isUndefined(endsOption)) {
@@ -195,6 +196,7 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
             }
 
             ctx.write(Uint8, endsMark);
+            return
         }
 
         if (!isUndefined(untilOption)) {
@@ -206,9 +208,8 @@ export class ArrayParser<T> extends AdvancedParser<T[]> {
                 if (matchedUntil && idx !== lastIndex) throw Error('Matching the \'until\' logic too early');
                 if (!matchedUntil && idx === lastIndex) throw Error('Last item does not match the \'until\' logic');
             }
+            return
         }
-
-        return items;
     }
 }
 
