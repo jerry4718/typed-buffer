@@ -1,85 +1,95 @@
 import { BaseParser } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
 import { Endian, isLittleEndian } from '../utils/endianness-util.ts';
+import { call } from "../utils/prototype-util.ts";
+import * as TypedArray from '../utils/typed-array.ts';
+import { TypedArrayFactory, TypedArrayInstance } from '../utils/typed-array.ts';
 
-type PrimitiveGetter<T> = (this: DataView, byteOffset: number, littleEndian?: boolean) => T
-type PrimitiveSetter<T> = (this: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
+type PrimitiveGetter<T> = (view: DataView, byteOffset: number, littleEndian?: boolean) => T
+type PrimitiveSetter<T> = (view: DataView, byteOffset: number, value: T, littleEndian?: boolean) => void
 
-interface PrimitiveParserOptionRequired<T> {
-    byteSize: number,
-    getter: PrimitiveGetter<T>,
-    setter: PrimitiveSetter<T>,
+interface PrimitiveParserOptionRequired<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>> {
+    getter: PrimitiveGetter<Item>,
+    setter: PrimitiveSetter<Item>,
+    container: TypedArrayFactory<Item, Container>,
 }
 
 interface PrimitiveParserOptionComposable {
     endian?: Endian,
 }
 
-type PrimitiveParserConfig<T> =
+type PrimitiveParserConfig<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>> =
     & PrimitiveParserOptionComposable
-    & PrimitiveParserOptionRequired<T>;
+    & PrimitiveParserOptionRequired<Item, Container>;
 
-export class PrimitiveParser<T> extends BaseParser<T> {
-    private readonly getter: PrimitiveGetter<T>;
-    private readonly setter: PrimitiveSetter<T>;
+export class PrimitiveParser<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>> extends BaseParser<Item> {
+    private readonly getter: PrimitiveGetter<Item>;
+    private readonly setter: PrimitiveSetter<Item>;
 
-    readonly byteSize: number;
+    readonly container: TypedArrayFactory<Item,Container>;
+    readonly bytesPerData: number;
     readonly endian?: Endian;
 
-    constructor(config: PrimitiveParserConfig<T>) {
+    constructor(config: PrimitiveParserConfig<Item, Container>) {
         super();
-        this.byteSize = config.byteSize;
         this.getter = config.getter;
         this.setter = config.setter;
+        this.container = config.container
+        this.bytesPerData = config.container.BYTES_PER_ELEMENT;
         this.endian = config.endian;
     }
 
-    read(ctx: ParserContext, byteOffset: number, endian?: Endian): T {
+    read(ctx: ParserContext,byteOffset: number, endian?: Endian): Item {
         const littleEndian = isLittleEndian(this.endian || endian);
-        return this.getter.call(ctx.view, byteOffset, littleEndian);
+        return this.getter(ctx.view, byteOffset, littleEndian);
     }
 
-    write(ctx: ParserContext, value: T, byteOffset: number, endian?: Endian): T {
+    write(ctx: ParserContext, value: Item, byteOffset: number, endian?: Endian) {
         const littleEndian = isLittleEndian(this.endian || endian);
-        this.setter.call(new DataView(ctx.buffer), byteOffset, value, littleEndian);
-        return value;
+        this.setter(ctx.view, byteOffset, value, littleEndian);
     }
 }
 
-function compose<T>(basic: PrimitiveParserOptionRequired<T>, ...expand: Partial<PrimitiveParserOptionComposable>[]) {
-    return Object.assign({}, basic, ...expand) as PrimitiveParserConfig<T>;
-}
+const dvp = DataView.prototype;
 
-const {
-    getInt8, setInt8, getUint8, setUint8,
-    getInt16, setInt16, getUint16, setUint16,
-    getInt32, setInt32, getUint32, setUint32,
-    getFloat32, setFloat32, getFloat64, setFloat64,
-    getBigInt64, setBigInt64, getBigUint64, setBigUint64,
-} = DataView.prototype;
+const
+    getInt8 = call.bind(dvp.getInt8), setInt8 = call.bind(dvp.setInt8),
+    getUint8 = call.bind(dvp.getUint8), setUint8 = call.bind(dvp.setUint8),
+    getInt16 = call.bind(dvp.getInt16), setInt16 = call.bind(dvp.setInt16),
+    getUint16 = call.bind(dvp.getUint16), setUint16 = call.bind(dvp.setUint16),
+    getInt32 = call.bind(dvp.getInt32), setInt32 = call.bind(dvp.setInt32),
+    getUint32 = call.bind(dvp.getUint32), setUint32 = call.bind(dvp.setUint32),
+    getFloat32 = call.bind(dvp.getFloat32), setFloat32 = call.bind(dvp.setFloat32),
+    getFloat64 = call.bind(dvp.getFloat64), setFloat64 = call.bind(dvp.setFloat64),
+    getBigInt64 = call.bind(dvp.getBigInt64), setBigInt64 = call.bind(dvp.setBigInt64),
+    getBigUint64 = call.bind(dvp.getBigUint64), setBigUint64 = call.bind(dvp.setBigUint64);
 
 const composeLE: Pick<PrimitiveParserOptionComposable, 'endian'> = { endian: 'le' };
 const composeBE: Pick<PrimitiveParserOptionComposable, 'endian'> = { endian: 'be' };
 
-function cell<T>(
-    byteSize: number,
-    getter: PrimitiveGetter<T>,
-    setter: PrimitiveSetter<T>,
-): PrimitiveParserOptionRequired<T> {
-    return { byteSize, getter, setter };
+function cell<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>>(
+    getter: PrimitiveGetter<Item>,
+    setter: PrimitiveSetter<Item>,
+    container: TypedArrayFactory<Item,Container>,
+): PrimitiveParserOptionRequired<Item,Container> {
+    return { getter, setter, container };
+}
+
+function compose<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>>(basic: PrimitiveParserOptionRequired<Item,Container>, ...expand: Partial<PrimitiveParserOptionComposable>[]) {
+    return Object.assign({}, basic, ...expand) as PrimitiveParserConfig<Item,Container>;
 }
 
 const
-    basicInt8 = cell(1, getInt8, setInt8),
-    basicUint8 = cell(1, getUint8, setUint8),
-    basicInt16 = cell(2, getInt16, setInt16),
-    basicUint16 = cell(2, getUint16, setUint16),
-    basicInt32 = cell(4, getInt32, setInt32),
-    basicUint32 = cell(4, getUint32, setUint32),
-    basicFloat32 = cell(4, getFloat32, setFloat32),
-    basicFloat64 = cell(8, getFloat64, setFloat64),
-    basicBigInt64 = cell(8, getBigInt64, setBigInt64),
-    basicBigUint64 = cell(8, getBigUint64, setBigUint64);
+    basicInt8 = cell(getInt8, setInt8, TypedArray.Int8Array),
+    basicUint8 = cell(getUint8, setUint8, TypedArray.Uint8Array),
+    basicInt16 = cell(getInt16, setInt16, TypedArray.Int16Array),
+    basicUint16 = cell(getUint16, setUint16, TypedArray.Uint16Array),
+    basicInt32 = cell(getInt32, setInt32, TypedArray.Int32Array),
+    basicUint32 = cell(getUint32, setUint32, TypedArray.Uint32Array),
+    basicFloat32 = cell(getFloat32, setFloat32, TypedArray.Float32Array),
+    basicFloat64 = cell(getFloat64, setFloat64, TypedArray.Float64Array),
+    basicBigInt64 = cell(getBigInt64, setBigInt64, TypedArray.BigInt64Array),
+    basicBigUint64 = cell(getBigUint64, setBigUint64, TypedArray.BigUint64Array);
 
 export const
     Int8 = new PrimitiveParser(compose(basicInt8)),

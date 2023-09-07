@@ -1,4 +1,4 @@
-import { AdvancedParser, AdvancedParserConfig, BaseParser, createParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, BaseParser, createParserCreator } from '../context/base-parser.ts';
 import { SnapTuple } from '../context/snap-tuple.ts';
 import { ContextCompute, ContextOption, ParserContext } from '../context/types.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
@@ -25,10 +25,11 @@ export type StructField<T, K extends keyof T> =
     | (StructFieldVirtual<T, K>)
     | (StructFieldActual<T, K>)
 
-export type StructParserConfig<T> =
-    & AdvancedParserConfig
-    & { type?: new () => T }
-    & { fields: StructField<T, keyof T>[] }
+export type StructParserConfig<T> = {
+    fields: StructField<T, keyof T>[],
+    type?: new () => T,
+    option?: ContextOption,
+}
 
 export const kStructReadSnap = Symbol.for('@@StructReadSnap');
 export const kStructReadKeys = Symbol.for('@@StructReadKeys');
@@ -68,9 +69,10 @@ export function getStructWriteSnap<T extends object>(target: T): StructSnap<T> |
 export class StructParser<T extends object> extends AdvancedParser<T> {
     private readonly fields: StructField<T, keyof T>[];
     private readonly creator: new () => T;
+    private readonly option?: ContextOption;
 
     constructor(config: StructParserConfig<T>) {
-        super(config);
+        super();
         this.fields = config.fields;
         this.creator = config.type || Object as unknown as new () => T;
     }
@@ -87,8 +89,8 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         const inputPoint = (fieldConfig as StructFieldActual<T, keyof T>).point;
 
         if (!isUndefined(inputPoint)) {
-            if (isNumber(inputPoint)) return { point: inputPoint };
-            if (isFunction(inputPoint)) return { point: ctx.compute(inputPoint)! };
+            if (isNumber(inputPoint)) return { ...this.option, point: inputPoint };
+            if (isFunction(inputPoint)) return { ...this.option, point: ctx.compute(inputPoint)! };
         }
     }
 
@@ -206,12 +208,12 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         return section;
     }
 
-    write(ctx: ParserContext, value: T): T {
+    write(ctx: ParserContext, value: T) {
         const debug = ctx.constant.DebugStruct.includes(this.creator);
 
-        const parentPath = ctx.scope[ ctx.constant.$path ];
-        const parentStart = `${parentPath} {`;
-        const parentEnd = `${parentPath} }`;
+        const parentPath = ctx.scope[ctx.constant.$path];
+        const parentStart = `${ parentPath } {`;
+        const parentEnd = `${ parentPath } }`;
 
         if (debug) {
             console.log(parentStart);
@@ -220,7 +222,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
 
         for (const fieldConfig of this.fields) {
             const fieldName = fieldConfig.name;
-            const fieldPath = `${parentPath}.${String(fieldName)}`;
+            const fieldPath = `${ parentPath }.${ String(fieldName) }`;
 
             this.applySetup(ctx, fieldConfig);
             if (debug) {
@@ -258,7 +260,7 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
             if (isStructFieldVirtual && assertType<StructFieldVirtual<T, keyof T>>(fieldConfig)) {
                 const fieldResolve = fieldConfig.resolve;
                 const resolvedValue = isFunction(fieldResolve) ? ctx.compute(fieldResolve) : fieldResolve;
-                if (fieldValue !== resolvedValue) console.warn(`field [${String(fieldName)}] cannot compare with resolved`);
+                if (fieldValue !== resolvedValue) console.warn(`field [${ String(fieldName) }] cannot compare with resolved`);
                 this.applyExpose(ctx, fieldConfig, resolvedValue);
             }
 
@@ -270,8 +272,6 @@ export class StructParser<T extends object> extends AdvancedParser<T> {
         if (debug) {
             console.timeEnd(parentEnd);
         }
-
-        return value;
     }
 }
 

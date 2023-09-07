@@ -1,12 +1,13 @@
-import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, createParserCreator } from '../context/base-parser.ts';
 import { ContextCompute, ContextOption, ParserContext, ScopeAccessor } from '../context/types.ts';
-import * as TypedArray from '../primitive/typed-array.ts';
-import { TypedArrayFactory, TypedArrayInstance } from '../primitive/typed-array.ts';
+import * as TypedArray from '../utils/typed-array.ts';
+import { TypedArrayFactory, TypedArrayInstance } from '../utils/typed-array.ts';
 import * as PrimitiveType from './primitive-parser.ts';
 import { PrimitiveParser } from './primitive-parser.ts';
 import { isBoolean, isFunction, isNumber, isUndefined } from '../utils/type-util.ts';
+import { SafeAny } from "../utils/prototype-util.ts";
 
-export type TypedArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number> | number;
+export type TypedArrayParserOptionNumber = ContextCompute<number> | PrimitiveParser<number, SafeAny> | number;
 export type TypedArrayParserOptionEos = ContextCompute<number> | number | boolean;// 支持：1.指定结束于固定数字或者 2.根据下一个unit8判断
 export type TypedArrayParserOptionUntil<T> = (prev: T, ctx: ParserContext, scope: ScopeAccessor) => boolean;
 
@@ -27,24 +28,22 @@ export type TypedArrayParserConfigComputed<T> =
     | TypedArrayConfigLoopEnds
     | TypedArrayParserLoopUntil<T>;
 
-export type TypedArrayParserConfig<T> =
-    & AdvancedParserConfig
-    & TypedArrayParserConfigComputed<T>;
+export type TypedArrayParserConfig<T> = TypedArrayParserConfigComputed<T>;
 
 const DEFAULT_ENDS_FLAG = 0x00;
 const endsFlag = (end?: number) => !isUndefined(end) ? end : DEFAULT_ENDS_FLAG;
 
-export class TypedArrayParser<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>> extends AdvancedParser<Instance> {
-    readonly itemParser: PrimitiveParser<Item>;
-    readonly typedArrayFactory: TypedArrayFactory<Item, Instance>;
+export class TypedArrayParser<Item extends (number | bigint), Container extends TypedArrayInstance<Item, Container>> extends AdvancedParser<Container> {
+    readonly itemParser: PrimitiveParser<Item, Container>;
+    readonly typedArrayFactory: TypedArrayFactory<Item, Container>;
     readonly bytesPerElement: number;
     private readonly countOption?: TypedArrayParserOptionNumber;
     private readonly sizeOption?: TypedArrayParserOptionNumber;
     private readonly endsOption?: TypedArrayParserOptionEos;
     private readonly untilOption?: TypedArrayParserOptionUntil<Item>;
 
-    constructor(itemParser: PrimitiveParser<Item>, typedArrayFactory: TypedArrayFactory<Item, Instance>, option: TypedArrayParserConfig<Item>) {
-        super(option);
+    constructor(itemParser: PrimitiveParser<Item, Container>, typedArrayFactory: TypedArrayFactory<Item, Container>, option: TypedArrayParserConfig<Item>) {
+        super();
         const { ...optionPartial } = option;
         const { count, size, ends, until } = optionPartial as TypedArrayParserReaderPartial<Item>;
         if (Number(!isUndefined(count)) + Number(!isUndefined(size)) + Number(!isUndefined(ends)) !== 1) {
@@ -79,7 +78,7 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         return ctx.compute(ends);
     }
 
-    read(ctx: ParserContext): Instance {
+    read(ctx: ParserContext): Container {
         const { countOption, sizeOption, endsOption, untilOption } = this;
         const itemEndian = this.itemParser.endian;
 
@@ -127,7 +126,7 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
         throw Error('unknown TypedArray option');
     }
 
-    write(ctx: ParserContext, typedArray: Instance): Instance {
+    write(ctx: ParserContext, typedArray: Container) {
         const { countOption, sizeOption, endsOption, untilOption } = this;
         const itemEndian = this.itemParser.endian;
 
@@ -138,20 +137,20 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
             // 使用传入的 count 选项写入数组长度
             this.writeConfigNumber(ctx, countOption, countValue);
             ctx.bufferWrite(typedArray, { endian: itemEndian })
-            return typedArray;
+            return;
         }
 
         if (!isUndefined(sizeOption)) {
             // 使用传入的 size 选项写入数组长度（暂时未知具体长度，先写0，以获取offset）
             this.writeConfigNumber(ctx, sizeOption, sizeValue);
             ctx.bufferWrite(typedArray, { endian: itemEndian })
-            return typedArray;
+            return;
         }
 
         if (!isUndefined(endsOption)) {
             ctx.bufferWrite(typedArray, { endian: itemEndian })
             ctx.write(PrimitiveType.Uint8, this.endsCompute(ctx));
-            return typedArray;
+            return;
         }
 
         if (!isUndefined(untilOption)) {
@@ -162,19 +161,18 @@ export class TypedArrayParser<Item extends (number | bigint), Instance extends T
                 if (!matchedUntil && idx === lastIndex) throw Error('Last item does not match the \'until\' logic');
             }
             ctx.bufferWrite(typedArray, { endian: itemEndian })
-            return typedArray;
+            return;
         }
 
         throw Error('unknown TypedArray option');
-
     }
 }
 
-function compose<Item extends (bigint | number), Instance extends TypedArrayInstance<Item, Instance>>(
-    item: PrimitiveParser<Item>,
-    constructor: TypedArrayFactory<Item, Instance>,
-): (new(option: TypedArrayParserConfig<Item>) => TypedArrayParser<Item, Instance>) {
-    return class SubTypedArrayParser extends TypedArrayParser<Item, Instance> {
+function compose<Item extends (bigint | number), Container extends TypedArrayInstance<Item, Container>>(
+    item: PrimitiveParser<Item, Container>,
+    constructor: TypedArrayFactory<Item, Container>,
+): (new(option: TypedArrayParserConfig<Item>) => TypedArrayParser<Item, Container>) {
+    return class SubTypedArrayParser extends TypedArrayParser<Item, Container> {
         constructor(option: TypedArrayParserConfig<Item>) {
             super(item, constructor, option);
         }

@@ -1,9 +1,9 @@
 import { Coding } from '../coding/face.ts';
-import { Endian } from '../common.ts';
 import { SafeAny } from '../utils/prototype-util.ts';
 import { SnapTuple } from "./snap-tuple.ts";
 import { BaseParser } from "./base-parser.ts";
-import { TypedArrayFactory, TypedArrayInstance } from "../primitive/typed-array.ts";
+import { TypedArrayFactory, TypedArrayInstance } from "../utils/typed-array.ts";
+import { Endian } from "../utils/endianness-util.ts";
 
 export type ScopeAccessor = Record<string | symbol | number, SafeAny>
 
@@ -72,9 +72,6 @@ export interface ParserContext {
 
     /* 将计算函数交给context进行计算 */
     compute<Result>(getter: ContextCompute<Result>): Result,
-
-    /* 派生一个自context */
-    derive(...options: (Partial<ContextOption> | undefined)[]): ParserContext,
 
     start: number, // context开始的offset
     size: number, // context已经消费掉的size，不是固定的

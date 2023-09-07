@@ -1,11 +1,10 @@
 // 字符串解析器
 import { type Coding, Utf8 } from '../coding/codings.ts';
-import { AdvancedParser, AdvancedParserConfig, createParserCreator } from '../context/base-parser.ts';
+import { AdvancedParser, createParserCreator } from '../context/base-parser.ts';
 import { ParserContext } from '../context/types.ts';
 import { TypedArrayConfigLoopCount, TypedArrayParser, TypedArrayParserConfigComputed, Uint8ArrayParserCreator } from './typed-array-parser.ts';
 
 type StringParserConfig =
-    & AdvancedParserConfig
     & Exclude<TypedArrayParserConfigComputed<number>, TypedArrayConfigLoopCount>
     & { coding?: Coding }
 
@@ -14,7 +13,7 @@ export class StringParser extends AdvancedParser<string> {
     dataParser: TypedArrayParser<number, Uint8Array>;
 
     constructor(config: StringParserConfig) {
-        super(config);
+        super();
         const { coding = Utf8, ...computed } = config;
         this.coding = coding;
         this.dataParser = Uint8ArrayParserCreator(computed);
@@ -25,10 +24,9 @@ export class StringParser extends AdvancedParser<string> {
         return this.coding.decode(readArray);
     }
 
-    write(ctx: ParserContext, value: string): string {
+    write(ctx: ParserContext, value: string) {
         const byteArray = this.coding.encode(value);
         this.dataParser.write(ctx, byteArray);
-        return value;
     }
 }
 

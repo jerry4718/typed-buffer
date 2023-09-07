@@ -1,7 +1,6 @@
-import { push } from '../utils/proto-fn.ts';
-import { ObjectPrototypeKeys, PublicSymbolAccessors, SafeAny } from '../utils/prototype-util.ts';
+import { ObjectPrototype, ObjectPrototypeKeys, PublicSymbolAccessors, push, SafeAny, slice } from '../utils/prototype-util.ts';
 import { isUndefined } from '../utils/type-util.ts';
-import { ScopeAccessor } from "./types.ts";
+import { ContextOption, ScopeAccessor } from "./types.ts";
 
 const kAccessChain = Symbol('@@AccessChain');
 const kAccessTarget = Symbol('@@AccessTarget');
@@ -14,9 +13,10 @@ createAccessChain.ct = {
     set: 0,
 };
 
-export function createAccessChain<T extends object, R = T extends Partial<infer P>
-    ? P
-    : T>(useTarget: boolean, ...accesses: (T | undefined)[]): R {
+export function createAccessChain<
+    T extends object,
+    R = T extends Partial<infer P> ? P : T
+>(useTarget: boolean, ...accesses: (T | undefined)[]): R {
     createAccessChain.ct.create ++;
     const chain: T[] = [];
     for (const arg of accesses) {
@@ -84,7 +84,32 @@ export function createAccessChain<T extends object, R = T extends Partial<infer 
 
 const ScopeChainTarget = Object.freeze({});
 
-function createScope(parent?: ScopeAccessor): ScopeAccessor {
+export function optionChain(...options: (Partial<ContextOption> | undefined)[]): ContextOption;
+export function optionChain() {
+    const options = slice.call(arguments) as ContextOption[];
+    let prev: ContextOption | null = null;
+    for (const option of options.reverse()) {
+        if (!option) continue;
+        if (Object.keys(option).length === 0) continue;
+        if (Object.getPrototypeOf(option) === ObjectPrototype) {
+            Object.setPrototypeOf(option, prev);
+            prev = option;
+            continue;
+        }
+        if (prev === null) {
+            prev = option;
+            continue;
+        }
+        throw Error('cant append this option to chain');
+    }
+    return prev || Object.create(prev);
+}
+
+export function scopeChain(parent: ScopeAccessor | null = null): ScopeAccessor {
+    return Object.create(parent) as ScopeAccessor;
+}
+
+function createScope0(parent?: ScopeAccessor): ScopeAccessor {
     const scope = new Map<string | symbol, unknown>();
     const cache = new Map<string | symbol, unknown>();
 

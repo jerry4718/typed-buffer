@@ -2,11 +2,11 @@ import { Ascii } from '../coding/codings.ts';
 import { BufferParser } from '../parse/buffer-parser.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { changeTypedArrayEndianness, Endian, NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
-import { createAccessChain } from './access-chain.ts';
+import { createAccessChain, optionChain, scopeChain } from './access-chain.ts';
 import { AdvancedParser, BaseParser } from './base-parser.ts';
 import { createResult, SnapTuple } from './snap-tuple.ts';
 import { ContextCompute, ContextConstant, ContextOption, ParserContext, ScopeAccessor } from './types.ts';
-import { TypedArrayFactory, TypedArrayInstance } from "../primitive/typed-array.ts";
+import { TypedArrayFactory, TypedArrayInstance } from "../utils/typed-array.ts";
 import { isNumber, isUndefined } from "../utils/type-util.ts";
 
 export * from './snap-tuple.ts';
@@ -54,9 +54,8 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
         start: number;
         size: number;
 
-        constructor(parent?: ParserContext, ...options: (ContextOption | undefined)[]) {
-            this.scope = createAccessChain(true, parent?.scope || rootScope);
-            const contextOption = createAccessChain(false, ...options, parent?.option || rootOption);
+        constructor(contextOption: ContextOption = rootOption) {
+            this.scope = scopeChain(rootScope);
             this.option = contextOption;
             this.start = contextOption.point;
             this.size = 0;
@@ -74,7 +73,7 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             const { size: specSize, count: specCount } = specify as { count: number, size: number };
 
             if (isUndefined(specSize) && isUndefined(specCount)) {
-                throw Error('Either `count` or `size` must be specified when calling `bufferView`')
+                throw Error('Either `count` or `size` must be specified when calling `bufferView`');
             }
 
             const viewSize = isNumber(specSize) ? specSize : specCount;
@@ -88,12 +87,12 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
         bufferRead<Item extends number | bigint, Instance extends TypedArrayInstance<Item, Instance>>(
             typedArrayFactory: TypedArrayFactory<Item, Instance>,
             specify: { endian?: Endian } & ({ size: number } | { count: number }),
-            patchOption?: Partial<ContextOption>
+            patchOption?: Partial<ContextOption>,
         ): Instance {
             const { size: specSize, count: specCount } = specify as { count: number, size: number };
 
             if (isUndefined(specSize) && isUndefined(specCount)) {
-                throw Error('Either `count` or `size` must be specified when calling `bufferRead`')
+                throw Error('Either `count` or `size` must be specified when calling `bufferRead`');
             }
 
             const bytesPerElement = typedArrayFactory.BYTES_PER_ELEMENT;
@@ -103,10 +102,10 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
 
             const copyBuffer = this.buffer.slice(point, point + readSize);
 
-            const result = Reflect.construct(typedArrayFactory, [ copyBuffer ])
+            const result = Reflect.construct(typedArrayFactory, [ copyBuffer ]);
             if (consume) this.size += readSize;
 
-            const selectedEndian = specify.endian || rootEndian
+            const selectedEndian = specify.endian || rootEndian;
             return selectedEndian === NATIVE_ENDIANNESS ? result : changeTypedArrayEndianness(result);
         }
 
@@ -115,8 +114,8 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             specify: { endian?: Endian },
             patchOption?: Partial<ContextOption>,
         ): Instance {
-            const selectedEndian = specify.endian || rootEndian
-            const writeValue = selectedEndian === NATIVE_ENDIANNESS ? value : changeTypedArrayEndianness(value)
+            const selectedEndian = specify.endian || rootEndian;
+            const writeValue = selectedEndian === NATIVE_ENDIANNESS ? value : changeTypedArrayEndianness(value);
 
             const { point, consume } = createAccessChain(false, patchOption, { point: this.start + this.size }, this.option);
 
@@ -136,22 +135,22 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
         }
 
         read<T>(parser: BaseParser<T>, patchOption?: Partial<ContextOption>): T {
-            const readOption = createAccessChain(false, patchOption, { point: this.start + this.size });
+            const readOption = optionChain(patchOption, { point: this.start + this.size }, this.option);
+
+            const { point, consume } = readOption;
 
             // 判断parser是否为Primitive，Primitive直接在ctx中读取，避免创建多余的subContext
             if (parser instanceof PrimitiveParser) {
-                const { point, consume } = createAccessChain(false, readOption, this.option);
                 const primitiveContext = { buffer, view } as ParserContext;
 
                 const value = parser.read(primitiveContext, point, rootEndian);
 
-                if (consume) this.size += parser.byteSize;
+                if (consume) this.size += parser.bytesPerData;
 
                 return value;
             }
 
             if (parser instanceof BufferParser) {
-                const { point, consume } = createAccessChain(false, readOption, this.option);
                 const primitiveContext = { buffer, constant } as ParserContext;
 
                 const value = parser.read(primitiveContext, point);
@@ -162,11 +161,11 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             }
 
             if (parser instanceof AdvancedParser) {
-                const ctx = this.derive(readOption, parser.option);
-                const readPoint = ctx.option.point;
-                const value = parser.read(ctx, readPoint);
-                const readSize = ctx.size;
-                if (ctx.option.consume) this.size += readSize;
+                const beforeSize = this.size;
+                this.scope = scopeChain(this.scope);
+                const value = parser.read(this, point);
+                if (!consume) this.size = beforeSize;
+                this.scope = Object.getPrototypeOf(this.scope);
                 return value;
             }
 
@@ -181,24 +180,25 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
         }
 
         write<T>(parser: BaseParser<T>, value: T, patchOption?: Partial<ContextOption>): T {
-            const writeOption = createAccessChain(false, patchOption, { point: this.start + this.size });
+            const writeOption = optionChain(patchOption, { point: this.start + this.size }, this.option);
+            const { point, consume } = writeOption;
             if (parser instanceof PrimitiveParser) {
-                const { point, consume } = createAccessChain(false, writeOption, this.option);
                 const primitiveContext = { buffer, view } as ParserContext;
 
                 parser.write(primitiveContext, value, point, rootEndian);
 
-                const writeSize = parser.byteSize;
+                const writeSize = parser.bytesPerData;
                 if (consume) this.size += writeSize;
 
                 return value;
             }
 
             if (parser instanceof AdvancedParser) {
-                const ctx = this.derive(writeOption, parser.option);
-                parser.write(ctx, value, ctx.option.point);
-                const writeSize = ctx.size;
-                if (ctx.option.consume) this.size += writeSize;
+                const beforeSize = this.size;
+                this.scope = scopeChain(this.scope);
+                parser.write(this, value, point);
+                if (!consume) this.size = beforeSize;
+                this.scope = Object.getPrototypeOf(this.scope);
                 return value;
             }
 
@@ -218,14 +218,9 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             createContext.ct.expose ++;
             Reflect.set(this.scope, name, value);
         }
-
-        derive(...options: (Partial<ContextOption> | undefined)[]): ParserContext {
-            createContext.ct.derive ++;
-            return new ParserContextImpl(this, ...(options as ContextOption[]));
-        }
     }
 
-    return new ParserContextImpl(void 0);
+    return new ParserContextImpl();
 }
 
 createContext.ct = {

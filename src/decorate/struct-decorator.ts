@@ -4,7 +4,8 @@ import { ContextCompute, ContextConstant, ContextOption } from '../context/types
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { StructFieldActual, StructParser, StructParserConfig } from '../parse/struct-parser.ts';
 import { Constructor, getInheritedMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
-import { defineClassDecorator, definePropertyDecorator, ensureFieldConfig, getParserFields, kParserCached, kParserTarget } from './util.ts';
+import { defineClassDecorator, definePropertyDecorator, ensureFieldConfig, getParserFields, kParserCached, kParserTarget } from './basic-util.ts';
+import { TypedArrayInstance } from "../utils/typed-array.ts";
 
 const kParserFields = Symbol('@@StructParserFields') as MetadataKey<FieldConfig<SafeAny, SafeAny>[]>;
 
@@ -43,7 +44,7 @@ function createFieldTypeDecorator<T>(parser: FieldConfig<string | symbol, T>['ty
     });
 }
 
-export function FieldType<T>(parser: PrimitiveParser<T>): PropertyDecorator
+export function FieldType<T extends (number | bigint), TC extends TypedArrayInstance<T, TC>>(parser: PrimitiveParser<T, TC>): PropertyDecorator
 export function FieldType<T, O>(parserCreator: ((option: O) => AdvancedParser<T>) | (new(option: O) => AdvancedParser<T>), config: O): PropertyDecorator
 export function FieldType<T>(typeClass: new() => T): PropertyDecorator
 export function FieldType(parserSwitch: ContextCompute<BaseParser<SafeAny> | (new () => SafeAny)>): PropertyDecorator

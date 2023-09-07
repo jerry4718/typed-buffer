@@ -1,5 +1,5 @@
 import { PrimitiveAccessor, PrimitiveEndianAccessor } from '../accessor/primitive-accessor.ts';
-import { TypedArrayInstance } from '../primitive/typed-array.ts';
+import { TypedArrayInstance } from '../utils/typed-array.ts';
 import { Endian } from '../utils/endianness-util.ts';
 import { isNumber } from '../utils/type-util.ts';
 import { SafeAny } from '../utils/prototype-util.ts';

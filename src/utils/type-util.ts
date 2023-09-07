@@ -1,4 +1,4 @@
-import { toString } from './proto-fn.ts';
+import { toString } from './prototype-util.ts';
 
 export function matchOf(variable: unknown): string {
     return toString.call(variable).replace(/(^\[[\W\w]+ )|(]$)/g, '');

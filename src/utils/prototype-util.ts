@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { TypedArrayConstructor } from '../primitive/typed-array.ts';
+import { TypedArrayConstructor } from './typed-array.ts';
 
 // deno-lint-ignore ban-types
 export type Constructor<T> = T extends object ? Function & (new (...args: unknown[]) => T) : never;
@@ -13,6 +13,11 @@ export const ObjectPrototypeKeys = Reflect.ownKeys(ObjectPrototype);
 export const PublicSymbolAccessors = Reflect.ownKeys(Symbol)
     .map(k => Reflect.get(Symbol, k))
     .filter(s => typeof s === 'symbol');
+
+export const slice = ArrayPrototype.slice;
+export const push = ArrayPrototype.push;
+export const call = Function.prototype.call;
+export const toString = ObjectPrototype.toString;
 
 export const AbstractTypedArray = Reflect.getPrototypeOf(Uint8Array) as TypedArrayConstructor<number | bigint, unknown>;
 
