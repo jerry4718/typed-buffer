@@ -58,7 +58,7 @@ const writeContext = t.createContext(new ArrayBuffer(100));
 const writeRes = writeContext.write(PersonArrayParser, data);
 
 console.log(writeRes);
-console.log(writeContext.buffer.slice(writeContext.start, writeContext.end));
+console.log(writeContext.buffer.slice(writeContext.byteOffset, writeContext.pos));
 
 const readContext = t.createContext(writeContext.buffer);
 const readData = readContext.read(PersonArrayParser);

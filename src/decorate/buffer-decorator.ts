@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { ContextConstant, ContextOption } from '../context/types.ts';
+import { ContextConstant, AccessOption } from '../context/types.ts';
 import { TypedArrayInstance } from '../utils/typed-array.ts';
 import { BufferParser, BufferParserConfig } from '../parse/buffer-parser.ts';
 import { Endian } from '../utils/endianness-util.ts';
@@ -9,9 +9,9 @@ import { PrimitiveParser } from "../parse/primitive-parser.ts";
 
 const kParserFields = Symbol('@@BufferParserFields') as MetadataKey<FieldConfig<SafeAny, SafeAny>[]>;
 
-export function BufferTarget<T, Item extends (bigint | number), Container extends TypedArrayInstance<Item, Container>>(
+export function BufferFields<T, Item extends (bigint | number), Container extends TypedArrayInstance<Item, Container>>(
     field: PrimitiveParser<Item, Container>,
-    config: Partial<ContextConstant & ContextOption> = {},
+    config: Partial<ContextConstant & AccessOption> = {},
 ) {
     function decorator<Class extends Constructor<T>>(klass: Class) {
         Reflect.defineMetadata(kParserTarget, config, klass);

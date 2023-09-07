@@ -20,7 +20,7 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
     private readonly endian?: Endian;
     readonly bytesPerField: number;
     readonly structFieldsCount: number;
-    readonly structBufferSize: number;
+    readonly bytesPerData: number;
 
     constructor(config: BufferParserConfig<T, Item, Instance>) {
         super();
@@ -76,7 +76,7 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
         this.endian = config.endian;
         this.structFieldsCount = structFieldsCount;
         this.bytesPerField = typedArrayClass.BYTES_PER_ELEMENT;
-        this.structBufferSize = structFieldsCount * typedArrayClass.BYTES_PER_ELEMENT;
+        this.bytesPerData = structFieldsCount * typedArrayClass.BYTES_PER_ELEMENT;
     }
 
     resolveEndianness(ctx: ParserContext, from: TypedArrayInstance<Item, Instance>): TypedArrayInstance<Item, Instance> {
@@ -87,7 +87,7 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
     }
 
     read(ctx: ParserContext, byteOffset: number): T {
-        const buffer = ctx.buffer.slice(byteOffset, byteOffset + this.structBufferSize);
+        const buffer = ctx.buffer.slice(byteOffset, byteOffset + this.bytesPerData);
         const typedArray = Reflect.construct(this.typedArrayClass, [ buffer ]);
         return Reflect.construct(this.bufferStructClass, [ this.resolveEndianness(ctx, typedArray) ]) as T;
     }
@@ -99,7 +99,7 @@ export class BufferParser<T extends object, Item extends (bigint | number), Inst
 
         const endianness = this.resolveEndianness(ctx, typedArray);
 
-        const writeView = new Uint8Array(ctx.buffer, byteOffset, this.structBufferSize);
+        const writeView = new Uint8Array(ctx.buffer, byteOffset, this.bytesPerData);
         writeView.set(new Uint8Array(endianness.buffer, endianness.byteOffset, endianness.byteLength));
     }
 }

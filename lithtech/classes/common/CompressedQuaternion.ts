@@ -1,9 +1,10 @@
-import { BufferField, BufferTarget } from '../../../mod.ts';
+import * as t from '../../../mod.ts';
+import { BufferField, BufferFields } from '../../../mod.ts';
 import { Quaternion } from './Quaternion.ts';
 
 const DecompressValue = 0x7fff;
 
-@BufferTarget(Int16Array)
+@BufferFields(t.Int16)
 export class CompressedQuaternion {
     @BufferField()
     declare x: number;

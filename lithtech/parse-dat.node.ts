@@ -10,14 +10,15 @@ import { LithtechDat } from './classes/dat/LithtechDat.ts';
 import { RenderData } from './classes/dat/RenderData.ts';
 import { WorldTree } from './classes/dat/WorldTree.ts';
 import { WorldModel } from './classes/dat/WorldModel.ts';
+import { World } from "./classes/dat/World.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const datBuffer = await fs.readFile(path.join(__dirname, './files/sa_worlds@project@tank.dat'));
+// const datBuffer = await fs.readFile(path.join(__dirname, './files/sa_worlds@project@tank.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/sa_worlds@project@ware_house.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/lastone3.dat'));
-// const datBuffer = await fs.readFile(path.join(__dirname, './files/school_ffa.dat'));
+const datBuffer = await fs.readFile(path.join(__dirname, './files/school_ffa.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/ware_house2.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/observer.dat'));
 // const datBuffer = await fs.readFile(path.join(__dirname, './files/WESTERN.DAT'));
@@ -46,5 +47,6 @@ const selfSnap = snap;
 const fieldSnap = getStructReadSnap(lithtechDat);
 // console.log(lithtechDat);
 console.log(selfSnap);
-console.log(t.createContext.ct)
+console.log(t.createContext.ct);
 console.log(fieldSnap);
+debugger

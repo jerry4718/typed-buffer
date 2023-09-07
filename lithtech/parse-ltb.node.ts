@@ -43,7 +43,9 @@ const readContext = t.createContext(ltbBuffer.buffer, {
     ],
 });
 
+console.time('lithtechLtb');
 const [ lithtechLtb, selfSnap ] = readContext.$$read(LithtechLtbParser);
+console.timeEnd('lithtechLtb');
 
 const fieldSnap = getStructReadSnap(lithtechLtb);
 // console.log(lithtechLtb);

@@ -1,9 +1,10 @@
-import { BufferField, BufferTarget } from '../../../mod.ts';
+import * as t from '../../../mod.ts';
+import { BufferField, BufferFields } from '../../../mod.ts';
 import { Vector3 } from './Vector3.ts';
 
 const DecompressValue = 16.0;
 
-@BufferTarget(Int16Array)
+@BufferFields(t.Int16)
 export class CompressedVector3 {
     @BufferField()
     declare x: number;

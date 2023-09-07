@@ -1,6 +1,7 @@
-import { BufferField, BufferTarget } from '../../../mod.ts';
+import * as t from '../../../mod.ts';
+import { BufferField, BufferFields } from '../../../mod.ts';
 
-@BufferTarget(Float32Array)
+@BufferFields(t.Float32)
 export class Quaternion {
     @BufferField()
     declare x: number;

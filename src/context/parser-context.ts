@@ -2,10 +2,10 @@ import { Ascii } from '../coding/codings.ts';
 import { BufferParser } from '../parse/buffer-parser.ts';
 import { PrimitiveParser } from '../parse/primitive-parser.ts';
 import { changeTypedArrayEndianness, Endian, NATIVE_ENDIANNESS } from '../utils/endianness-util.ts';
-import { createAccessChain, optionChain, scopeChain } from './access-chain.ts';
+import { scopeChain } from './access-chain.ts';
 import { AdvancedParser, BaseParser } from './base-parser.ts';
 import { createResult, SnapTuple } from './snap-tuple.ts';
-import { ContextCompute, ContextConstant, ContextOption, ParserContext, ScopeAccessor } from './types.ts';
+import { AccessOption, ContextCompute, ContextConstant, ParserContext, ScopeAccessor } from './types.ts';
 import { TypedArrayFactory, TypedArrayInstance } from "../utils/typed-array.ts";
 import { isNumber, isUndefined } from "../utils/type-util.ts";
 
@@ -22,19 +22,13 @@ const defaultContextConstant: ContextConstant = Object.freeze({
     DebugStruct: [],
 });
 
-const defaultContextOption: ContextOption = Object.freeze({
-    point: 0,
-    consume: true,
-});
-
-export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextConstant & ContextOption> = {}) {
+export function createContext(buffer: ArrayBuffer, inputConstant: Partial<ContextConstant> = {}, byteOffset = 0) {
     const view = new DataView(buffer);
 
-    const constant: ContextConstant = { ...defaultContextConstant, ...inputOption };
+    const constant: ContextConstant = { ...defaultContextConstant, ...inputConstant };
     const { $path, path: rootPath, endian: rootEndian } = constant;
 
     const rootScope: ScopeAccessor = { [$path]: rootPath };
-    const rootOption: ContextOption = { ...defaultContextOption, ...inputOption };
 
     class ParserContextImpl implements ParserContext {
         get buffer() {
@@ -49,27 +43,44 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             return constant;
         }
 
-        option: Required<ContextOption>;
         scope: ScopeAccessor;
-        start: number;
-        size: number;
+        byteOffset: number;
+        byteLength: number;
+        pos: number;
 
-        constructor(contextOption: ContextOption = rootOption) {
+        constructor() {
             this.scope = scopeChain(rootScope);
-            this.option = contextOption;
-            this.start = contextOption.point;
-            this.size = 0;
+            this.byteOffset = byteOffset;
+            this.byteLength = buffer.byteLength;
+            this.pos = 0;
+        }
+
+        get start() {
+            return this.byteOffset;
+        }
+
+        get size() {
+            return this.byteLength - this.byteOffset;
         }
 
         get end() {
-            return this.start + this.size;
+            return this.byteLength;
+        }
+
+        public seek(pos: number) {
+            const validated = Math.max(0, Math.min(this.size, pos));
+            this.pos = (isNaN(validated) || !isFinite(validated)) ? 0 : validated;
         }
 
         get take() {
-            return [ this.start, this.end ] as [ number, number ];
+            return [ this.start, this.pos ] as [ number, number ];
         }
 
-        u8View(specify: ({ size: number } | { count: number }), patchOption?: Partial<ContextOption>): Uint8Array {
+        consume(consume: boolean | undefined, hasSeeked?: boolean) {
+            return !hasSeeked && (isUndefined(consume) || consume);
+        }
+
+        u8View(specify: ({ size: number } | { count: number }), patchOption?: Partial<AccessOption>): Uint8Array {
             const { size: specSize, count: specCount } = specify as { count: number, size: number };
 
             if (isUndefined(specSize) && isUndefined(specCount)) {
@@ -78,16 +89,22 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
 
             const viewSize = isNumber(specSize) ? specSize : specCount;
 
-            const { point, consume } = createAccessChain(false, patchOption, { point: this.start + this.size }, this.option);
+            const pos = this.pos;
+            const seek = patchOption?.pos;
+            const consume = patchOption?.consume;
+            const hasSeeked = isNumber(seek);
+            if (hasSeeked) this.seek(seek);
 
-            if (consume) this.size += viewSize;
-            return new Uint8Array(this.buffer, point, viewSize);
+            const view = new Uint8Array(this.buffer, this.pos, viewSize);
+            this.pos += viewSize;
+            if (!this.consume(consume, hasSeeked)) this.pos = pos;
+            return view;
         }
 
-        bufferRead<Item extends number | bigint, Instance extends TypedArrayInstance<Item, Instance>>(
+        readBuffer<Item extends number | bigint, Instance extends TypedArrayInstance<Item, Instance>>(
             typedArrayFactory: TypedArrayFactory<Item, Instance>,
             specify: { endian?: Endian } & ({ size: number } | { count: number }),
-            patchOption?: Partial<ContextOption>,
+            patchOption?: Partial<AccessOption>,
         ): Instance {
             const { size: specSize, count: specCount } = specify as { count: number, size: number };
 
@@ -98,73 +115,77 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             const bytesPerElement = typedArrayFactory.BYTES_PER_ELEMENT;
             const readSize = isNumber(specSize) ? specSize : (specCount * bytesPerElement);
 
-            const { point, consume } = createAccessChain(false, patchOption, { point: this.start + this.size }, this.option);
+            const pos = this.pos;
+            const seek = patchOption?.pos;
+            const consume = patchOption?.consume;
+            const hasSeeked = isNumber(seek);
+            if (hasSeeked) this.seek(seek);
 
-            const copyBuffer = this.buffer.slice(point, point + readSize);
+            const copyBuffer = this.buffer.slice(this.pos, this.pos + readSize);
 
             const result = Reflect.construct(typedArrayFactory, [ copyBuffer ]);
-            if (consume) this.size += readSize;
+
+            this.pos += readSize;
+            if (!this.consume(consume, hasSeeked)) this.pos = pos;
 
             const selectedEndian = specify.endian || rootEndian;
             return selectedEndian === NATIVE_ENDIANNESS ? result : changeTypedArrayEndianness(result);
         }
 
-        bufferWrite<Item extends number | bigint, Instance extends TypedArrayInstance<Item, Instance>>(
+        writeBuffer<Item extends number | bigint, Instance extends TypedArrayInstance<Item, Instance>>(
             value: Instance,
             specify: { endian?: Endian },
-            patchOption?: Partial<ContextOption>,
+            patchOption?: Partial<AccessOption>,
         ): Instance {
             const selectedEndian = specify.endian || rootEndian;
             const writeValue = selectedEndian === NATIVE_ENDIANNESS ? value : changeTypedArrayEndianness(value);
 
-            const { point, consume } = createAccessChain(false, patchOption, { point: this.start + this.size }, this.option);
+            const pos = this.pos;
+            const seek = patchOption?.pos;
+            const consume = patchOption?.consume;
+            const hasSeeked = isNumber(seek);
+            if (hasSeeked) this.seek(seek);
 
             const writeSize = writeValue.byteLength;
 
-            new Uint8Array(this.buffer).set(new Uint8Array(writeValue.buffer), point);
+            new Uint8Array(this.buffer).set(new Uint8Array(writeValue.buffer), this.pos);
 
-            if (consume) this.size += writeSize;
+            this.pos += writeSize;
+            if (!this.consume(consume, hasSeeked)) this.pos = pos;
+
             return value;
         }
 
-        $$read<T>(parser: BaseParser<T>, patchOption?: Partial<ContextOption>): SnapTuple<T> {
-            const start = this.start;
-            const prevSize = this.size;
+        $$read<T>(parser: BaseParser<T>, patchOption?: Partial<AccessOption>): SnapTuple<T> {
+            const start = this.byteOffset;
+            const prevSize = this.byteLength;
             const value = this.read(parser, patchOption);
-            return createResult(value, start + prevSize, this.size - prevSize);
+            return createResult(value, start + prevSize, this.byteLength - prevSize);
         }
 
-        read<T>(parser: BaseParser<T>, patchOption?: Partial<ContextOption>): T {
-            const readOption = optionChain(patchOption, { point: this.start + this.size }, this.option);
-
-            const { point, consume } = readOption;
+        read<T>(parser: BaseParser<T>, patchOption?: Partial<AccessOption>): T {
+            const pos = this.pos;
+            const seek = patchOption?.pos;
+            const consume = patchOption?.consume;
+            const hasSeeked = isNumber(seek);
+            if (hasSeeked) this.seek(seek);
 
             // 判断parser是否为Primitive，Primitive直接在ctx中读取，避免创建多余的subContext
-            if (parser instanceof PrimitiveParser) {
-                const primitiveContext = { buffer, view } as ParserContext;
+            if (parser instanceof PrimitiveParser || parser instanceof BufferParser) {
+                const value = parser.read(this, this.pos, rootEndian);
 
-                const value = parser.read(primitiveContext, point, rootEndian);
-
-                if (consume) this.size += parser.bytesPerData;
-
-                return value;
-            }
-
-            if (parser instanceof BufferParser) {
-                const primitiveContext = { buffer, constant } as ParserContext;
-
-                const value = parser.read(primitiveContext, point);
-
-                if (consume) this.size += parser.structBufferSize;
+                this.pos += parser.bytesPerData;
+                if (!this.consume(consume, hasSeeked)) this.pos = pos;
 
                 return value;
             }
 
             if (parser instanceof AdvancedParser) {
-                const beforeSize = this.size;
                 this.scope = scopeChain(this.scope);
-                const value = parser.read(this, point);
-                if (!consume) this.size = beforeSize;
+                const value = parser.read(this, this.pos);
+
+                if (!this.consume(consume, hasSeeked)) this.pos = pos;
+
                 this.scope = Object.getPrototypeOf(this.scope);
                 return value;
             }
@@ -172,41 +193,40 @@ export function createContext(buffer: ArrayBuffer, inputOption: Partial<ContextC
             throw Error('unknown Parser type');
         }
 
-        $$write<T>(parser: BaseParser<T>, value: T, patchOption?: Partial<ContextOption>): SnapTuple<T> {
-            const start = this.start;
-            const prevSize = this.size;
+        $$write<T>(parser: BaseParser<T>, value: T, patchOption?: Partial<AccessOption>): SnapTuple<T> {
+            const start = this.byteOffset;
+            const prevSize = this.byteLength;
             this.write(parser, value, patchOption);
-            return createResult(value, start + prevSize, this.size - prevSize);
+            return createResult(value, start + prevSize, this.byteLength - prevSize);
         }
 
-        write<T>(parser: BaseParser<T>, value: T, patchOption?: Partial<ContextOption>): T {
-            const writeOption = optionChain(patchOption, { point: this.start + this.size }, this.option);
-            const { point, consume } = writeOption;
+        write<T>(parser: BaseParser<T>, value: T, patchOption?: Partial<AccessOption>): T {
+            const pos = this.pos;
+            const seek = patchOption?.pos;
+            const consume = patchOption?.consume;
+            const hasSeeked = isNumber(seek);
+            if (hasSeeked) this.seek(seek);
+
             if (parser instanceof PrimitiveParser) {
                 const primitiveContext = { buffer, view } as ParserContext;
 
-                parser.write(primitiveContext, value, point, rootEndian);
+                parser.write(primitiveContext, value, this.pos, rootEndian);
 
-                const writeSize = parser.bytesPerData;
-                if (consume) this.size += writeSize;
+                this.pos += parser.bytesPerData;
+                if (!this.consume(consume, hasSeeked)) this.pos = pos;
 
                 return value;
             }
 
             if (parser instanceof AdvancedParser) {
-                const beforeSize = this.size;
                 this.scope = scopeChain(this.scope);
-                parser.write(this, value, point);
-                if (!consume) this.size = beforeSize;
+                parser.write(this, value, this.pos);
+                if (!this.consume(consume, hasSeeked)) this.pos = pos;
                 this.scope = Object.getPrototypeOf(this.scope);
                 return value;
             }
 
             throw Error('unknown Parser type');
-        }
-
-        skip(size: number): void {
-            this.size += size;
         }
 
         compute<Result>(getter: ContextCompute<Result>): Result {

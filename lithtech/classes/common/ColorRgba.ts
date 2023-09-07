@@ -1,6 +1,7 @@
-import { BufferField, BufferTarget } from '../../../mod.ts';
+import * as t from '../../../mod.ts';
+import { BufferField, BufferFields } from '../../../mod.ts';
 
-@BufferTarget(Uint8Array)
+@BufferFields(t.Uint8)
 export class ColorRgba {
     @BufferField()
     declare r: number;
