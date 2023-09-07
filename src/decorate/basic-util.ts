@@ -1,8 +1,8 @@
 import { BaseParser } from '../context/base-parser.ts';
-import { ContextOption } from '../context/types.ts';
+import { AccessOption } from '../context/types.ts';
 import { Constructor, getPrototypeMetadata, MetadataKey, SafeAny } from '../utils/prototype-util.ts';
 
-export const kParserTarget = Symbol('@@ParserTarget') as MetadataKey<Partial<ContextOption>>;
+export const kParserTarget = Symbol('@@ParserTarget') as MetadataKey<Partial<AccessOption>>;
 export const kParserCached = Symbol('@@ParserCached') as MetadataKey<BaseParser<SafeAny>>;
 
 export const defineClassDecorator = (decorator: ClassDecorator): ClassDecorator => decorator;

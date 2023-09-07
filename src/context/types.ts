@@ -10,10 +10,12 @@ export type ScopeAccessor = Record<string | symbol | number, SafeAny>
 export type ContextCompute<Result> = (ctx: ParserContext, scope: ScopeAccessor) => Result
 
 // 可动态配置的option
-export type ContextOption = {
-    point: number, // fixed, cannot computable
+export type AccessOption = {
+    pos: number,
     consume: boolean,
 };
+// 可动态配置的option
+export type ContextOption = {};
 
 // 固定的配置，我们认定这些配置不需要在解析过程中发生改变
 export type ContextConstant = {
@@ -36,36 +38,32 @@ export interface ParserContext {
     buffer: ArrayBuffer,
     view: DataView,
     constant: ContextConstant,
-    /* 灵活的配置参数，可在每一层自由定制 */
-    option: Required<ContextOption>,
     /* 作用域，提供一些上下文产生的数据的访问功能 */
     scope: ScopeAccessor,
 
     /* context中保留着一切需要的数据，所以read，write操作最终交付给context执行 */
-    $$read<T>(parser: BaseParser<T>, option?: Partial<ContextOption>): SnapTuple<T>,
+    $$read<T>(parser: BaseParser<T>, option?: Partial<AccessOption>): SnapTuple<T>,
 
-    $$write<T>(parser: BaseParser<T>, value: T, option?: Partial<ContextOption>): SnapTuple<T>,
+    $$write<T>(parser: BaseParser<T>, value: T, option?: Partial<AccessOption>): SnapTuple<T>,
 
     /* context中保留着一切需要的数据，所以read，write操作最终交付给context执行 */
-    read<T>(parser: BaseParser<T>, option?: Partial<ContextOption>): T,
+    read<T>(parser: BaseParser<T>, option?: Partial<AccessOption>): T,
 
-    write<T>(parser: BaseParser<T>, value: T, option?: Partial<ContextOption>): T,
+    write<T>(parser: BaseParser<T>, value: T, option?: Partial<AccessOption>): T,
 
-    u8View(specify: ({ size: number } | { count: number }), patchOption?: Partial<ContextOption>): Uint8Array
+    u8View(specify: ({ size: number } | { count: number }), patchOption?: Partial<AccessOption>): Uint8Array
 
-    bufferRead<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>>(
+    readBuffer<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>>(
         typedArrayFactory: TypedArrayFactory<Item, Instance>,
         specify: { endian?: Endian } & { count: number } | { size: number },
-        patchOption?: Partial<ContextOption>
+        patchOption?: Partial<AccessOption>,
     ): Instance,
 
-    bufferWrite<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>>(
+    writeBuffer<Item extends (number | bigint), Instance extends TypedArrayInstance<Item, Instance>>(
         value: Instance,
         specify: { endian?: Endian },
-        patchOption?: Partial<ContextOption>,
+        patchOption?: Partial<AccessOption>,
     ): Instance,
-
-    skip(size: number): void,
 
     /* 向scope中暴露变量 */
     expose(name: string | number | symbol, value: unknown): void,
@@ -75,6 +73,6 @@ export interface ParserContext {
 
     start: number, // context开始的offset
     size: number, // context已经消费掉的size，不是固定的
-    end: number, // end并不是固定的，取到的值是start+size
+    pos: number, // end并不是固定的，取到的值是start+size
     take: [ number, number ], // [start, end]
 }

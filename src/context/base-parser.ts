@@ -1,5 +1,5 @@
 import { Constructor, isExtendFrom } from '../utils/prototype-util.ts';
-import { ParserContext, ScopeAccessor } from './types.ts';
+import { ParserContext } from './types.ts';
 
 export abstract class BaseParser<T> {
     abstract read(context: ParserContext, byteOffset: number): T;
